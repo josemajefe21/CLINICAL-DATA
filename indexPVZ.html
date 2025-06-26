@@ -10,9 +10,6 @@
   <title>CLINICAL DATA</title>
   <!-- PWA Meta Tags -->
   <meta name="description" content="Bitácora para seguimiento de cultivos">
-  <!-- Elimino o comento la línea del manifest y el icono -->
-  <!-- <link rel="manifest" href="manifest.json"> -->
-  <!-- <link rel="apple-touch-icon" href="icons/icon-192.svg"> -->
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -3356,6 +3353,51 @@
         if (btn) btn.textContent = 'Cerrar';
         showNewBitacoraForm();
       }
+    }
+
+    var formPaciente = document.getElementById('formPaciente');
+    if (formPaciente) {
+      formPaciente.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var nombreInput = document.getElementById('pacienteNombre');
+        var dniInput = document.getElementById('pacienteDNI');
+        if (!nombreInput || !dniInput) return;
+        var nombre = nombreInput.value.trim();
+        var dni = dniInput.value.trim();
+        // ... resto del código ...
+      });
+    }
+
+    var loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+      loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var userInput = document.getElementById('loginUser');
+        var passInput = document.getElementById('loginPassword');
+        if (!userInput || !passInput) return;
+        var username = userInput.value.trim();
+        var password = passInput.value;
+        // ... resto del código ...
+      });
+    }
+
+    window.mostrarFormularioPaciente = function() {
+      var modal = document.getElementById('modalPaciente');
+      if (modal) modal.style.display = 'block';
+    };
+    window.filtrarPacientes = function() {
+      // Aquí deberías poner la lógica de filtrado de pacientes
+      // Por ejemplo, si tienes una función cargarPacientes(filtro)
+      var input = document.getElementById('busquedaPaciente');
+      if (!input) return;
+      var filtro = input.value;
+      if (typeof cargarPacientes === 'function') cargarPacientes(filtro);
+    };
+    function clearUserData() {
+      var el = document.getElementById('userInfo');
+      if (el && el.style) el.style.display = 'none';
+      localStorage.removeItem('bitacoras');
+      localStorage.removeItem('bitacora_backups');
     }
   </script>
 </body>
