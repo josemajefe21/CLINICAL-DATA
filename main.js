@@ -421,4 +421,162 @@ window.exportarHistoriaClinica = function(tipo) {
         win.print();
         win.close();
     }
+};
+
+// --- AUTENTICACIÓN Y REGISTRO CON FIREBASE ---
+function showRegister() {
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('registerCard').style.display = 'block';
+}
+
+function showLogin() {
+    document.getElementById('registerCard').style.display = 'none';
+    document.getElementById('loginCard').style.display = 'block';
+}
+
+document.getElementById('registerForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const name = document.getElementById('registerName').value.trim();
+    const email = document.getElementById('registerEmail').value.trim();
+    const password = document.getElementById('registerPassword').value;
+    const errorDiv = document.getElementById('registerError');
+    errorDiv.style.display = 'none';
+    try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        await auth.currentUser.updateProfile({ displayName: name });
+        showLogin();
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+    }
+};
+
+document.getElementById('loginForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorDiv = document.getElementById('loginError');
+    errorDiv.style.display = 'none';
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        location.reload();
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+    }
+};
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        document.querySelector('.container').style.display = 'none';
+        // Aquí puedes mostrar la app principal y cargar pacientes del usuario
+        cargarPacientesFirestore();
+    } else {
+        document.querySelector('.container').style.display = 'block';
+    }
+});
+
+// --- PACIENTES Y VISITAS EN FIRESTORE ---
+async function cargarPacientesFirestore() {
+    const user = auth.currentUser;
+    if (!user) return;
+    const pacientesRef = db.collection('usuarios').doc(user.uid).collection('pacientes');
+    const snapshot = await pacientesRef.get();
+    const lista = document.getElementById('listaPacientes');
+    if (!lista) return;
+    lista.innerHTML = '';
+    snapshot.forEach(doc => {
+        const p = doc.data();
+        const div = document.createElement('div');
+        div.className = 'paciente-card';
+        div.innerHTML = `<b>${p.nombre}</b><br>DNI: ${p.dni}<br><span style='font-size:0.95em;'>${p.patologia || ''}</span>`;
+        div.onclick = () => verFichaPacienteFirestore(doc.id);
+        lista.appendChild(div);
+    });
+}
+
+window.verFichaPacienteFirestore = async function(id) {
+    const user = auth.currentUser;
+    if (!user) return;
+    const doc = await db.collection('usuarios').doc(user.uid).collection('pacientes').doc(id).get();
+    if (!doc.exists) return;
+    const p = doc.data();
+    document.querySelector('.pacientes-section').style.display = 'none';
+    document.getElementById('fichaPaciente').style.display = 'block';
+    document.getElementById('nombreFichaPaciente').textContent = p.nombre;
+    document.getElementById('datosPaciente').innerHTML = `
+        <b>DNI:</b> ${p.dni}<br>
+        <b>Dirección:</b> ${p.direccion}<br>
+        <b>Teléfono:</b> ${p.telefono}<br>
+        <b>Obra social:</b> ${p.obraSocial}<br>
+        <b>Patología:</b> ${p.patologia}
+    `;
+    mostrarVisitasFirestore(p.id);
+};
+
+async function mostrarVisitasFirestore(pacienteId) {
+    const user = auth.currentUser;
+    if (!user) return;
+    const visitasRef = db.collection('usuarios').doc(user.uid).collection('pacientes').doc(pacienteId).collection('visitas');
+    const snapshot = await visitasRef.orderBy('fecha').get();
+    const div = document.getElementById('historialVisitas');
+    div.innerHTML = '';
+    snapshot.forEach((doc, i) => {
+        const v = doc.data();
+        const entry = document.createElement('div');
+        entry.className = 'entry';
+        entry.innerHTML = `<b>${v.fecha}</b> - <b>${v.tipo}</b> - <span>${v.estado}</span><br>
+            <b>Observaciones:</b> ${v.observaciones}<br>
+            <b>Problemas:</b> ${v.problemas}<br>
+            <b>Tratamiento:</b> ${v.tratamiento}<br>
+            <button onclick="editarVisitaFirestore('${pacienteId}','${doc.id}')">✏️</button>
+            <button onclick="eliminarVisitaFirestore('${pacienteId}','${doc.id}')">🗑️</button>`;
+        div.appendChild(entry);
+    });
+}
+
+document.getElementById('formVisita').onsubmit = async function(e) {
+    e.preventDefault();
+    const user = auth.currentUser;
+    if (!user) return;
+    const pacienteId = document.getElementById('nombreFichaPaciente').dataset.id;
+    const idVisita = document.getElementById('visitaId').value;
+    const fecha = document.getElementById('visitaFecha').value;
+    const tipo = document.getElementById('visitaTipo').value;
+    const estado = document.getElementById('visitaEstado').value;
+    const observaciones = document.getElementById('visitaObservaciones').value;
+    const problemas = document.getElementById('visitaProblemas').value;
+    const tratamiento = document.getElementById('visitaTratamiento').value;
+    const visitasRef = db.collection('usuarios').doc(user.uid).collection('pacientes').doc(pacienteId).collection('visitas');
+    if (idVisita) {
+        await visitasRef.doc(idVisita).set({ fecha, tipo, estado, observaciones, problemas, tratamiento });
+    } else {
+        await visitasRef.add({ fecha, tipo, estado, observaciones, problemas, tratamiento });
+    }
+    cerrarModalVisita();
+    mostrarVisitasFirestore(pacienteId);
+};
+
+window.editarVisitaFirestore = async function(pacienteId, visitaId) {
+    const user = auth.currentUser;
+    if (!user) return;
+    const doc = await db.collection('usuarios').doc(user.uid).collection('pacientes').doc(pacienteId).collection('visitas').doc(visitaId).get();
+    if (!doc.exists) return;
+    const v = doc.data();
+    document.getElementById('visitaId').value = visitaId;
+    document.getElementById('visitaFecha').value = v.fecha;
+    document.getElementById('visitaTipo').value = v.tipo;
+    document.getElementById('visitaEstado').value = v.estado;
+    document.getElementById('visitaObservaciones').value = v.observaciones;
+    document.getElementById('visitaProblemas').value = v.problemas;
+    document.getElementById('visitaTratamiento').value = v.tratamiento;
+    document.getElementById('tituloModalVisita').textContent = 'Editar Visita';
+    document.getElementById('modalVisita').style.display = 'block';
+};
+
+window.eliminarVisitaFirestore = async function(pacienteId, visitaId) {
+    const user = auth.currentUser;
+    if (!user) return;
+    await db.collection('usuarios').doc(user.uid).collection('pacientes').doc(pacienteId).collection('visitas').doc(visitaId).delete();
+    mostrarVisitasFirestore(pacienteId);
 }; 
