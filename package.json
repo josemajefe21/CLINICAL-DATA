@@ -1,12 +1,28 @@
 {
   "name": "bitacora-high-stakes",
   "version": "1.0.0",
-  "description": "Bitácora para seguimiento de cultivos",
-  "private": true,
+  "description": "Aplicación web profesional para seguimiento de cultivos con sistema de usuarios",
+  "main": "indexPVZ.html",
   "scripts": {
-    "start": "serve ."
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "start": "vercel dev"
   },
-  "dependencies": {
-    "serve": "^14.2.1"
+  "keywords": [
+    "cultivo",
+    "bitácora",
+    "pwa",
+    "firebase",
+    "agricultura",
+    "plantas"
+  ],
+  "author": "Smart Honey Selections",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tu-usuario/bitacora-high-stakes"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 } 

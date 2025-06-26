@@ -4,14 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#4ade80">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Bitácora">
-  <title>Bitácora High Stakes</title>
+  <title>CLINICAL DATA</title>
   <!-- PWA Meta Tags -->
   <meta name="description" content="Bitácora para seguimiento de cultivos">
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <!-- Configuración de Firebase -->
+  <script src="firebase-config.js"></script>
   <!-- Fuente divertida tipo cartoon -->
   <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -241,6 +247,65 @@
       }
       #calendarVisual {
         overflow-x: auto;
+      }
+      
+      /* Estilos responsivos para campos de cepas y luces */
+      .bitacora-form-row {
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .bitacora-form-row input[type="text"] {
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+      }
+      
+      .bitacora-form-row input[type="number"] {
+        width: 80px;
+        min-width: 80px;
+      }
+      
+      .cepa-item, .carpa-item, .luz-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        padding: 8px;
+      }
+      
+      .cepa-item input[type="number"], 
+      .carpa-item input[type="number"] {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 4px;
+      }
+      
+      .cepa-remove, .carpa-remove, .luz-remove {
+        align-self: flex-end;
+        margin-left: 0;
+        margin-top: 4px;
+      }
+      
+      /* Mejorar el layout de los campos de formulario */
+      .bitacora-form-group {
+        margin-bottom: 1.5rem;
+      }
+      
+      .bitacora-form-group input[type="text"],
+      .bitacora-form-group input[type="number"],
+      .bitacora-form-group select {
+        font-size: 16px; /* Evita zoom en iOS */
+        padding: 12px;
+        border-radius: 8px;
+      }
+      
+      /* Hacer los botones más grandes en móvil */
+      .bitacora-form-group button,
+      .bitacora-form-row button {
+        padding: 12px 16px;
+        font-size: 16px;
+        border-radius: 8px;
+        min-height: 44px; /* Tamaño mínimo para touch */
       }
     }
     /* --- FIN: Estilos responsivos para móvil --- */
@@ -716,327 +781,670 @@
     .luz-remove:hover {
       background: #ef4444;
     }
+
+    /* Estilos para mostrar características de la bitácora */
+    .bitacora-info {
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px 24px 16px 24px;
+      box-shadow: 0 4px 24px rgba(167, 243, 208, 0.67), 0 1.5px 0 #4ade80;
+      border-left: 8px solid #4ade80;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bitacora-info::before {
+      content: '📋';
+      position: absolute;
+      left: 8px;
+      top: -10px;
+      font-size: 1.5em;
+      opacity: 0.25;
+      transform: rotate(-20deg);
+    }
+
+    .bitacora-info h3 {
+      font-family: 'Luckiest Guy', cursive;
+      color: #388e3c;
+      margin-bottom: 15px;
+      text-shadow: 1px 1px 0 #fff, 0 1px 4px #a7f3d0;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .info-section {
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+    }
+
+    .info-section h4 {
+      font-family: 'Luckiest Guy', cursive;
+      color: #388e3c;
+      margin-bottom: 8px;
+      font-size: 0.9em;
+      text-shadow: 1px 1px 0 #fff;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .info-item:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9em;
+    }
+
+    .info-value {
+      color: #6b7280;
+      font-size: 0.9em;
+      text-align: right;
+    }
+
+    .info-value.cepa {
+      background: #4ade80;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .info-value.luz {
+      background: #facc15;
+      color: #374151;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .info-value.riego {
+      background: #0ea5e9;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .info-value.interior {
+      background: #a78bfa;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .info-value.exterior {
+      background: #22c55e;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .info-value.invernadero {
+      background: #f472b6;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+
+    .no-info {
+      color: #9ca3af;
+      font-style: italic;
+      text-align: center;
+      padding: 20px;
+    }
+
+    /* Responsive para móvil */
+    @media (max-width: 600px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      
+      .bitacora-info {
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+      
+      .info-section {
+        padding: 10px;
+      }
+    }
+
+    /* Estilos para el sistema de autenticación */
+    .auth-container {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #f3f4f6 80%, #d1fae5 100%);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .auth-container.active {
+      display: flex;
+    }
+
+    .auth-card {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-card::before {
+      content: '🌱';
+      position: absolute;
+      top: -15px;
+      left: 20px;
+      font-size: 3em;
+      opacity: 0.1;
+      transform: rotate(-15deg);
+    }
+
+    .auth-card h2 {
+      font-family: 'Luckiest Guy', cursive;
+      color: #388e3c;
+      margin-bottom: 20px;
+      font-size: 1.8em;
+      text-shadow: 1px 1px 0 #fff, 0 1px 4px #a7f3d0;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .auth-form input {
+      padding: 12px 15px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 16px;
+      font-family: 'Quicksand', sans-serif;
+      transition: all 0.3s;
+    }
+
+    .auth-form input:focus {
+      outline: none;
+      border-color: #4ade80;
+      box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.1);
+    }
+
+    .auth-btn {
+      background: linear-gradient(135deg, #4ade80, #22c55e);
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Quicksand', sans-serif;
+    }
+
+    .auth-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(74, 222, 128, 0.3);
+    }
+
+    .auth-btn:active {
+      transform: translateY(0);
+    }
+
+    .auth-btn.secondary {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    }
+
+    .auth-btn.secondary:hover {
+      box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+    }
+
+    .auth-switch {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .auth-switch a {
+      color: #4ade80;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .auth-switch a:hover {
+      text-decoration: underline;
+    }
+
+    .user-info {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: white;
+      padding: 10px 15px;
+      border-radius: 25px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 100;
+      font-family: 'Quicksand', sans-serif;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4ade80, #22c55e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-email {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .logout-btn {
+      background: #f87171;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .logout-btn:hover {
+      background: #ef4444;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #4ade80;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      background: #fef2f2;
+      color: #dc2626;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #fecaca;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    .success-message {
+      background: #f0fdf4;
+      color: #16a34a;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #bbf7d0;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    /* Responsive para móvil */
+    @media (max-width: 600px) {
+      .auth-card {
+        margin: 20px;
+        padding: 20px;
+      }
+      
+      .user-info {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        padding: 8px 12px;
+      }
+    }
+
+    .extractor-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f8fafc;
+      border-radius: 0.5rem;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+    }
+    
+    .extractor-remove {
+      background: #f87171;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0 10px;
+      font-size: 1.1em;
+      cursor: pointer;
+      margin-left: 6px;
+    }
+    
+    .extractor-remove:hover {
+      background: #ef4444;
+    }
+
+    body.dark-mode {
+      background: #18181b !important;
+      color: #f3f4f6 !important;
+    }
+    body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode label, body.dark-mode .info-label {
+      color: #a7f3d0 !important;
+      border-color: #4ade80 !important;
+      text-shadow: none !important;
+    }
+    body.dark-mode .entry, body.dark-mode .bitacora-info, body.dark-mode .info-section, body.dark-mode .auth-card, body.dark-mode .user-info, body.dark-mode .modal-content, body.dark-mode .edit-bitacora-content, body.dark-mode .backup-modal-content, body.dark-mode .new-bitacora, body.dark-mode .bitacora-selector, body.dark-mode .calendar, body.dark-mode .day, body.dark-mode .credits {
+      background: #22223b !important;
+      color: #f3f4f6 !important;
+      box-shadow: 0 4px 24px rgba(30,41,59,0.67), 0 1.5px 0 #4ade80;
+    }
+    body.dark-mode .bitacora-card {
+      background: #334155 !important;
+      color: #f3f4f6 !important;
+      border-color: #4ade80 !important;
+    }
+    body.dark-mode .bitacora-card.active {
+      border-color: #facc15 !important;
+    }
+    body.dark-mode .calendar, body.dark-mode .day {
+      background: #22223b !important;
+      color: #f3f4f6 !important;
+      border-color: #4ade80 !important;
+    }
+    body.dark-mode .m1 { background-color: #b91c1c !important; }
+    body.dark-mode .m2 { background-color: #ca8a04 !important; }
+    body.dark-mode .m3 { background-color: #16a34a !important; }
+    body.dark-mode .m4 { background-color: #166534 !important; }
+    body.dark-mode .backup-btn, body.dark-mode button, body.dark-mode .stage-btn, body.dark-mode .button-small {
+      background: #334155 !important;
+      color: #f3f4f6 !important;
+      border-color: #4ade80 !important;
+    }
+    body.dark-mode .backup-btn:hover, body.dark-mode button:hover, body.dark-mode .stage-btn:hover, body.dark-mode .button-small:hover {
+      background: #4ade80 !important;
+      color: #18181b !important;
+    }
+    body.dark-mode .modal, body.dark-mode .backup-modal {
+      background: rgba(24,24,27,0.85) !important;
+    }
+    body.dark-mode input, body.dark-mode textarea, body.dark-mode select {
+      background: #18181b !important;
+      color: #f3f4f6 !important;
+      border-color: #4ade80 !important;
+    }
+    body.dark-mode input::placeholder, body.dark-mode textarea::placeholder {
+      color: #a7f3d0 !important;
+      opacity: 0.7;
+    }
+    body.dark-mode .extractor-item, body.dark-mode .cepa-item, body.dark-mode .carpa-item, body.dark-mode .luz-item {
+      background: #334155 !important;
+      color: #f3f4f6 !important;
+    }
+    body.dark-mode .error-message {
+      background: #7f1d1d !important;
+      color: #fca5a5 !important;
+      border-color: #f87171 !important;
+    }
+    body.dark-mode .success-message {
+      background: #14532d !important;
+      color: #bbf7d0 !important;
+      border-color: #4ade80 !important;
+    }
+    body.dark-mode .color-option {
+      border-color: #4ade80 !important;
+    }
+    body.dark-mode .color-option.selected {
+      border-color: #facc15 !important;
+    }
+    body.dark-mode .auth-switch a {
+      color: #4ade80 !important;
+    }
+    body.dark-mode .user-avatar {
+      background: linear-gradient(135deg, #334155, #4ade80) !important;
+      color: #f3f4f6 !important;
+    }
+    body.dark-mode .logout-btn {
+      background: #b91c1c !important;
+      color: #fff !important;
+    }
+    body.dark-mode .logout-btn:hover {
+      background: #ef4444 !important;
+      color: #fff !important;
+    }
+    body.dark-mode .help-question {
+      background: #334155 !important;
+      color: #f3f4f6 !important;
+      border: 2px solid #4ade80 !important;
+    }
+    body.dark-mode .modal-content, body.dark-mode .edit-bitacora-content, body.dark-mode .backup-modal-content {
+      background: #18181b !important;
+      color: #f3f4f6 !important;
+    }
+    body.dark-mode .info-value {
+      color: #bbf7d0 !important;
+    }
+    body.dark-mode .info-value.cepa {
+      background: #16a34a !important;
+      color: #fff !important;
+    }
+    body.dark-mode .info-value.luz {
+      background: #facc15 !important;
+      color: #22223b !important;
+    }
+    body.dark-mode .info-value.riego {
+      background: #0ea5e9 !important;
+      color: #fff !important;
+    }
+    body.dark-mode .info-value.interior {
+      background: #a78bfa !important;
+      color: #fff !important;
+    }
+    body.dark-mode .info-value.exterior {
+      background: #22c55e !important;
+      color: #fff !important;
+    }
+    body.dark-mode .info-value.invernadero {
+      background: #f472b6 !important;
+      color: #fff !important;
+    }
+    body.dark-mode .no-info {
+      color: #a7f3d0 !important;
+    }
   </style>
 </head>
 <body>
+  <!-- Sistema de Autenticación (solo login, sin registro) -->
+  <div class="auth-container" id="authContainer">
+    <div class="auth-card" id="loginCard">
+      <h2>👨‍⚕️ Iniciar Sesión Médico</h2>
+      <form class="auth-form" id="loginForm">
+        <div id="loginError" class="error-message" style="display: none;"></div>
+        <input type="text" id="loginUser" placeholder="Usuario" required>
+        <input type="password" id="loginPassword" placeholder="Contraseña" required>
+        <button type="submit" class="auth-btn" id="loginBtn">
+          <span id="loginBtnText">Iniciar Sesión</span>
+          <span id="loginBtnLoading" class="loading" style="display: none;"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Información del Usuario -->
+  <div class="user-info" id="userInfo" style="display: none;">
+    <div class="user-avatar" id="userAvatar">M</div>
+    <div class="user-details">
+      <div class="user-name" id="userName">Médico</div>
+      <div class="user-email" id="userEmail">medico@clinicadata.com</div>
+    </div>
+    <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+  </div>
+
   <div class="container">
-    <div class="backup-controls" style="display: flex; align-items: center; gap: 10px;">
-      <div id="ultimoRespaldo" style="font-size: 0.95em; color: #4b5563; margin-right: 18px; min-width: 180px;">Último respaldo: -</div>
-      <button class="backup-btn" onclick="createBackup()">
-        💾 Crear Respaldo
-      </button>
-      <button class="backup-btn" onclick="showBackups()">
-        ⏪ Restaurar
-      </button>
-      <div class="help-question" id="helpQuestion" title="¿Qué puede hacer Bitácora High Stakes?" onclick="showHelpModal()" style="margin-left: 8px;">
-        <span style="font-size: 2rem; cursor: pointer; user-select: none;">❓</span>
+    <h1>CLINICAL DATA 🩺</h1>
+    <div class="credits">Gestión clínica de pacientes</div>
+
+    <!-- Sección de Pacientes -->
+    <div class="pacientes-section">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <input type="text" id="busquedaPaciente" placeholder="Buscar por nombre, DNI o patología..." style="flex:1;" oninput="filtrarPacientes()">
+        <button onclick="mostrarFormularioPaciente()">➕ Nuevo paciente</button>
+      </div>
+      <div id="listaPacientes">
+        <!-- Aquí se listarán los pacientes -->
       </div>
     </div>
-    
-    <h1>Bitácora High Stakes 🌱</h1>
-    <div class="credits">Creada por Smart Honey Selections</div>
 
-    <!-- Selector de Bitácoras -->
-    <div class="bitacora-selector" id="bitacoraSelector">
-      <!-- Las bitácoras se generarán dinámicamente -->
-    </div>
-
-    <!-- Formulario para nueva bitácora -->
-    <div class="new-bitacora" id="newBitacoraForm">
-      <h3>Nueva Bitácora</h3>
-      <div class="bitacora-form-group">
-        <input type="text" id="newBitacoraName" placeholder="Nombre de la bitácora" />
-        <div class="color-picker" id="colorPicker">
-          <!-- Los colores se generarán dinámicamente como círculos -->
-        </div>
-      </div>
-      <!-- Cepas -->
-      <div class="bitacora-form-group">
-        <label>Cepas:</label>
-        <div id="cepasList"></div>
-        <div class="bitacora-form-row">
-          <input type="text" id="cepaNombre" placeholder="Nombre de la cepa" />
-          <input type="number" id="cepaCantidad" placeholder="Cantidad" min="1" value="1" />
-          <button type="button" onclick="addCepa()">+</button>
-        </div>
-      </div>
-      <!-- Tipo de cultivo -->
-      <div class="bitacora-form-group">
-        <label>Tipo de cultivo:</label>
-        <select id="tipoCultivo" onchange="toggleInteriorFields()">
-          <option value="">Selecciona...</option>
-          <option value="interior">Interior</option>
-          <option value="exterior">Exterior</option>
-          <option value="invernadero">Invernadero</option>
-        </select>
-      </div>
-      <div id="interiorFields" style="display:none;">
-        <div class="bitacora-form-group">
-          <label>¿Cuántas carpas?</label>
-          <input type="number" id="numCarpas" min="0" value="0" onchange="toggleCarpasFields()" />
-          <label><input type="checkbox" id="soloSala" onchange="toggleCarpasFields()" /> Solo una sala</label>
-          <div id="carpasList"></div>
-        </div>
-        <div class="bitacora-form-group">
-          <label>Lámparas de vegetación:</label>
-          <input type="number" id="lamparasVege" min="0" value="0" />
-          <input type="text" id="wattsVege" placeholder="Watts totales / por lámpara" />
-        </div>
-        <div class="bitacora-form-group">
-          <label>Lámparas de floración:</label>
-          <input type="number" id="lamparasFlora" min="0" value="0" />
-          <input type="text" id="wattsFlora" placeholder="Watts totales / por lámpara" />
-        </div>
-        <div class="bitacora-form-group">
-          <label>Ventiladores:</label>
-          <input type="number" id="ventiladores" min="0" value="0" />
-          <input type="text" id="pulgadasVentilador" placeholder="Pulgadas (opcional)" />
-        </div>
-        <div class="bitacora-form-group">
-          <label>Filtro de aire:</label>
-          <select id="filtroAire">
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-        </div>
-        <div class="bitacora-form-group">
-          <label>Aire acondicionado:</label>
-          <select id="aireAcondicionado" onchange="toggleFrigorias()">
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-          <input type="text" id="frigorias" placeholder="Frigorías" style="display:none;" />
-        </div>
-      </div>
-      <!-- Tipo de riego -->
-      <div class="bitacora-form-group bitacora-form-checkboxes">
-        <label>Tipo de riego:</label>
-        <div id="riegoOptions">
-          <label><input type="checkbox" value="manual" /> Manual</label>
-          <label><input type="checkbox" value="goteo" /> Goteo</label>
-          <label><input type="checkbox" value="hidroponica" /> Hidropónica</label>
-        </div>
-        <input type="text" id="detalleRiego" placeholder="Detalles de riego (opcional)" />
-      </div>
-      <!-- Sustrato -->
-      <div class="bitacora-form-group">
-        <label>Sustrato:</label>
-        <input type="text" id="sustrato" placeholder="Especifica el sustrato (opcional)" />
-      </div>
-      <!-- Tipo de luz -->
-      <div class="bitacora-form-group">
-        <label>Tipo de luz:</label>
-        <div id="luzOptions" style="display: flex; gap: 12px; margin-bottom: 8px;">
-          <button type="button" class="luz-btn" id="luzSolBtn" onclick="selectLuz('sol')">☀️ Sol</button>
-          <button type="button" class="luz-btn" id="luzArtificialBtn" onclick="selectLuz('luz')">💡 Luz</button>
-          <button type="button" class="luz-btn" id="luzMixtoBtn" onclick="selectLuz('mixto')">🔄 Mixto</button>
-        </div>
-        <div id="luzSolIcon" style="display:none; font-size:2rem; margin-bottom:8px;">☀️</div>
-        <div id="luzArtificialFields" style="display:none;">
-          <label>Agregar luces:</label>
-          <div id="lucesList"></div>
-          <div class="bitacora-form-row">
-            <input type="text" id="luzNombre" placeholder="Nombre de la luz" />
-            <input type="number" id="luzCantidad" placeholder="Cantidad" min="1" value="1" />
-            <input type="number" id="luzWatts" placeholder="Watts" min="1" />
-            <button type="button" onclick="addLuz()">+</button>
-          </div>
-        </div>
-      </div>
-      <button onclick="createNewBitacora()">Crear Bitácora</button>
-    </div>
-
-    <!-- Contenido principal (se mostrará solo cuando haya una bitácora seleccionada) -->
-    <div id="mainContent" style="display: none;">
-      <!-- Etapas -->
-      <label>Etapa:</label><br/>
-      <div>
-        <button class="stage-btn" id="btn-vege" onclick="setStage('vege')">🟢 Vegetativo</button>
-        <button class="stage-btn" id="btn-flora" onclick="setStage('flora')">🌺 Floración</button>
-        <button class="stage-btn" id="btn-general" onclick="setStage('general')">📖 General</button>
-      </div>
-
-      <!-- Resumen Semanal -->
-      <div class="weekly-summary" id="weeklySummary">
-        <h3>Resumen Semanal</h3>
-        <div class="summary-grid">
-          <div class="summary-item">
-            <h4>Total Entradas</h4>
-            <div id="totalEntries">0</div>
-          </div>
-          <div class="summary-item">
-            <h4>Promedio Emocional</h4>
-            <div id="averageMood">-</div>
-          </div>
-          <div class="summary-item">
-            <h4>Días con Riego</h4>
-            <div id="wateredDays">0</div>
-          </div>
-        </div>
-        <div class="emotion-timeline" id="emotionTimeline">
-          <!-- La línea de tiempo se generará dinámicamente -->
-        </div>
-      </div>
-
-      <div id="floraStartContainer" style="display:none;">
-        <label>Inicio de floración:</label>
-        <input type="date" id="floraStart" onchange="setFloraStart()" />
-      </div>
-
-      <label>Fecha del registro:</label>
-      <input type="date" id="date" onfocus="this.showPicker()" />
-
-      <label>¿Cómo estuvo el día?</label><br/>
-      <div id="moodOptions"></div>
-
-      <label>Tareas realizadas:</label>
-      <textarea id="tasks"></textarea>
-
-      <label>¿Regaste hoy?</label><br/>
-      <button onclick="setWater(true)">💧 Sí</button>
-      <button onclick="setWater(false)">❌ No</button><br/>
-
-      <div id="waterDetails" style="display:none;">
-        <input type="text" id="waterAmount" placeholder="Cantidad de agua (L o ml)" />
-        <input type="text" id="nutrients" placeholder="Nutrientes utilizados" />
-        <input type="text" id="ph" placeholder="pH del agua" />
-        <input type="text" id="ec" placeholder="EC del agua" />
-      </div>
-
-      <label>Problemas o anomalías:</label>
-      <textarea id="issues"></textarea>
-
-      <label>Notas o reflexiones:</label>
-      <textarea id="notes"></textarea>
-
-      <button onclick="saveEntry()">Guardar entrada</button>
-      <button class="button-small" onclick="exportData()">📤 Exportar JSON</button>
-
-      <!-- Historial -->
-      <h2>Historial</h2>
-      <div id="calendarVisual"></div>
-      <div id="history"></div>
-    </div>
-
-    <!-- Modal de edición -->
-    <div class="modal" id="editModal">
+    <!-- Formulario de nuevo/editar paciente (modal) -->
+    <div class="modal" id="modalPaciente">
       <div class="modal-content">
-        <span class="close-modal" onclick="closeEditModal()">&times;</span>
-        <h3>Editar Entrada</h3>
-        <input type="password" id="editPassword" placeholder="Contraseña" />
-        <div id="editForm" style="display: none;">
-          <!-- El formulario de edición se generará dinámicamente -->
-        </div>
+        <span class="close-modal" onclick="cerrarModalPaciente()">&times;</span>
+        <h3 id="tituloModalPaciente">Nuevo Paciente</h3>
+        <form id="formPaciente">
+          <input type="hidden" id="pacienteId">
+          <label>Nombre completo</label>
+          <input type="text" id="pacienteNombre" required>
+          <label>DNI</label>
+          <input type="text" id="pacienteDNI" required>
+          <label>Dirección</label>
+          <input type="text" id="pacienteDireccion">
+          <label>Teléfono</label>
+          <input type="text" id="pacienteTelefono">
+          <label>Obra social</label>
+          <input type="text" id="pacienteObraSocial">
+          <label>Patología (diagnóstico presuntivo)</label>
+          <input type="text" id="pacientePatologia">
+          <button type="submit">Guardar</button>
+        </form>
       </div>
     </div>
 
-    <!-- Agregar el modal de edición de bitácora -->
-    <div class="edit-bitacora-modal" id="editBitacoraModal">
-      <div class="edit-bitacora-content">
-        <span class="close-modal" onclick="closeEditBitacoraModal()">&times;</span>
-        <h3>Editar Bitácora</h3>
-        <input type="text" id="editBitacoraName" placeholder="Nombre de la bitácora" />
-        <div class="color-picker" id="editColorPicker">
-          <!-- Los colores se generarán dinámicamente -->
-        </div>
-        <!-- Cepas -->
-        <label>Cepas:</label>
-        <div id="editCepasList"></div>
-        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-          <input type="text" id="editCepaNombre" placeholder="Nombre de la cepa" style="flex:2;" />
-          <input type="number" id="editCepaCantidad" placeholder="Cantidad" min="1" value="1" style="width:70px;" />
-          <button type="button" onclick="addEditCepa()">+</button>
-        </div>
-        <!-- Tipo de cultivo -->
-        <label>Tipo de cultivo:</label>
-        <select id="editTipoCultivo" onchange="toggleEditInteriorFields()">
-          <option value="">Selecciona...</option>
-          <option value="interior">Interior</option>
-          <option value="exterior">Exterior</option>
-          <option value="invernadero">Invernadero</option>
-        </select>
-        <div id="editInteriorFields" style="display:none; margin-top:10px;">
-          <label>¿Cuántas carpas?</label>
-          <input type="number" id="editNumCarpas" min="0" value="0" style="width:70px;" onchange="toggleEditCarpasFields()" />
-          <label><input type="checkbox" id="editSoloSala" onchange="toggleEditCarpasFields()" /> Solo una sala</label>
-          <div id="editCarpasList" style="margin-bottom:10px;"></div>
-          <!-- Lámparas -->
-          <label>Lámparas de vegetación:</label>
-          <input type="number" id="editLamparasVege" min="0" value="0" style="width:70px;" />
-          <input type="text" id="editWattsVege" placeholder="Watts totales / por lámpara" />
-          <label>Lámparas de floración:</label>
-          <input type="number" id="editLamparasFlora" min="0" value="0" style="width:70px;" />
-          <input type="text" id="editWattsFlora" placeholder="Watts totales / por lámpara" />
-          <!-- Ventiladores -->
-          <label>Ventiladores:</label>
-          <input type="number" id="editVentiladores" min="0" value="0" style="width:70px;" />
-          <input type="text" id="editPulgadasVentilador" placeholder="Pulgadas (opcional)" />
-          <!-- Filtro de aire -->
-          <label>Filtro de aire:</label>
-          <select id="editFiltroAire">
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-          <!-- Aire acondicionado -->
-          <label>Aire acondicionado:</label>
-          <select id="editAireAcondicionado" onchange="toggleEditFrigorias()">
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-          <input type="text" id="editFrigorias" placeholder="Frigorías" style="display:none;" />
-        </div>
-        <!-- Tipo de riego -->
-        <label>Tipo de riego:</label>
-        <div id="editRiegoOptions">
-          <label><input type="checkbox" value="manual" /> Manual</label>
-          <label><input type="checkbox" value="goteo" /> Goteo</label>
-          <label><input type="checkbox" value="hidroponica" /> Hidropónica</label>
-        </div>
-        <input type="text" id="editDetalleRiego" placeholder="Detalles de riego (opcional)" />
-        <!-- Sustrato -->
-        <label>Sustrato:</label>
-        <input type="text" id="editSustrato" placeholder="Especifica el sustrato (opcional)" />
-        <div class="visibility-selector">
-          <label>Visibilidad:</label>
-          <select id="editBitacoraVisibility">
-            <option value="false">Privada</option>
-            <option value="true">Pública</option>
-          </select>
-        </div>
-        <button onclick="saveBitacoraEdit()">Guardar Cambios</button>
+    <!-- Ficha clínica del paciente seleccionado -->
+    <div id="fichaPaciente" style="display:none; margin-top:30px;">
+      <button onclick="volverAListaPacientes()">← Volver a pacientes</button>
+      <h2 id="nombreFichaPaciente"></h2>
+      <div id="datosPaciente"></div>
+      <div style="margin-top:20px;">
+        <h3>Estudios y Archivos</h3>
+        <form id="formEstudio" enctype="multipart/form-data">
+          <input type="text" id="nombreEstudio" placeholder="Nombre del estudio">
+          <input type="file" id="archivoEstudio" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+          <button type="submit">Subir estudio</button>
+        </form>
+        <div id="listaEstudios"></div>
+      </div>
+      <div style="margin-top:20px;">
+        <h3>Historial de Visitas</h3>
+        <button onclick="mostrarFormularioVisita()">➕ Nueva visita</button>
+        <div id="estadisticasVisitas"></div>
+        <div id="historialVisitas"></div>
+      </div>
+      <div style="margin-top:20px;">
+        <button onclick="exportarHistoriaClinica('json')">Exportar JSON</button>
+        <button onclick="exportarHistoriaClinica('pdf')">Exportar PDF</button>
       </div>
     </div>
 
-    <!-- Modal de respaldos -->
-    <div class="backup-modal" id="backupModal">
-      <div class="backup-modal-content">
-        <span class="close-modal" onclick="closeBackupModal()">&times;</span>
-        <h3>Respaldos Guardados</h3>
-        <div class="backup-list" id="backupList">
-          <!-- Los respaldos se generarán dinámicamente -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal de ayuda -->
-    <div class="modal" id="helpModal" style="display:none;">
-      <div class="modal-content" style="max-width: 400px; margin: 50px auto; background: #fff; border-radius: 1rem; padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); position: relative;">
-        <span class="close-modal" onclick="closeHelpModal()" style="position: absolute; right: 1rem; top: 1rem; cursor: pointer; font-size: 1.5rem;">&times;</span>
-        <h2 style="font-family: 'Luckiest Guy', cursive; color: #388e3c;">¿Qué puede hacer Bitácora High Stakes?</h2>
-        <ul style="font-size: 1.1rem; color: #374151; margin-top: 1rem; list-style: none; padding-left: 0;">
-          <li><span style='font-size:1.3em; margin-right:6px;'>🌱</span>Gestiona varios cultivos en un solo lugar.</li>
-          <li><span style='font-size:1.3em; margin-right:6px;'>📊</span>Visualiza tu progreso con gráficos automáticos de emociones, riego y parámetros del agua.</li>
-          <li><span style='font-size:1.3em; margin-right:6px;'>💾</span>Guarda y recupera respaldos de tus datos fácilmente.</li>
-          <li><span style='font-size:1.3em; margin-right:6px;'>🔒</span>Comparte tus bitácoras o mantenlas privadas según prefieras.</li>
-          <li><span style='font-size:1.3em; margin-right:6px;'>📱</span>Accede desde cualquier dispositivo, incluso sin conexión (PWA).</li>
-          <li><span style='font-size:1.3em; margin-right:6px;'>📤</span>Exporta tus registros para llevar un control fuera de la app.</li>
-        </ul>
-        <div style="margin-top: 1.5rem; text-align: center; color: #4ade80; font-family: 'Luckiest Guy', cursive;">¡Tu cultivo, tu historia! 🌿</div>
+    <!-- Formulario de nueva/editar visita (modal) -->
+    <div class="modal" id="modalVisita">
+      <div class="modal-content">
+        <span class="close-modal" onclick="cerrarModalVisita()">&times;</span>
+        <h3 id="tituloModalVisita">Nueva Visita</h3>
+        <form id="formVisita">
+          <input type="hidden" id="visitaId">
+          <label>Fecha</label>
+          <input type="date" id="visitaFecha" required>
+          <label>Tipo de visita</label>
+          <select id="visitaTipo">
+            <option value="primera consulta">Primera consulta</option>
+            <option value="seguimiento">Seguimiento</option>
+            <option value="urgencia">Urgencia</option>
+            <option value="control">Control</option>
+            <option value="otro">Otro</option>
+          </select>
+          <label>Estado clínico</label>
+          <select id="visitaEstado">
+            <option value="estable">Estable</option>
+            <option value="crítico">Crítico</option>
+            <option value="en observación">En observación</option>
+            <option value="dado de alta">Dado de alta</option>
+          </select>
+          <label>Observaciones</label>
+          <textarea id="visitaObservaciones"></textarea>
+          <label>Problemas reportados</label>
+          <textarea id="visitaProblemas"></textarea>
+          <label>Tratamiento / receta / tareas</label>
+          <textarea id="visitaTratamiento"></textarea>
+          <button type="submit">Guardar visita</button>
+        </form>
       </div>
     </div>
   </div>
 
   <script>
+    // Variables globales del sistema de autenticación
+    let currentUser = null;
+    let isAuthenticated = false;
+
     // Registrar el Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -1055,7 +1463,6 @@
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      // Aquí podrías mostrar un botón para instalar la app
     });
 
     // Variables globales
@@ -1065,6 +1472,7 @@
     let didWater = false;
     let tipoLuz = '';
     let luces = [];
+    let extractores = [];
 
     const moodStates = [
       { value: 1, icon: '😞', label: 'Mal día', color: '#f87171' },
@@ -1077,6 +1485,496 @@
       '#4ade80', '#0ea5e9', '#f87171', '#facc15',
       '#a78bfa', '#f472b6', '#60a5fa', '#34d399'
     ];
+
+    // ===== FUNCIÓN DE GUARDADO AUTOMÁTICO =====
+    async function autoSave() {
+      if (!currentUser || !selectedBitacora) return;
+      
+      try {
+        await saveBitacoraToFirestore(selectedBitacora);
+        console.log('Guardado automático completado');
+      } catch (error) {
+        console.error('Error en guardado automático:', error);
+      }
+    }
+
+    // ===== SISTEMA DE AUTENTICACIÓN =====
+
+    // Observar cambios en el estado de autenticación
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Usuario autenticado
+        currentUser = user;
+        isAuthenticated = true;
+        showUserInfo(user);
+        hideAuthContainer();
+        loadUserData();
+      } else {
+        // Usuario no autenticado
+        currentUser = null;
+        isAuthenticated = false;
+        hideUserInfo();
+        showAuthContainer();
+        clearUserData();
+      }
+    });
+
+    // Funciones de autenticación
+    function showAuthContainer() {
+      document.getElementById('authContainer').classList.add('active');
+      document.querySelector('.container').style.display = 'none';
+    }
+
+    function hideAuthContainer() {
+      document.getElementById('authContainer').classList.remove('active');
+      document.querySelector('.container').style.display = 'block';
+    }
+
+    function showUserInfo(user) {
+      const userInfo = document.getElementById('userInfo');
+      const userAvatar = document.getElementById('userAvatar');
+      const userName = document.getElementById('userName');
+      const userEmail = document.getElementById('userEmail');
+
+      // Mostrar información del usuario
+      userInfo.style.display = 'flex';
+      
+      // Avatar con iniciales
+      const displayName = user.displayName || user.email.split('@')[0];
+      userAvatar.textContent = displayName.charAt(0).toUpperCase();
+      
+      // Nombre y email
+      userName.textContent = displayName;
+      userEmail.textContent = user.email;
+    }
+
+    function hideUserInfo() {
+      document.getElementById('userInfo').style.display = 'none';
+    }
+
+    function showLogin() {
+      document.getElementById('loginCard').style.display = 'block';
+      document.getElementById('registerCard').style.display = 'none';
+      clearAuthErrors();
+    }
+
+    function showRegister() {
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('registerCard').style.display = 'block';
+      clearAuthErrors();
+    }
+
+    function clearAuthErrors() {
+      document.getElementById('loginError').style.display = 'none';
+      document.getElementById('registerError').style.display = 'none';
+    }
+
+    // Login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const loginBtn = document.getElementById('loginBtn');
+      const loginBtnText = document.getElementById('loginBtnText');
+      const loginBtnLoading = document.getElementById('loginBtnLoading');
+      const loginError = document.getElementById('loginError');
+
+      // Mostrar loading
+      loginBtn.disabled = true;
+      loginBtnText.style.display = 'none';
+      loginBtnLoading.style.display = 'inline-block';
+      loginError.style.display = 'none';
+
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        // El onAuthStateChanged se encargará del resto
+      } catch (error) {
+        console.error('Error de login:', error);
+        loginError.textContent = getErrorMessage(error.code);
+        loginError.style.display = 'block';
+      } finally {
+        // Ocultar loading
+        loginBtn.disabled = false;
+        loginBtnText.style.display = 'inline';
+        loginBtnLoading.style.display = 'none';
+      }
+    });
+
+    // Registro
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const name = document.getElementById('registerName').value;
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+      const confirmPassword = document.getElementById('registerConfirmPassword').value;
+      const registerBtn = document.getElementById('registerBtn');
+      const registerBtnText = document.getElementById('registerBtnText');
+      const registerBtnLoading = document.getElementById('registerBtnLoading');
+      const registerError = document.getElementById('registerError');
+
+      // Validar contraseñas
+      if (password !== confirmPassword) {
+        registerError.textContent = 'Las contraseñas no coinciden';
+        registerError.style.display = 'block';
+        return;
+      }
+
+      // Mostrar loading
+      registerBtn.disabled = true;
+      registerBtnText.style.display = 'none';
+      registerBtnLoading.style.display = 'inline-block';
+      registerError.style.display = 'none';
+
+      try {
+        // Crear usuario
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        
+        // Actualizar perfil
+        await userCredential.user.updateProfile({
+          displayName: name
+        });
+
+        // Crear documento de usuario en Firestore
+        await db.collection('users').doc(userCredential.user.uid).set({
+          name: name,
+          email: email,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Migrar datos locales si existen
+        await migrateLocalData(userCredential.user.uid);
+
+      } catch (error) {
+        console.error('Error de registro:', error);
+        registerError.textContent = getErrorMessage(error.code);
+        registerError.style.display = 'block';
+      } finally {
+        // Ocultar loading
+        registerBtn.disabled = false;
+        registerBtnText.style.display = 'inline';
+        registerBtnLoading.style.display = 'none';
+      }
+    });
+
+    // Logout
+    async function logout() {
+      try {
+        await auth.signOut();
+        // El onAuthStateChanged se encargará del resto
+      } catch (error) {
+        console.error('Error de logout:', error);
+        alert('Error al cerrar sesión');
+      }
+    }
+
+    // Obtener mensaje de error amigable
+    function getErrorMessage(errorCode) {
+      const errorMessages = {
+        'auth/user-not-found': 'No existe una cuenta con este email',
+        'auth/wrong-password': 'Contraseña incorrecta',
+        'auth/email-already-in-use': 'Este email ya está registrado',
+        'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres',
+        'auth/invalid-email': 'Email inválido',
+        'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde',
+        'auth/network-request-failed': 'Error de conexión. Verifica tu internet'
+      };
+      return errorMessages[errorCode] || 'Error desconocido. Intenta de nuevo';
+    }
+
+    // ===== GESTIÓN DE DATOS CON FIRESTORE =====
+
+    // Cargar datos del usuario
+    async function loadUserData() {
+      if (!currentUser) return;
+
+      try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        
+        if (userDoc.exists) {
+          // Actualizar último login
+          await db.collection('users').doc(currentUser.uid).update({
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
+        // Cargar bitácoras del usuario
+        await loadUserBitacoras();
+        
+      } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+      }
+    }
+
+    // Cargar bitácoras del usuario
+    async function loadUserBitacoras() {
+      if (!currentUser) return;
+
+      try {
+        const bitacorasSnapshot = await db.collection('users').doc(currentUser.uid)
+          .collection('bitacoras').get();
+
+        const bitacoras = [];
+        bitacorasSnapshot.forEach(doc => {
+          bitacoras.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+
+        // Guardar en localStorage para compatibilidad
+        localStorage.setItem('bitacoras', JSON.stringify(bitacoras));
+        
+        // Renderizar selector de bitácoras
+        renderBitacoraSelector();
+        
+        // Seleccionar primera bitácora si existe
+        if (bitacoras.length > 0) {
+          selectBitacora(bitacoras[0].id);
+        } else {
+          showNewBitacoraForm();
+        }
+
+      } catch (error) {
+        console.error('Error al cargar bitácoras:', error);
+      }
+    }
+
+    // Guardar bitácora en Firestore
+    async function saveBitacoraToFirestore(bitacora) {
+      if (!currentUser) return;
+
+      try {
+        const bitacoraRef = db.collection('users').doc(currentUser.uid)
+          .collection('bitacoras').doc(bitacora.id);
+        
+        await bitacoraRef.set({
+          ...bitacora,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        console.log('Bitácora guardada en Firestore');
+      } catch (error) {
+        console.error('Error al guardar bitácora:', error);
+        throw error;
+      }
+    }
+
+    // Migrar datos locales a Firestore
+    async function migrateLocalData(userId) {
+      try {
+        const localBitacoras = JSON.parse(localStorage.getItem('bitacoras') || '[]');
+        
+        if (localBitacoras.length > 0) {
+          const batch = db.batch();
+          
+          for (const bitacora of localBitacoras) {
+            const bitacoraRef = db.collection('users').doc(userId)
+              .collection('bitacoras').doc(bitacora.id);
+            
+            batch.set(bitacoraRef, {
+              ...bitacora,
+              migratedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+          
+          await batch.commit();
+          console.log('Datos migrados exitosamente');
+        }
+      } catch (error) {
+        console.error('Error al migrar datos:', error);
+      }
+    }
+
+    // Limpiar datos del usuario
+    function clearUserData() {
+      localStorage.removeItem('bitacoras');
+      localStorage.removeItem('bitacora_backups');
+      selectedBitacora = null;
+      document.getElementById('mainContent').style.display = 'none';
+      document.getElementById('bitacoraSelector').innerHTML = '';
+    }
+
+    // ===== FUNCIONES MODIFICADAS PARA FIRESTORE =====
+
+    // Modificar createNewBitacora para usar Firestore
+    async function createNewBitacora() {
+      if (!currentUser) {
+        alert('Debes iniciar sesión para crear una bitácora');
+        return;
+      }
+
+      const name = document.getElementById('newBitacoraName').value.trim();
+      const selectedColor = document.querySelector('.color-option.selected');
+      
+      if (!name) {
+        alert('Por favor, ingresa un nombre para la bitácora.');
+        return;
+      }
+      
+      if (!selectedColor) {
+        alert('Por favor, selecciona un color para la bitácora.');
+        return;
+      }
+
+      const color = selectedColor.style.backgroundColor;
+      
+      // Verificar si ya existe una bitácora con ese nombre
+      const existingBitacoras = JSON.parse(localStorage.getItem('bitacoras') || '[]');
+      if (existingBitacoras.some(b => b.name.toLowerCase() === name.toLowerCase())) {
+        alert('Ya existe una bitácora con ese nombre. Por favor, elige otro.');
+        return;
+      }
+
+      // Recopilar características (código existente)
+      const tipoCultivo = document.getElementById('tipoCultivo').value;
+      const numCarpas = parseInt(document.getElementById('numCarpas').value) || 0;
+      const soloSala = document.getElementById('soloSala').checked;
+      const lamparasVege = parseInt(document.getElementById('lamparasVege').value) || 0;
+      const wattsVege = document.getElementById('wattsVege').value;
+      const lamparasFlora = parseInt(document.getElementById('lamparasFlora').value) || 0;
+      const wattsFlora = document.getElementById('wattsFlora').value;
+      const ventiladores = parseInt(document.getElementById('ventiladores').value) || 0;
+      const pulgadasVentilador = document.getElementById('pulgadasVentilador').value;
+      const filtroAire = document.getElementById('filtroAire').value;
+      const aireAcondicionado = document.getElementById('aireAcondicionado').value;
+      const frigorias = document.getElementById('frigorias').value;
+      
+      // Recopilar carpas con metros cuadrados
+      const carpas = [];
+      document.querySelectorAll('#carpasList .carpa-item input[type="number"]').forEach(input => {
+        if (input.value) {
+          carpas.push({ metrosCuadrados: parseFloat(input.value) });
+        }
+      });
+      
+      const riegoOptions = [];
+      document.querySelectorAll('#riegoOptions input[type=checkbox]:checked').forEach(cb => {
+        riegoOptions.push(cb.value);
+      });
+      const detalleRiego = document.getElementById('detalleRiego').value;
+      const sustrato = document.getElementById('sustrato').value;
+
+      const newBitacora = {
+        id: Date.now().toString(),
+        name,
+        color,
+        floraStart: null,
+        isPublic: true,
+        userId: currentUser.uid,
+        // Características de la bitácora
+        cepas: [...cepas],
+        tipoCultivo,
+        numCarpas,
+        soloSala,
+        carpas: carpas,
+        lamparasVege,
+        wattsVege,
+        lamparasFlora,
+        wattsFlora,
+        ventiladores,
+        pulgadasVentilador,
+        extractores: [...extractores],
+        filtroAire,
+        aireAcondicionado,
+        frigorias,
+        riegoOptions,
+        detalleRiego,
+        sustrato,
+        tipoLuz,
+        luces: [...luces],
+        entries: {
+          vege: [],
+          flora: [],
+          general: []
+        },
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        // Guardar en Firestore
+        await saveBitacoraToFirestore(newBitacora);
+        
+        // Actualizar localStorage
+        existingBitacoras.push(newBitacora);
+        localStorage.setItem('bitacoras', JSON.stringify(existingBitacoras));
+        
+        // Limpiar formulario
+        document.getElementById('newBitacoraName').value = '';
+        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+        document.getElementById('newBitacoraForm').classList.remove('active');
+        
+        // Limpiar variables globales
+        cepas = [];
+        extractores = [];
+        luces = [];
+        tipoLuz = '';
+        
+        // Actualizar UI
+        renderBitacoraSelector();
+        selectBitacora(newBitacora.id);
+        
+      } catch (error) {
+        console.error('Error al crear bitácora:', error);
+        alert('Error al crear la bitácora. Intenta de nuevo.');
+      }
+    }
+
+    // Modificar saveEntry para usar Firestore
+    async function saveEntry() {
+      if (!selectedBitacora || !currentUser) {
+        alert('Por favor, selecciona una bitácora primero.');
+        return;
+      }
+
+      const date = document.getElementById('date').value;
+      if (!date || !selectedMood) {
+        alert('Elegí fecha y estado emocional.');
+        return;
+      }
+
+      const entry = {
+        date,
+        mood: selectedMood,
+        tasks: document.getElementById('tasks').value,
+        issues: document.getElementById('issues').value,
+        notes: document.getElementById('notes').value,
+        didWater,
+        waterAmount: document.getElementById('waterAmount').value,
+        nutrients: document.getElementById('nutrients').value,
+        ph: document.getElementById('ph').value,
+        ec: document.getElementById('ec').value,
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        // Actualizar en localStorage
+        const bitacoras = JSON.parse(localStorage.getItem('bitacoras') || '[]');
+        const bitacoraIndex = bitacoras.findIndex(b => b.id === selectedBitacora.id);
+        
+        if (bitacoraIndex !== -1) {
+          let entries = bitacoras[bitacoraIndex].entries[selectedStage].filter(e => e.date !== date);
+          entries.push(entry);
+          bitacoras[bitacoraIndex].entries[selectedStage] = entries;
+          
+          localStorage.setItem('bitacoras', JSON.stringify(bitacoras));
+          selectedBitacora = bitacoras[bitacoraIndex];
+          
+          // Guardar en Firestore
+          await saveBitacoraToFirestore(selectedBitacora);
+          
+          // Actualizar UI
+          renderHistory();
+          renderCalendar();
+          updateWeeklySummary();
+        }
+      } catch (error) {
+        console.error('Error al guardar entrada:', error);
+        alert('Error al guardar la entrada. Intenta de nuevo.');
+      }
+    }
 
     // Funciones auxiliares
     function getEntries() {
@@ -1183,12 +2081,53 @@
         return;
       }
 
+      // Recopilar todas las características de la bitácora
+      const tipoCultivo = document.getElementById('tipoCultivo').value;
+      const numCarpas = parseInt(document.getElementById('numCarpas').value) || 0;
+      const soloSala = document.getElementById('soloSala').checked;
+      const lamparasVege = parseInt(document.getElementById('lamparasVege').value) || 0;
+      const wattsVege = document.getElementById('wattsVege').value;
+      const lamparasFlora = parseInt(document.getElementById('lamparasFlora').value) || 0;
+      const wattsFlora = document.getElementById('wattsFlora').value;
+      const ventiladores = parseInt(document.getElementById('ventiladores').value) || 0;
+      const pulgadasVentilador = document.getElementById('pulgadasVentilador').value;
+      const filtroAire = document.getElementById('filtroAire').value;
+      const aireAcondicionado = document.getElementById('aireAcondicionado').value;
+      const frigorias = document.getElementById('frigorias').value;
+      
+      // Recopilar tipo de riego
+      const riegoOptions = [];
+      document.querySelectorAll('#riegoOptions input[type=checkbox]:checked').forEach(cb => {
+        riegoOptions.push(cb.value);
+      });
+      const detalleRiego = document.getElementById('detalleRiego').value;
+      const sustrato = document.getElementById('sustrato').value;
+
       const newBitacora = {
         id: Date.now().toString(),
         name,
         color,
         floraStart: null,
         isPublic: true,
+        // Características de la bitácora
+        cepas: [...cepas],
+        tipoCultivo,
+        numCarpas,
+        soloSala,
+        lamparasVege,
+        wattsVege,
+        lamparasFlora,
+        wattsFlora,
+        ventiladores,
+        pulgadasVentilador,
+        filtroAire,
+        aireAcondicionado,
+        frigorias,
+        riegoOptions,
+        detalleRiego,
+        sustrato,
+        tipoLuz,
+        luces: [...luces],
         entries: {
           vege: [],
           flora: [],
@@ -1218,9 +2157,10 @@
       newButton.style.backgroundColor = '#e5e7eb';
       newButton.style.color = '#374151';
       newButton.innerHTML = '+ Nueva Bitácora';
-      newButton.onclick = showNewBitacoraForm;
+      newButton.id = 'btnNuevaBitacora';
+      newButton.onclick = toggleNewBitacoraForm;
       container.appendChild(newButton);
-
+      
       bitacoras.forEach(bitacora => {
         const div = document.createElement('div');
         div.className = `bitacora-card ${bitacora.id === selectedBitacora?.id ? 'active' : ''}`;
@@ -1290,28 +2230,48 @@
       document.getElementById('newBitacoraName').value = '';
       renderColorPicker();
       document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+      
+      // Limpiar cepas
       cepas = [];
       renderCepasList();
       document.getElementById('cepaNombre').value = '';
       document.getElementById('cepaCantidad').value = 1;
+      document.getElementById('cepaTipo').value = 'clon';
+      document.getElementById('cepaGerminacion').value = '';
+      document.getElementById('semillaFields').style.display = 'none';
+      
+      // Limpiar tipo de cultivo
       document.getElementById('tipoCultivo').value = '';
       document.getElementById('interiorFields').style.display = 'none';
       document.getElementById('numCarpas').value = 0;
       document.getElementById('soloSala').checked = false;
       document.getElementById('carpasList').innerHTML = '';
+      
+      // Limpiar equipamiento interior
       document.getElementById('lamparasVege').value = 0;
       document.getElementById('wattsVege').value = '';
       document.getElementById('lamparasFlora').value = 0;
       document.getElementById('wattsFlora').value = '';
       document.getElementById('ventiladores').value = 0;
       document.getElementById('pulgadasVentilador').value = '';
+      
+      // Limpiar extractores
+      extractores = [];
+      renderExtractoresList();
+      document.getElementById('extractorCantidad').value = 1;
+      document.getElementById('extractorPulgadas').value = '';
+      
       document.getElementById('filtroAire').value = 'no';
       document.getElementById('aireAcondicionado').value = 'no';
       document.getElementById('frigorias').value = '';
       document.getElementById('frigorias').style.display = 'none';
+      
+      // Limpiar riego
       document.querySelectorAll('#riegoOptions input[type=checkbox]').forEach(cb => cb.checked = false);
       document.getElementById('detalleRiego').value = '';
       document.getElementById('sustrato').value = '';
+      
+      // Limpiar luces
       tipoLuz = '';
       luces = [];
       document.getElementById('luzSolBtn').classList.remove('selected');
@@ -1341,24 +2301,96 @@
     function addCepa() {
       const nombre = document.getElementById('cepaNombre').value.trim();
       const cantidad = parseInt(document.getElementById('cepaCantidad').value, 10) || 1;
+      const tipo = document.getElementById('cepaTipo').value;
+      const germinacion = document.getElementById('cepaGerminacion').value;
+      
       if (!nombre) return;
-      cepas.push({ nombre, cantidad });
+      
+      const cepa = { nombre, cantidad, tipo };
+      if (tipo === 'semilla' && germinacion) {
+        cepa.germinacion = germinacion;
+      }
+      
+      cepas.push(cepa);
       renderCepasList();
       document.getElementById('cepaNombre').value = '';
       document.getElementById('cepaCantidad').value = 1;
+      document.getElementById('cepaTipo').value = 'clon';
+      document.getElementById('cepaGerminacion').value = '';
+      document.getElementById('semillaFields').style.display = 'none';
       document.getElementById('cepaNombre').focus();
+      
+      // Guardado automático
+      if (selectedBitacora) {
+        selectedBitacora.cepas = [...cepas];
+        autoSave();
+      }
     }
+    
     function removeCepa(index) {
       cepas.splice(index, 1);
       renderCepasList();
+      
+      // Guardado automático
+      if (selectedBitacora) {
+        selectedBitacora.cepas = [...cepas];
+        autoSave();
+      }
     }
+    
     function renderCepasList() {
       const list = document.getElementById('cepasList');
       list.innerHTML = '';
       cepas.forEach((cepa, idx) => {
         const div = document.createElement('div');
         div.className = 'cepa-item';
-        div.innerHTML = `<span>${cepa.nombre}</span> <span>x${cepa.cantidad}</span> <button class='cepa-remove' onclick='removeCepa(${idx})'>🗑️</button>`;
+        let info = `${cepa.nombre} x${cepa.cantidad} (${cepa.tipo})`;
+        if (cepa.germinacion) {
+          info += ` - Germinación: ${cepa.germinacion}`;
+        }
+        div.innerHTML = `<span>${info}</span> <button class='cepa-remove' onclick='removeCepa(${idx})'>🗑️</button>`;
+        list.appendChild(div);
+      });
+    }
+
+    // Funciones para extractores
+    function addExtractor() {
+      const cantidad = parseInt(document.getElementById('extractorCantidad').value, 10) || 1;
+      const pulgadas = document.getElementById('extractorPulgadas').value.trim();
+      
+      if (!pulgadas) return;
+      
+      extractores.push({ cantidad, pulgadas });
+      renderExtractoresList();
+      document.getElementById('extractorCantidad').value = 1;
+      document.getElementById('extractorPulgadas').value = '';
+      document.getElementById('extractorPulgadas').focus();
+      
+      // Guardado automático
+      if (selectedBitacora) {
+        selectedBitacora.extractores = [...extractores];
+        autoSave();
+      }
+    }
+    
+    function removeExtractor(index) {
+      extractores.splice(index, 1);
+      renderExtractoresList();
+      
+      // Guardado automático
+      if (selectedBitacora) {
+        selectedBitacora.extractores = [...extractores];
+        autoSave();
+      }
+    }
+    
+    function renderExtractoresList() {
+      const list = document.getElementById('extractoresList');
+      list.innerHTML = '';
+      extractores.forEach((extractor, idx) => {
+        const div = document.createElement('div');
+        div.className = 'extractor-item';
+        div.innerHTML = `<span>x${extractor.cantidad} de ${extractor.pulgadas}"</span> <button class='extractor-remove' onclick='removeExtractor(${idx})'>🗑️</button>`;
         list.appendChild(div);
       });
     }
@@ -1383,7 +2415,24 @@
       selectedStage = stage;
       document.querySelectorAll('.stage-btn').forEach(btn => btn.classList.remove('stage-selected'));
       document.getElementById('btn-' + stage).classList.add('stage-selected');
-      document.getElementById('floraStartContainer').style.display = stage === 'flora' ? 'block' : 'none';
+      
+      
+      // Mostrar/ocultar elementos según la etapa
+      const floraStartContainer = document.getElementById('floraStartContainer');
+      const bitacoraInfo = document.getElementById('bitacoraInfo');
+      const entryForm = document.getElementById('entryForm');
+      
+      floraStartContainer.style.display = stage === 'flora' ? 'block' : 'none';
+      
+      if (stage === 'general') {
+        bitacoraInfo.style.display = 'block';
+        if (entryForm) entryForm.style.display = 'none';
+        renderBitacoraInfo();
+      } else {
+        bitacoraInfo.style.display = 'none';
+        if (entryForm) entryForm.style.display = 'block';
+      }
+      
       renderHistory();
       renderCalendar();
       updateWeeklySummary();
@@ -1780,7 +2829,21 @@
         document.getElementById('luzSolIcon').style.display = 'block';
         document.getElementById('luzArtificialFields').style.display = 'block';
       }
+      
+      // Guardado automático
+      if (selectedBitacora) {
+        selectedBitacora.tipoLuz = tipoLuz;
+        autoSave();
+      }
     }
+
+    // Función para mostrar/ocultar campo de germinación
+    function toggleGerminacionField() {
+      const tipo = document.getElementById('cepaTipo').value;
+      const semillaFields = document.getElementById('semillaFields');
+      semillaFields.style.display = tipo === 'semilla' ? 'block' : 'none';
+    }
+
     function addLuz() {
       const nombre = document.getElementById('luzNombre').value.trim();
       const cantidad = parseInt(document.getElementById('luzCantidad').value, 10) || 1;
@@ -1792,11 +2855,25 @@
       document.getElementById('luzCantidad').value = 1;
       document.getElementById('luzWatts').value = '';
       document.getElementById('luzNombre').focus();
+      
+      // Guardado automático
+      if (selectedBitacora) {
+        selectedBitacora.luces = [...luces];
+        autoSave();
+      }
     }
+    
     function removeLuz(index) {
       luces.splice(index, 1);
       renderLucesList();
+      
+      // Guardado automático
+      if (selectedBitacora) {
+        selectedBitacora.luces = [...luces];
+        autoSave();
+      }
     }
+    
     function renderLucesList() {
       const list = document.getElementById('lucesList');
       list.innerHTML = '';
@@ -1806,6 +2883,254 @@
         div.innerHTML = `<span>${luz.nombre}</span> <span>x${luz.cantidad}</span> <span>${luz.watts}W</span> <button class='luz-remove' onclick='removeLuz(${idx})'>🗑️</button>`;
         list.appendChild(div);
       });
+    }
+
+    function renderBitacoraInfo() {
+      if (!selectedBitacora) return;
+      
+      const container = document.getElementById('bitacoraInfoContent');
+      container.innerHTML = '';
+      
+      // Verificar si la bitácora tiene características guardadas
+      if (!selectedBitacora.cepas && !selectedBitacora.tipoCultivo) {
+        container.innerHTML = '<div class="no-info">Esta bitácora no tiene características guardadas. Edita la bitácora para agregar información.</div>';
+        return;
+      }
+      
+      const infoGrid = document.createElement('div');
+      infoGrid.className = 'info-grid';
+      
+      // Sección de Cepas
+      if (selectedBitacora.cepas && selectedBitacora.cepas.length > 0) {
+        const cepasSection = document.createElement('div');
+        cepasSection.className = 'info-section';
+        cepasSection.innerHTML = '<h4>🌱 Cepas</h4>';
+        selectedBitacora.cepas.forEach(cepa => {
+          const item = document.createElement('div');
+          item.className = 'info-item';
+          let info = `<span class='info-label'>${cepa.nombre}</span> <span class='info-value cepa'>x${cepa.cantidad}</span> <span class='info-value'>(${cepa.tipo}`;
+          if (cepa.tipo === 'semilla' && cepa.germinacion) {
+            info += `, germinación: ${cepa.germinacion}`;
+          }
+          info += ")</span>";
+          item.innerHTML = info;
+          cepasSection.appendChild(item);
+        });
+        infoGrid.appendChild(cepasSection);
+      }
+      
+      // Sección de Tipo de Cultivo
+      if (selectedBitacora.tipoCultivo) {
+        const cultivoSection = document.createElement('div');
+        cultivoSection.className = 'info-section';
+        cultivoSection.innerHTML = '<h4>🏠 Tipo de Cultivo</h4>';
+        const cultivoItem = document.createElement('div');
+        cultivoItem.className = 'info-item';
+        const cultivoText = selectedBitacora.tipoCultivo.charAt(0).toUpperCase() + selectedBitacora.tipoCultivo.slice(1);
+        cultivoItem.innerHTML = `
+          <span class="info-label">Tipo</span>
+          <span class="info-value ${selectedBitacora.tipoCultivo}">${cultivoText}</span>
+        `;
+        cultivoSection.appendChild(cultivoItem);
+        // Información adicional para cultivo interior/invernadero
+        if ((selectedBitacora.tipoCultivo === 'interior' || selectedBitacora.tipoCultivo === 'invernadero')) {
+          if (selectedBitacora.numCarpas > 0) {
+            const carpasItem = document.createElement('div');
+            carpasItem.className = 'info-item';
+            let carpasInfo = `${selectedBitacora.numCarpas}`;
+            if (selectedBitacora.carpas && selectedBitacora.carpas.length > 0) {
+              carpasInfo += ' (' + selectedBitacora.carpas.map((c, i) => `Carpa ${i+1}: ${c.metrosCuadrados} m²`).join(', ') + ')';
+            }
+            carpasItem.innerHTML = `
+              <span class="info-label">Carpas</span>
+              <span class="info-value">${carpasInfo}</span>
+            `;
+            cultivoSection.appendChild(carpasItem);
+          }
+          if (selectedBitacora.soloSala) {
+            const salaItem = document.createElement('div');
+            salaItem.className = 'info-item';
+            let salaInfo = 'Solo sala';
+            if (selectedBitacora.carpas && selectedBitacora.carpas.length === 1) {
+              salaInfo += ` (${selectedBitacora.carpas[0].metrosCuadrados} m²)`;
+            }
+            salaItem.innerHTML = `
+              <span class="info-label">Configuración</span>
+              <span class="info-value">${salaInfo}</span>
+            `;
+            cultivoSection.appendChild(salaItem);
+          }
+        }
+        infoGrid.appendChild(cultivoSection);
+      }
+      // Sección de Extractores
+      if (selectedBitacora.extractores && selectedBitacora.extractores.length > 0) {
+        const extSection = document.createElement('div');
+        extSection.className = 'info-section';
+        extSection.innerHTML = '<h4>💨 Extractores</h4>';
+        selectedBitacora.extractores.forEach((ext, idx) => {
+          const extItem = document.createElement('div');
+          extItem.className = 'info-item';
+          extItem.innerHTML = `<span class='info-label'>Extractor ${idx+1}</span> <span class='info-value'>x${ext.cantidad} de ${ext.pulgadas}"</span>`;
+          extSection.appendChild(extItem);
+        });
+        infoGrid.appendChild(extSection);
+      }
+      
+      // Sección de Iluminación
+      if (selectedBitacora.tipoLuz || (selectedBitacora.luces && selectedBitacora.luces.length > 0)) {
+        const luzSection = document.createElement('div');
+        luzSection.className = 'info-section';
+        luzSection.innerHTML = '<h4>💡 Iluminación</h4>';
+        
+        if (selectedBitacora.tipoLuz) {
+          const tipoLuzItem = document.createElement('div');
+          tipoLuzItem.className = 'info-item';
+          let tipoLuzText = '';
+          switch (selectedBitacora.tipoLuz) {
+            case 'sol': tipoLuzText = '☀️ Sol'; break;
+            case 'luz': tipoLuzText = '💡 Artificial'; break;
+            case 'mixto': tipoLuzText = '🔄 Mixto'; break;
+          }
+          tipoLuzItem.innerHTML = `
+            <span class="info-label">Tipo</span>
+            <span class="info-value luz">${tipoLuzText}</span>
+          `;
+          luzSection.appendChild(tipoLuzItem);
+        }
+        
+        if (selectedBitacora.luces && selectedBitacora.luces.length > 0) {
+          selectedBitacora.luces.forEach(luz => {
+            const luzItem = document.createElement('div');
+            luzItem.className = 'info-item';
+            luzItem.innerHTML = `
+              <span class="info-label">${luz.nombre}</span>
+              <span class="info-value">x${luz.cantidad} (${luz.watts}W)</span>
+            `;
+            luzSection.appendChild(luzItem);
+          });
+        }
+        
+        // Información de lámparas para cultivo interior
+        if (selectedBitacora.tipoCultivo === 'interior') {
+          if (selectedBitacora.lamparasVege > 0) {
+            const vegeItem = document.createElement('div');
+            vegeItem.className = 'info-item';
+            vegeItem.innerHTML = `
+              <span class="info-label">Lámparas Vegetación</span>
+              <span class="info-value">${selectedBitacora.lamparasVege}${selectedBitacora.wattsVege ? ` (${selectedBitacora.wattsVege})` : ''}</span>
+            `;
+            luzSection.appendChild(vegeItem);
+          }
+          
+          if (selectedBitacora.lamparasFlora > 0) {
+            const floraItem = document.createElement('div');
+            floraItem.className = 'info-item';
+            floraItem.innerHTML = `
+              <span class="info-label">Lámparas Floración</span>
+              <span class="info-value">${selectedBitacora.lamparasFlora}${selectedBitacora.wattsFlora ? ` (${selectedBitacora.wattsFlora})` : ''}</span>
+            `;
+            luzSection.appendChild(floraItem);
+          }
+        }
+        
+        infoGrid.appendChild(luzSection);
+      }
+      
+      // Sección de Riego
+      if (selectedBitacora.riegoOptions && selectedBitacora.riegoOptions.length > 0) {
+        const riegoSection = document.createElement('div');
+        riegoSection.className = 'info-section';
+        riegoSection.innerHTML = '<h4>💧 Riego</h4>';
+        
+        selectedBitacora.riegoOptions.forEach(riego => {
+          const riegoItem = document.createElement('div');
+          riegoItem.className = 'info-item';
+          let riegoText = '';
+          switch (riego) {
+            case 'manual': riegoText = '👋 Manual'; break;
+            case 'goteo': riegoText = '💧 Goteo'; break;
+            case 'hidroponica': riegoText = '🌊 Hidropónica'; break;
+          }
+          riegoItem.innerHTML = `
+            <span class="info-label">Tipo</span>
+            <span class="info-value riego">${riegoText}</span>
+          `;
+          riegoSection.appendChild(riegoItem);
+        });
+        
+        if (selectedBitacora.detalleRiego) {
+          const detalleItem = document.createElement('div');
+          detalleItem.className = 'info-item';
+          detalleItem.innerHTML = `
+            <span class="info-label">Detalles</span>
+            <span class="info-value">${selectedBitacora.detalleRiego}</span>
+          `;
+          riegoSection.appendChild(detalleItem);
+        }
+        
+        infoGrid.appendChild(riegoSection);
+      }
+      
+      // Sección de Sustrato
+      if (selectedBitacora.sustrato) {
+        const sustratoSection = document.createElement('div');
+        sustratoSection.className = 'info-section';
+        sustratoSection.innerHTML = '<h4>🌱 Sustrato</h4>';
+        
+        const sustratoItem = document.createElement('div');
+        sustratoItem.className = 'info-item';
+        sustratoItem.innerHTML = `
+          <span class="info-label">Tipo</span>
+          <span class="info-value">${selectedBitacora.sustrato}</span>
+        `;
+        sustratoSection.appendChild(sustratoItem);
+        
+        infoGrid.appendChild(sustratoSection);
+      }
+      
+      // Sección de Equipamiento (solo para cultivo interior)
+      if (selectedBitacora.tipoCultivo === 'interior') {
+        const equipamientoSection = document.createElement('div');
+        equipamientoSection.className = 'info-section';
+        equipamientoSection.innerHTML = '<h4>⚙️ Equipamiento</h4>';
+        
+        if (selectedBitacora.ventiladores > 0) {
+          const ventiladoresItem = document.createElement('div');
+          ventiladoresItem.className = 'info-item';
+          ventiladoresItem.innerHTML = `
+            <span class="info-label">Ventiladores</span>
+            <span class="info-value">${selectedBitacora.ventiladores}${selectedBitacora.pulgadasVentilador ? ` (${selectedBitacora.pulgadasVentilador}")` : ''}</span>
+          `;
+          equipamientoSection.appendChild(ventiladoresItem);
+        }
+        
+        if (selectedBitacora.filtroAire === 'si') {
+          const filtroItem = document.createElement('div');
+          filtroItem.className = 'info-item';
+          filtroItem.innerHTML = `
+            <span class="info-label">Filtro de Aire</span>
+            <span class="info-value">✅ Sí</span>
+          `;
+          equipamientoSection.appendChild(filtroItem);
+        }
+        
+        if (selectedBitacora.aireAcondicionado === 'si') {
+          const aireItem = document.createElement('div');
+          aireItem.className = 'info-item';
+          aireItem.innerHTML = `
+            <span class="info-label">Aire Acondicionado</span>
+            <span class="info-value">✅ Sí${selectedBitacora.frigorias ? ` (${selectedBitacora.frigorias})` : ''}</span>
+          `;
+          equipamientoSection.appendChild(aireItem);
+        }
+        
+        if (equipamientoSection.children.length > 1) { // Más de 1 porque incluye el h4
+          infoGrid.appendChild(equipamientoSection);
+        }
+      }
+      
+      container.appendChild(infoGrid);
     }
 
     // Mostrar la fecha del último respaldo
@@ -1827,6 +3152,197 @@
       if (originalCreateBackup) originalCreateBackup();
       const fecha = new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
       setUltimoRespaldo(fecha);
+    }
+
+    // Funciones auxiliares para el formulario
+    function toggleInteriorFields() {
+      const tipoCultivo = document.getElementById('tipoCultivo').value;
+      const interiorFields = document.getElementById('interiorFields');
+      interiorFields.style.display = tipoCultivo === 'interior' ? 'block' : 'none';
+    }
+
+    function toggleCarpasFields() {
+      const numCarpas = parseInt(document.getElementById('numCarpas').value) || 0;
+      const soloSala = document.getElementById('soloSala').checked;
+      const carpasList = document.getElementById('carpasList');
+      
+      carpasList.innerHTML = '';
+      
+      if (numCarpas > 0 && !soloSala) {
+        for (let i = 1; i <= numCarpas; i++) {
+          const div = document.createElement('div');
+          div.className = 'carpa-item';
+          div.innerHTML = `
+            <span>Carpa ${i}</span>
+            <input type="number" placeholder="Metros cuadrados (ej: 1x1 = 1)" min="0" step="0.1" />
+            <button class='carpa-remove' onclick='this.parentElement.remove()'>🗑️</button>
+          `;
+          carpasList.appendChild(div);
+        }
+      } else if (soloSala) {
+        const div = document.createElement('div');
+        div.className = 'carpa-item';
+        div.innerHTML = `
+          <span>Sala única</span>
+          <input type="number" placeholder="Metros cuadrados (ej: 2x3 = 6)" min="0" step="0.1" />
+          <button class='carpa-remove' onclick='this.parentElement.remove()'>🗑️</button>
+        `;
+        carpasList.appendChild(div);
+      }
+    }
+
+    function toggleFrigorias() {
+      const aireAcondicionado = document.getElementById('aireAcondicionado').value;
+      const frigorias = document.getElementById('frigorias');
+      frigorias.style.display = aireAcondicionado === 'si' ? 'block' : 'none';
+    }
+
+    // Funciones para edición de bitácora
+    function toggleEditInteriorFields() {
+      const tipoCultivo = document.getElementById('editTipoCultivo').value;
+      const interiorFields = document.getElementById('editInteriorFields');
+      interiorFields.style.display = tipoCultivo === 'interior' ? 'block' : 'none';
+    }
+
+    function toggleEditCarpasFields() {
+      const numCarpas = parseInt(document.getElementById('editNumCarpas').value) || 0;
+      const soloSala = document.getElementById('editSoloSala').checked;
+      const carpasList = document.getElementById('editCarpasList');
+      
+      carpasList.innerHTML = '';
+      
+      if (numCarpas > 0 && !soloSala) {
+        for (let i = 1; i <= numCarpas; i++) {
+          const div = document.createElement('div');
+          div.className = 'carpa-item';
+          div.innerHTML = `
+            <span>Carpa ${i}</span>
+            <input type="number" placeholder="Metros cuadrados (ej: 1x1 = 1)" min="0" step="0.1" />
+            <button class='carpa-remove' onclick='this.parentElement.remove()'>🗑️</button>
+          `;
+          carpasList.appendChild(div);
+        }
+      } else if (soloSala) {
+        const div = document.createElement('div');
+        div.className = 'carpa-item';
+        div.innerHTML = `
+          <span>Sala única</span>
+          <input type="number" placeholder="Metros cuadrados (ej: 2x3 = 6)" min="0" step="0.1" />
+          <button class='carpa-remove' onclick='this.parentElement.remove()'>🗑️</button>
+        `;
+        carpasList.appendChild(div);
+      }
+    }
+
+    function toggleEditFrigorias() {
+      const aireAcondicionado = document.getElementById('editAireAcondicionado').value;
+      const frigorias = document.getElementById('editFrigorias');
+      frigorias.style.display = aireAcondicionado === 'si' ? 'block' : 'none';
+    }
+
+    // Funciones para edición de cepas en modal de edición
+    let editCepas = [];
+    function addEditCepa() {
+      const nombre = document.getElementById('editCepaNombre').value.trim();
+      const cantidad = parseInt(document.getElementById('editCepaCantidad').value, 10) || 1;
+      const tipo = document.getElementById('editCepaTipo').value;
+      const germinacion = document.getElementById('editCepaGerminacion').value;
+      if (!nombre) return;
+      const cepa = { nombre, cantidad, tipo };
+      if (tipo === 'semilla' && germinacion) {
+        cepa.germinacion = germinacion;
+      }
+      editCepas.push(cepa);
+      renderEditCepasList();
+      document.getElementById('editCepaNombre').value = '';
+      document.getElementById('editCepaCantidad').value = 1;
+      document.getElementById('editCepaTipo').value = 'clon';
+      document.getElementById('editCepaGerminacion').value = '';
+      document.getElementById('editSemillaFields').style.display = 'none';
+    }
+    function removeEditCepa(index) {
+      editCepas.splice(index, 1);
+      renderEditCepasList();
+    }
+    function renderEditCepasList() {
+      const list = document.getElementById('editCepasList');
+      list.innerHTML = '';
+      editCepas.forEach((cepa, idx) => {
+        const div = document.createElement('div');
+        div.className = 'cepa-item';
+        let info = `${cepa.nombre} x${cepa.cantidad} (${cepa.tipo}`;
+        if (cepa.tipo === 'semilla' && cepa.germinacion) {
+          info += `, germinación: ${cepa.germinacion}`;
+        }
+        info += ")";
+        div.innerHTML = `<span>${info}</span> <button class='cepa-remove' onclick='removeEditCepa(${idx})'>🗑️</button>`;
+        list.appendChild(div);
+      });
+    }
+    function toggleEditGerminacionField() {
+      const tipo = document.getElementById('editCepaTipo').value;
+      const semillaFields = document.getElementById('editSemillaFields');
+      semillaFields.style.display = tipo === 'semilla' ? 'block' : 'none';
+    }
+    // Funciones para extractores en edición
+    let editExtractores = [];
+    function addEditExtractor() {
+      const cantidad = parseInt(document.getElementById('editExtractorCantidad').value, 10) || 1;
+      const pulgadas = document.getElementById('editExtractorPulgadas').value.trim();
+      if (!pulgadas) return;
+      editExtractores.push({ cantidad, pulgadas });
+      renderEditExtractoresList();
+      document.getElementById('editExtractorCantidad').value = 1;
+      document.getElementById('editExtractorPulgadas').value = '';
+    }
+    function removeEditExtractor(index) {
+      editExtractores.splice(index, 1);
+      renderEditExtractoresList();
+    }
+    function renderEditExtractoresList() {
+      const list = document.getElementById('editExtractoresList');
+      list.innerHTML = '';
+      editExtractores.forEach((ext, idx) => {
+        const div = document.createElement('div');
+        div.className = 'extractor-item';
+        div.innerHTML = `<span>x${ext.cantidad} de ${ext.pulgadas}"</span> <button class='extractor-remove' onclick='removeEditExtractor(${idx})'>🗑️</button>`;
+        list.appendChild(div);
+      });
+    }
+
+    // Modo nocturno
+    function toggleDarkMode() {
+      const body = document.body;
+      body.classList.toggle('dark-mode');
+      const btn = document.getElementById('toggleDarkMode');
+      if (body.classList.contains('dark-mode')) {
+        btn.textContent = '☀️';
+        localStorage.setItem('darkMode', '1');
+      } else {
+        btn.textContent = '🌙';
+        localStorage.setItem('darkMode', '0');
+      }
+    }
+    // Al cargar, aplicar modo guardado
+    if (localStorage.getItem('darkMode') === '1') {
+      document.body.classList.add('dark-mode');
+      document.getElementById('toggleDarkMode').textContent = '☀️';
+    }
+
+    // Alternar formulario de nueva bitácora
+    function toggleNewBitacoraForm() {
+      const form = document.getElementById('newBitacoraForm');
+      const btn = document.getElementById('btnNuevaBitacora');
+      if (form.style.display === 'block' || form.classList.contains('active')) {
+        form.style.display = 'none';
+        form.classList.remove('active');
+        if (btn) btn.textContent = '+ Nueva Bitácora';
+      } else {
+        form.style.display = 'block';
+        form.classList.add('active');
+        if (btn) btn.textContent = 'Cerrar';
+        showNewBitacoraForm();
+      }
     }
   </script>
 </body>

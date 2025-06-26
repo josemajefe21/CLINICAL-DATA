@@ -1,19 +1,60 @@
 {
   "version": 2,
+  "name": "bitacora-high-stakes",
   "builds": [
     {
-      "src": "indexPVZ.html",
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.json",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "icons/*",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/",
-      "dest": "/indexPVZ.html"
+      "src": "/sw.js",
+      "dest": "/sw.js",
+      "headers": {
+        "cache-control": "s-maxage=0",
+        "content-type": "application/javascript"
+      }
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/manifest.json",
+      "headers": {
+        "cache-control": "s-maxage=0",
+        "content-type": "application/manifest+json"
+      }
+    },
+    {
+      "src": "/firebase-config.js",
+      "dest": "/firebase-config.js",
+      "headers": {
+        "cache-control": "s-maxage=0"
+      }
     },
     {
       "src": "/(.*)",
-      "dest": "/$1"
+      "dest": "/indexPVZ.html",
+      "headers": {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "X-XSS-Protection": "1; mode=block"
+      }
     }
   ]
 } 

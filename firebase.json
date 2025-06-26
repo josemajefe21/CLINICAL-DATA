@@ -1,0 +1,23 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "package.json",
+      "package-lock.json",
+      "vercel.json",
+      ".vercel",
+      "FIREBASE_SETUP.md",
+      "DEPLOY.md",
+      "README.md"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/indexPVZ.html"
+      }
+    ]
+  }
+} 
