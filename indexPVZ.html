@@ -10,8 +10,9 @@
   <title>CLINICAL DATA</title>
   <!-- PWA Meta Tags -->
   <meta name="description" content="Bitácora para seguimiento de cultivos">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+  <!-- Elimino o comento la línea del manifest y el icono -->
+  <!-- <link rel="manifest" href="manifest.json"> -->
+  <!-- <link rel="apple-touch-icon" href="icons/icon-192.svg"> -->
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -1310,6 +1311,12 @@
     body.dark-mode .no-info {
       color: #a7f3d0 !important;
     }
+    .login-input {
+      max-width: 300px;
+      width: 100%;
+      margin: 0 auto 10px auto;
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -1319,7 +1326,7 @@
       <h2>👨‍⚕️ Iniciar Sesión Médico</h2>
       <form class="auth-form" id="loginForm">
         <div id="loginError" class="error-message" style="display: none;"></div>
-        <input type="text" id="loginUser" placeholder="Usuario" required>
+        <input type="text" id="loginUser" placeholder="Usuario" required style="max-width:220px;width:100%;margin:0 auto 10px auto;display:block;">
         <input type="password" id="loginPassword" placeholder="Contraseña" required>
         <button type="submit" class="auth-btn" id="loginBtn">
           <span id="loginBtnText">Iniciar Sesión</span>
@@ -1549,7 +1556,8 @@
     }
 
     function hideUserInfo() {
-      document.getElementById('userInfo').style.display = 'none';
+      var el = document.getElementById('userInfo');
+      if (el) el.style.display = 'none';
     }
 
     function showLogin() {
@@ -1790,6 +1798,8 @@
 
     // Limpiar datos del usuario
     function clearUserData() {
+      var el = document.getElementById('userInfo');
+      if (el) el.style.display = 'none';
       localStorage.removeItem('bitacoras');
       localStorage.removeItem('bitacora_backups');
       selectedBitacora = null;
