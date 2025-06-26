@@ -1312,10 +1312,11 @@
       color: #a7f3d0 !important;
     }
     .login-input {
-      max-width: 300px;
+      max-width: 220px;
       width: 100%;
       margin: 0 auto 10px auto;
       display: block;
+      box-sizing: border-box;
     }
   </style>
 </head>
@@ -1326,8 +1327,8 @@
       <h2>👨‍⚕️ Iniciar Sesión Médico</h2>
       <form class="auth-form" id="loginForm">
         <div id="loginError" class="error-message" style="display: none;"></div>
-        <input type="text" id="loginUser" placeholder="Usuario" required style="max-width:220px;width:100%;margin:0 auto 10px auto;display:block;">
-        <input type="password" id="loginPassword" placeholder="Contraseña" required>
+        <input type="text" id="loginUser" placeholder="Usuario" required class="login-input">
+        <input type="password" id="loginPassword" placeholder="Contraseña" required class="login-input">
         <button type="submit" class="auth-btn" id="loginBtn">
           <span id="loginBtnText">Iniciar Sesión</span>
           <span id="loginBtnLoading" class="loading" style="display: none;"></span>
@@ -1557,7 +1558,7 @@
 
     function hideUserInfo() {
       var el = document.getElementById('userInfo');
-      if (el) el.style.display = 'none';
+      if (el && el.style) el.style.display = 'none';
     }
 
     function showLogin() {
@@ -1578,11 +1579,13 @@
     }
 
     // Login
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    document.getElementById('loginForm')?.addEventListener('submit', async function(e) {
       e.preventDefault();
-      
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
+      var userInput = document.getElementById('loginUser');
+      var passInput = document.getElementById('loginPassword');
+      if (!userInput || !passInput) return;
+      var username = userInput.value.trim();
+      var password = passInput.value;
       const loginBtn = document.getElementById('loginBtn');
       const loginBtnText = document.getElementById('loginBtnText');
       const loginBtnLoading = document.getElementById('loginBtnLoading');
@@ -1595,7 +1598,7 @@
       loginError.style.display = 'none';
 
       try {
-        await auth.signInWithEmailAndPassword(email, password);
+        await auth.signInWithEmailAndPassword(username, password);
         // El onAuthStateChanged se encargará del resto
       } catch (error) {
         console.error('Error de login:', error);
@@ -1799,7 +1802,7 @@
     // Limpiar datos del usuario
     function clearUserData() {
       var el = document.getElementById('userInfo');
-      if (el) el.style.display = 'none';
+      if (el && el.style) el.style.display = 'none';
       localStorage.removeItem('bitacoras');
       localStorage.removeItem('bitacora_backups');
       selectedBitacora = null;
