@@ -188,6 +188,13 @@
       <h2>Iniciar Sesión</h2>
       <form id="loginForm">
         <div id="loginError" class="error-message" style="display:none;"></div>
+        <div id="loginConfigHelp" class="error-message" style="display:none; background:#fef3c7; color:#92400e; border-color:#fbbf24;">
+          <strong>🔧 Configuración Requerida:</strong><br>
+          <a href="https://console.firebase.google.com/project/clinical-70644/authentication/providers" target="_blank" style="color:#92400e; text-decoration:underline;">
+            Click aquí para configurar Firebase Authentication
+          </a><br>
+          <small>1. Ve a Authentication → Sign-in method<br>2. Habilita Email/Password<br>3. Guarda cambios</small>
+        </div>
         <label for="loginEmail">Email</label>
         <input type="email" id="loginEmail" required autocomplete="username">
         <label for="loginPassword">Contraseña</label>
@@ -202,6 +209,13 @@
       <h2>Crear Cuenta</h2>
       <form id="registerForm">
         <div id="registerError" class="error-message" style="display:none;"></div>
+        <div id="firebaseConfigHelp" class="error-message" style="display:none; background:#fef3c7; color:#92400e; border-color:#fbbf24;">
+          <strong>🔧 Configuración Requerida:</strong><br>
+          <a href="https://console.firebase.google.com/project/clinical-70644/authentication/providers" target="_blank" style="color:#92400e; text-decoration:underline;">
+            Click aquí para configurar Firebase Authentication
+          </a><br>
+          <small>1. Ve a Authentication → Sign-in method<br>2. Habilita Email/Password<br>3. Guarda cambios</small>
+        </div>
         <label for="registerName">Nombre completo</label>
         <input type="text" id="registerName" required>
         <label for="registerEmail">Email</label>
@@ -617,6 +631,8 @@
 
       // Limpiar errores previos
       if (loginError) loginError.style.display = 'none';
+      const loginConfigHelp = document.getElementById('loginConfigHelp');
+      if (loginConfigHelp) loginConfigHelp.style.display = 'none';
 
       // Validaciones básicas
       if (!email) {
@@ -642,9 +658,19 @@
         // El onAuthStateChanged se encargará del resto
       } catch (error) {
         console.error('Error de login:', error);
-        if (loginError) {
-          loginError.textContent = getErrorMessage(error);
-          loginError.style.display = 'block';
+        
+        const loginConfigHelp = document.getElementById('loginConfigHelp');
+        
+        // Mostrar ayuda específica para error de configuración
+        if (error.message && error.message.includes('CONFIGURATION_NOT_FOUND')) {
+          if (loginConfigHelp) loginConfigHelp.style.display = 'block';
+          if (loginError) loginError.style.display = 'none';
+        } else {
+          if (loginConfigHelp) loginConfigHelp.style.display = 'none';
+          if (loginError) {
+            loginError.textContent = getErrorMessage(error);
+            loginError.style.display = 'block';
+          }
         }
       }
     });
@@ -660,6 +686,8 @@
 
       // Limpiar errores previos
       if (registerError) registerError.style.display = 'none';
+      const firebaseConfigHelp = document.getElementById('firebaseConfigHelp');
+      if (firebaseConfigHelp) firebaseConfigHelp.style.display = 'none';
 
       // Validaciones básicas
       if (!name) {
@@ -723,9 +751,19 @@
 
       } catch (error) {
         console.error('Error de registro:', error);
-        if (registerError) {
-          registerError.textContent = getErrorMessage(error);
-          registerError.style.display = 'block';
+        
+        const firebaseConfigHelp = document.getElementById('firebaseConfigHelp');
+        
+        // Mostrar ayuda específica para error de configuración
+        if (error.message && error.message.includes('CONFIGURATION_NOT_FOUND')) {
+          if (firebaseConfigHelp) firebaseConfigHelp.style.display = 'block';
+          if (registerError) registerError.style.display = 'none';
+        } else {
+          if (firebaseConfigHelp) firebaseConfigHelp.style.display = 'none';
+          if (registerError) {
+            registerError.textContent = getErrorMessage(error);
+            registerError.style.display = 'block';
+          }
         }
       }
     });
@@ -756,24 +794,36 @@
           'auth/user-disabled': 'Esta cuenta ha sido deshabilitada',
           'auth/operation-not-allowed': 'Operación no permitida',
           'auth/requires-recent-login': 'Necesitas volver a iniciar sesión',
-          'auth/invalid-credential': 'Credenciales inválidas'
+          'auth/invalid-credential': 'Credenciales inválidas',
+          'auth/internal-error': 'Error de configuración de Firebase - Contacta al administrador',
+          'auth/configuration-not-found': 'Firebase Authentication no está configurado correctamente'
         };
+        // Chequeo específico para CONFIGURATION_NOT_FOUND
+        if (error.message && error.message.includes('CONFIGURATION_NOT_FOUND')) {
+          return 'Firebase Authentication no está habilitado. Ve a Firebase Console → Authentication → Sign-in method → Habilita Email/Password';
+        }
+        
         return errorMessages[error.code] || `Error: ${error.message || error.code}`;
       }
       
-      // Si es solo un código string
-      if (typeof error === 'string') {
-        const errorMessages = {
-          'auth/user-not-found': 'No existe una cuenta con este email',
-          'auth/wrong-password': 'Contraseña incorrecta',
-          'auth/email-already-in-use': 'Este email ya está registrado',
-          'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres',
-          'auth/invalid-email': 'Email inválido',
-          'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde',
-          'auth/network-request-failed': 'Error de conexión. Verifica tu internet'
-        };
-        return errorMessages[error] || `Error: ${error}`;
-      }
+              // Si es solo un código string
+        if (typeof error === 'string') {
+          // Chequeo específico para CONFIGURATION_NOT_FOUND
+          if (error.includes('CONFIGURATION_NOT_FOUND')) {
+            return 'Firebase Authentication no está habilitado. Ve a Firebase Console → Authentication → Sign-in method → Habilita Email/Password';
+          }
+          
+          const errorMessages = {
+            'auth/user-not-found': 'No existe una cuenta con este email',
+            'auth/wrong-password': 'Contraseña incorrecta',
+            'auth/email-already-in-use': 'Este email ya está registrado',
+            'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres',
+            'auth/invalid-email': 'Email inválido',
+            'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde',
+            'auth/network-request-failed': 'Error de conexión. Verifica tu internet'
+          };
+          return errorMessages[error] || `Error: ${error}`;
+        }
       
       return 'Error desconocido. Verifica tu conexión e intenta de nuevo';
     }
