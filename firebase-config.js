@@ -14,12 +14,19 @@ var firebaseConfig = {
 
 // Inicializar Firebase solo si no está inicializado
 if (!firebase.apps.length) {
+  console.log('Inicializando Firebase...');
   firebase.initializeApp(firebaseConfig);
+  console.log('Firebase inicializado correctamente');
+} else {
+  console.log('Firebase ya estaba inicializado');
 }
 
 // Servicios globales
 window.auth = firebase.auth();
 window.db = firebase.firestore();
+
+console.log('Firebase Auth disponible:', !!window.auth);
+console.log('Firebase Firestore disponible:', !!window.db);
 
 // Configuración de Firestore
 // Comentamos la configuración de settings para evitar warnings

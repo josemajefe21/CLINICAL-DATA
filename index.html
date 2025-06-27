@@ -458,24 +458,83 @@
 
     // ===== SISTEMA DE AUTENTICACIÓN =====
 
-    // Observar cambios en el estado de autenticación
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        // Usuario autenticado
-        currentUser = user;
-        isAuthenticated = true;
-        showUserInfo(user);
-        hideAuthContainer();
-        loadUserData();
-      } else {
-        // Usuario no autenticado
-        currentUser = null;
-        isAuthenticated = false;
-        hideUserInfo();
-        showAuthContainer();
-        clearUserData();
+    // Verificar que Firebase esté cargado antes de inicializar
+    function initializeAuth() {
+      if (typeof firebase === 'undefined') {
+        console.error('Firebase no está cargado');
+        setTimeout(initializeAuth, 1000); // Reintentar en 1 segundo
+        return;
       }
-    });
+
+      if (!window.auth) {
+        console.error('Firebase Auth no está disponible');
+        return;
+      }
+
+      console.log('Firebase inicializado correctamente');
+      
+      // Función de prueba para verificar conectividad
+      window.testFirebaseConnection = async function() {
+        try {
+          console.log('Probando conexión a Firebase...');
+          console.log('Auth domain:', auth.app.options.authDomain);
+          console.log('Project ID:', auth.app.options.projectId);
+          return true;
+        } catch (error) {
+          console.error('Error al probar conexión:', error);
+          return false;
+        }
+      };
+      
+      // Función de prueba para crear usuario de prueba
+      window.testUserCreation = async function() {
+        try {
+          const testEmail = 'test' + Date.now() + '@test.com';
+          const testPassword = 'test123456';
+          console.log('Probando creación de usuario con:', testEmail);
+          
+          const userCredential = await auth.createUserWithEmailAndPassword(testEmail, testPassword);
+          console.log('Usuario de prueba creado exitosamente:', userCredential.user.uid);
+          
+          // Eliminar usuario de prueba
+          await userCredential.user.delete();
+          console.log('Usuario de prueba eliminado');
+          
+          return true;
+        } catch (error) {
+          console.error('Error en prueba de creación:', error);
+          return false;
+        }
+      };
+
+      // Observar cambios en el estado de autenticación
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          // Usuario autenticado
+          console.log('Usuario autenticado:', user.email);
+          currentUser = user;
+          isAuthenticated = true;
+          showUserInfo(user);
+          hideAuthContainer();
+          loadUserData();
+        } else {
+          // Usuario no autenticado
+          console.log('Usuario no autenticado');
+          currentUser = null;
+          isAuthenticated = false;
+          hideUserInfo();
+          showAuthContainer();
+          clearUserData();
+        }
+      });
+    }
+
+    // Inicializar cuando la página esté cargada
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeAuth);
+    } else {
+      initializeAuth();
+    }
 
     // Funciones de autenticación
     function showAuthContainer() {
@@ -543,20 +602,48 @@
     // Login
     document.getElementById('loginForm')?.addEventListener('submit', async function(e) {
       e.preventDefault();
-      var userInput = document.getElementById('loginEmail');
-      var passInput = document.getElementById('loginPassword');
-      if (!userInput || !passInput) return;
-      var email = userInput.value.trim();
-      var password = passInput.value;
+      
+      const userInput = document.getElementById('loginEmail');
+      const passInput = document.getElementById('loginPassword');
       const loginError = document.getElementById('loginError');
+      
+      if (!userInput || !passInput) {
+        console.error('Elementos de login no encontrados');
+        return;
+      }
+      
+      const email = userInput.value?.trim();
+      const password = passInput.value;
+
+      // Limpiar errores previos
+      if (loginError) loginError.style.display = 'none';
+
+      // Validaciones básicas
+      if (!email) {
+        if (loginError) {
+          loginError.textContent = 'Por favor ingresa tu email';
+          loginError.style.display = 'block';
+        }
+        return;
+      }
+
+      if (!password) {
+        if (loginError) {
+          loginError.textContent = 'Por favor ingresa tu contraseña';
+          loginError.style.display = 'block';
+        }
+        return;
+      }
 
       try {
+        console.log('Intentando iniciar sesión con:', email);
         await auth.signInWithEmailAndPassword(email, password);
+        console.log('Login exitoso');
         // El onAuthStateChanged se encargará del resto
       } catch (error) {
         console.error('Error de login:', error);
         if (loginError) {
-          loginError.textContent = getErrorMessage(error.code);
+          loginError.textContent = getErrorMessage(error);
           loginError.style.display = 'block';
         }
       }
@@ -566,35 +653,78 @@
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const name = document.getElementById('registerName').value;
-      const email = document.getElementById('registerEmail').value;
+      const name = document.getElementById('registerName').value?.trim();
+      const email = document.getElementById('registerEmail').value?.trim();
       const password = document.getElementById('registerPassword').value;
       const registerError = document.getElementById('registerError');
 
+      // Limpiar errores previos
+      if (registerError) registerError.style.display = 'none';
+
+      // Validaciones básicas
+      if (!name) {
+        if (registerError) {
+          registerError.textContent = 'Por favor ingresa tu nombre completo';
+          registerError.style.display = 'block';
+        }
+        return;
+      }
+
+      if (!email) {
+        if (registerError) {
+          registerError.textContent = 'Por favor ingresa un email válido';
+          registerError.style.display = 'block';
+        }
+        return;
+      }
+
+      if (!password || password.length < 6) {
+        if (registerError) {
+          registerError.textContent = 'La contraseña debe tener al menos 6 caracteres';
+          registerError.style.display = 'block';
+        }
+        return;
+      }
+
       try {
+        console.log('Intentando crear usuario con:', { email, password: '***', name });
+        
         // Crear usuario
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        console.log('Usuario creado exitosamente:', userCredential.user.uid);
         
         // Actualizar perfil
         await userCredential.user.updateProfile({
           displayName: name
         });
+        console.log('Perfil actualizado exitosamente');
 
         // Crear documento de usuario en Firestore
-        await db.collection('users').doc(userCredential.user.uid).set({
-          name: name,
-          email: email,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        try {
+          await db.collection('users').doc(userCredential.user.uid).set({
+            name: name,
+            email: email,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          console.log('Documento de usuario creado en Firestore');
+        } catch (firestoreError) {
+          console.warn('Error al crear documento en Firestore (no crítico):', firestoreError);
+        }
 
         // Migrar datos locales si existen
-        await migrateLocalData(userCredential.user.uid);
+        try {
+          await migrateLocalData(userCredential.user.uid);
+        } catch (migrationError) {
+          console.warn('Error en migración de datos (no crítico):', migrationError);
+        }
+
+        console.log('Registro completado exitosamente');
 
       } catch (error) {
         console.error('Error de registro:', error);
         if (registerError) {
-          registerError.textContent = getErrorMessage(error.code);
+          registerError.textContent = getErrorMessage(error);
           registerError.style.display = 'block';
         }
       }
@@ -612,17 +742,40 @@
     }
 
     // Obtener mensaje de error amigable
-    function getErrorMessage(errorCode) {
-      const errorMessages = {
-        'auth/user-not-found': 'No existe una cuenta con este email',
-        'auth/wrong-password': 'Contraseña incorrecta',
-        'auth/email-already-in-use': 'Este email ya está registrado',
-        'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres',
-        'auth/invalid-email': 'Email inválido',
-        'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde',
-        'auth/network-request-failed': 'Error de conexión. Verifica tu internet'
-      };
-      return errorMessages[errorCode] || 'Error desconocido. Intenta de nuevo';
+    function getErrorMessage(error) {
+      // Si es un objeto error completo
+      if (typeof error === 'object' && error.code) {
+        const errorMessages = {
+          'auth/user-not-found': 'No existe una cuenta con este email',
+          'auth/wrong-password': 'Contraseña incorrecta',
+          'auth/email-already-in-use': 'Este email ya está registrado',
+          'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres',
+          'auth/invalid-email': 'Email inválido',
+          'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde',
+          'auth/network-request-failed': 'Error de conexión. Verifica tu internet',
+          'auth/user-disabled': 'Esta cuenta ha sido deshabilitada',
+          'auth/operation-not-allowed': 'Operación no permitida',
+          'auth/requires-recent-login': 'Necesitas volver a iniciar sesión',
+          'auth/invalid-credential': 'Credenciales inválidas'
+        };
+        return errorMessages[error.code] || `Error: ${error.message || error.code}`;
+      }
+      
+      // Si es solo un código string
+      if (typeof error === 'string') {
+        const errorMessages = {
+          'auth/user-not-found': 'No existe una cuenta con este email',
+          'auth/wrong-password': 'Contraseña incorrecta',
+          'auth/email-already-in-use': 'Este email ya está registrado',
+          'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres',
+          'auth/invalid-email': 'Email inválido',
+          'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde',
+          'auth/network-request-failed': 'Error de conexión. Verifica tu internet'
+        };
+        return errorMessages[error] || `Error: ${error}`;
+      }
+      
+      return 'Error desconocido. Verifica tu conexión e intenta de nuevo';
     }
 
     // ===== GESTIÓN DE DATOS CON FIRESTORE =====
