@@ -704,17 +704,24 @@
       justify-content: center;
       font-weight: 600;
       font-size: 1.2rem;
+      flex-shrink: 0;
     }
 
     #userName {
       font-weight: 600;
       color: var(--text);
       font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     #userEmail {
       font-size: 0.8rem;
       color: var(--text-light);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* Mejoras para responsive */
@@ -736,18 +743,97 @@
         font-size: 1.2rem;
       }
 
+      /* Arreglar authContainer en móvil */
+      #authContainer {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin: 0 10px 16px 10px;
+        z-index: 999;
+      }
+
       #userInfo {
         position: relative;
         top: auto;
         right: auto;
-        margin: 16px;
-        width: auto;
+        margin: 0;
+        width: 100%;
+        min-width: auto;
+        padding: 12px;
+        gap: 8px;
+        border-radius: var(--radius);
+      }
+
+      #userAvatar {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+      }
+
+      #userName {
+        font-size: 0.8rem;
+        max-width: 120px;
+      }
+
+      #userEmail {
+        font-size: 0.7rem;
+        max-width: 120px;
+      }
+
+      /* Arreglar botones en móvil */
+      .btn-secondary, .btn-primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 12px 8px;
+        font-size: 0.8rem;
+        line-height: 1.2;
+      }
+
+      /* Arreglar el contenedor de búsqueda en móvil */
+      #searchContainer .btn-secondary {
+        min-height: 44px;
+        white-space: nowrap;
+        overflow: hidden;
       }
 
       .modal-content {
         margin: 10px;
         padding: 24px 20px;
         max-width: calc(100vw - 20px);
+      }
+
+      /* Espaciado adicional para evitar que el userInfo tape contenido */
+      #mainContent {
+        margin-top: 10px;
+      }
+
+      /* Botón logout en móvil */
+      #logoutBtn {
+        padding: 6px 10px !important;
+        font-size: 0.7rem !important;
+        min-width: 50px;
+        width: auto !important;
+        margin: 0 !important;
+      }
+
+      /* Mejoras adicionales para texto en botones móvil */
+      #searchContainer div {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      #searchContainer .btn-secondary,
+      #searchContainer .btn-primary {
+        flex: 1;
+        min-width: 0;
+        padding: 12px 6px;
+        font-size: 0.75rem;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
     }
   </style>
@@ -815,11 +901,19 @@
   <div id="authContainer" style="display: none;">
     <div id="userInfo" style="display: none;">
       <div id="userAvatar"></div>
-      <div>
+      <div style="flex: 1; min-width: 0;">
         <div id="userName"></div>
         <div id="userEmail"></div>
       </div>
-      <button onclick="logout()">Cerrar Sesión</button>
+      <button onclick="logout()" id="logoutBtn" style="
+        padding: 8px 12px;
+        margin: 0;
+        width: auto;
+        font-size: 0.8rem;
+        border-radius: 8px;
+        background: var(--danger);
+        flex-shrink: 0;
+      ">Salir</button>
     </div>
   </div>
 
