@@ -850,7 +850,32 @@
 <body>
   <div class="container">
     <h1>📋 CLINICAL DATA</h1>
-    <p style="text-align: center; color: var(--text-light); margin-bottom: 24px;">Sistema de Gestión de Pacientes</p>
+    <p style="text-align: center; color: var(--text-light); margin-bottom: 16px;">Sistema de Gestión de Pacientes</p>
+    
+    <!-- Botón de ayuda médica -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <button onclick="showSoftwareInfo()" style="
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      " 
+      onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 20px rgba(79, 70, 229, 0.4)'"
+      onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(79, 70, 229, 0.3)'"
+      title="¿Qué puede hacer este software?">🩺❓</button>
+      <p style="color: var(--text-light); font-size: 0.85rem; margin-top: 8px;">¿Qué puede hacer este software?</p>
+    </div>
+    
     <div id="loginCard" class="form-card">
       <h2>Iniciar Sesión</h2>
       <form id="loginForm">
@@ -1171,6 +1196,95 @@
       <div class="form-section">
         <h4>📋 Recordatorios Pendientes</h4>
         <div id="recordatoriosList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Información del Software -->
+  <div id="softwareInfoModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+      <button onclick="closeSoftwareInfoModal()">✕</button>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h2 style="color: var(--primary); margin-bottom: 8px;">🩺 CLINICAL DATA</h2>
+        <p style="color: var(--text-light); font-size: 1.1rem;">Sistema Integral de Gestión Médica</p>
+      </div>
+      
+      <div class="form-section">
+        <h3 style="color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 8px;">👨‍⚕️ ¿Qué puede hacer este software?</h3>
+        
+        <div style="display: grid; gap: 16px; margin-top: 16px;">
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 12px; border-left: 4px solid #4ade80;">
+            <h4>👤 Gestión Completa de Pacientes</h4>
+            <ul style="margin: 8px 0; padding-left: 20px; color: var(--text-light);">
+              <li>Registro de datos personales completos</li>
+              <li>Búsqueda por nombre, DNI o diagnóstico</li>
+              <li>Historial médico completo</li>
+              <li>Estadísticas automáticas de cada paciente</li>
+            </ul>
+          </div>
+          
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 12px; border-left: 4px solid #0ea5e9;">
+            <h4>🩺 Sistema de Visitas Médicas</h4>
+            <ul style="margin: 8px 0; padding-left: 20px; color: var(--text-light);">
+              <li><strong>Primera Consulta:</strong> Evaluación inicial del paciente</li>
+              <li><strong>Seguimiento:</strong> Control y evolución del tratamiento</li>
+              <li><strong>Urgencia:</strong> Atención médica urgente</li>
+              <li><strong>Control:</strong> Revisiones programadas</li>
+            </ul>
+          </div>
+          
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 12px; border-left: 4px solid #f87171;">
+            <h4>📊 Análisis y Reportes</h4>
+            <ul style="margin: 8px 0; padding-left: 20px; color: var(--text-light);">
+              <li>Gráficos de evolución del estado clínico</li>
+              <li>Estadísticas de visitas y tratamientos</li>
+              <li>Exportación de historias clínicas en PDF</li>
+              <li>Respaldo de datos en formato JSON</li>
+            </ul>
+          </div>
+          
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 12px; border-left: 4px solid #facc15;">
+            <h4>⏰ Sistema de Recordatorios</h4>
+            <ul style="margin: 8px 0; padding-left: 20px; color: var(--text-light);">
+              <li>Notificaciones automáticas del navegador</li>
+              <li>Recordatorios por paciente</li>
+              <li>Clasificación por urgencia (urgentes, hoy, pendientes)</li>
+              <li>Gestión completa de tareas médicas</li>
+            </ul>
+          </div>
+          
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 12px; border-left: 4px solid #a78bfa;">
+            <h4>📅 Calendario de Citas</h4>
+            <ul style="margin: 8px 0; padding-left: 20px; color: var(--text-light);">
+              <li>Vista de calendario mensual interactiva</li>
+              <li>Programación de citas por paciente</li>
+              <li>Indicadores visuales de días ocupados</li>
+              <li>Gestión completa de agenda médica</li>
+            </ul>
+          </div>
+          
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 12px; border-left: 4px solid #f472b6;">
+            <h4>🔐 Seguridad y Sincronización</h4>
+            <ul style="margin: 8px 0; padding-left: 20px; color: var(--text-light);">
+              <li>Autenticación segura con Firebase</li>
+              <li>Sincronización automática en la nube</li>
+              <li>Datos protegidos por usuario</li>
+              <li>Acceso desde cualquier dispositivo</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); padding: 16px; border-radius: 12px; margin-top: 20px; text-align: center; color: white;">
+          <h4 style="margin: 0 0 8px 0;">✨ Diseño Moderno y Responsive</h4>
+          <p style="margin: 0; opacity: 0.9;">Interfaz elegante con modo nocturno, efectos glassmorphism y optimizada para móviles</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+          <p style="color: var(--text-light); font-size: 0.9rem;">
+            💡 <strong>¿Listo para comenzar?</strong><br>
+            Crea tu cuenta e inicia la gestión profesional de tus pacientes
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -3392,23 +3506,38 @@
 
     // ===== FUNCIONES DEL SISTEMA MÉDICO =====
 
-    // Mostrar/ocultar formulario de nuevo paciente
+    // Mostrar/ocultar formulario de nuevo paciente (con toggle)
     function showNewPacienteForm() {
       const form = document.getElementById('newPacienteForm');
       const selector = document.getElementById('pacienteSelector');
       const ficha = document.getElementById('fichaClinica');
       
+      // Toggle: si el formulario ya está visible, lo ocultamos
+      if (form && form.style.display === 'block') {
+        hideNewPacienteForm();
+        return;
+      }
+      
+      // Mostrar formulario nuevo paciente
       if (form) form.style.display = 'block';
       if (selector) selector.style.display = 'none';
       if (ficha) ficha.style.display = 'none';
       
       clearPacienteForm();
       renderColorPicker();
+      
+      // Agregar logging para debug
+      console.log('Formulario nuevo paciente abierto');
     }
 
     function hideNewPacienteForm() {
       const form = document.getElementById('newPacienteForm');
+      const selector = document.getElementById('pacienteSelector');
+      
       if (form) form.style.display = 'none';
+      if (selector) selector.style.display = 'block';
+      
+      console.log('Formulario nuevo paciente cerrado');
       renderPacienteSelector();
     }
 
@@ -3424,60 +3553,117 @@
 
     // Crear nuevo paciente
     async function createNewPaciente() {
-      const nombre = document.getElementById('pacienteNombre')?.value?.trim();
-      const dni = document.getElementById('pacienteDNI')?.value?.trim();
-      const direccion = document.getElementById('pacienteDireccion')?.value?.trim();
-      const telefono = document.getElementById('pacienteTelefono')?.value?.trim();
-      const obraSocial = document.getElementById('pacienteObraSocial')?.value?.trim();
-      const patologia = document.getElementById('pacientePatologia')?.value?.trim();
-
-      if (!nombre || !dni) {
-        alert('Nombre y DNI son obligatorios');
-        return;
-      }
-
-      // Verificar DNI único
-      if (allPacientes.find(p => p.dni === dni)) {
-        alert('Ya existe un paciente con este DNI');
-        return;
-      }
-
-      const colorIndex = Math.floor(Math.random() * availableColors.length);
-      const color = availableColors[colorIndex];
-
-      const nuevoPaciente = {
-        id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        nombre,
-        dni,
-        direccion,
-        telefono,
-        obraSocial,
-        patologia,
-        color,
-        fechaCreacion: new Date().toISOString(),
-        visitas: {
-          primera: [],
-          seguimiento: [],
-          urgencia: [],
-          control: []
-        }
-      };
-
+      console.log('🔄 Iniciando creación de paciente...');
+      
       try {
-        if (currentUser) {
-          await savePacienteToFirestore(nuevoPaciente);
+        // Obtener elementos del formulario
+        const nombreEl = document.getElementById('pacienteNombre');
+        const dniEl = document.getElementById('pacienteDNI');
+        const direccionEl = document.getElementById('pacienteDireccion');
+        const telefonoEl = document.getElementById('pacienteTelefono');
+        const obraSocialEl = document.getElementById('pacienteObraSocial');
+        const patologiaEl = document.getElementById('pacientePatologia');
+
+        console.log('📋 Elementos del formulario:', {
+          nombreEl: !!nombreEl,
+          dniEl: !!dniEl,
+          direccionEl: !!direccionEl,
+          telefonoEl: !!telefonoEl,
+          obraSocialEl: !!obraSocialEl,
+          patologiaEl: !!patologiaEl
+        });
+
+        if (!nombreEl || !dniEl) {
+          alert('❌ Error: No se encontraron los campos obligatorios del formulario');
+          console.error('Elementos del formulario no encontrados');
+          return;
         }
+
+        const nombre = nombreEl.value?.trim();
+        const dni = dniEl.value?.trim();
+        const direccion = direccionEl?.value?.trim() || '';
+        const telefono = telefonoEl?.value?.trim() || '';
+        const obraSocial = obraSocialEl?.value?.trim() || '';
+        const patologia = patologiaEl?.value?.trim() || '';
+
+        console.log('📝 Datos del formulario:', { nombre, dni, direccion, telefono, obraSocial, patologia });
+
+        // Validar datos obligatorios
+        if (!nombre || !dni) {
+          alert('❌ Nombre y DNI son obligatorios');
+          console.log('❌ Validación fallida: campos obligatorios vacíos');
+          return;
+        }
+
+        // Verificar DNI único
+        console.log('🔍 Verificando DNI único...');
+        console.log('📊 Total pacientes actuales:', allPacientes.length);
+        
+        const pacienteExistente = allPacientes.find(p => p.dni === dni);
+        if (pacienteExistente) {
+          alert('❌ Ya existe un paciente con este DNI');
+          console.log('❌ DNI duplicado encontrado:', pacienteExistente);
+          return;
+        }
+
+        // Verificar availableColors
+        if (!availableColors || availableColors.length === 0) {
+          console.error('❌ availableColors no está definido o está vacío');
+          alert('Error interno: colores no disponibles');
+          return;
+        }
+
+        const colorIndex = Math.floor(Math.random() * availableColors.length);
+        const color = availableColors[colorIndex];
+        console.log('🎨 Color asignado:', color);
+
+        const nuevoPaciente = {
+          id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+          nombre,
+          dni,
+          direccion,
+          telefono,
+          obraSocial,
+          patologia,
+          color,
+          fechaCreacion: new Date().toISOString(),
+          visitas: {
+            primera: [],
+            seguimiento: [],
+            urgencia: [],
+            control: []
+          }
+        };
+
+        console.log('👤 Nuevo paciente creado:', nuevoPaciente);
+
+        // Guardar en Firebase si hay usuario autenticado
+        if (currentUser) {
+          console.log('☁️ Guardando en Firebase...');
+          await savePacienteToFirestore(nuevoPaciente);
+          console.log('✅ Guardado en Firebase exitoso');
+        } else {
+          console.log('⚠️ No hay usuario autenticado, guardando solo localmente');
+        }
+
+        // Agregar a la lista local
         allPacientes.push(nuevoPaciente);
         selectedPaciente = nuevoPaciente;
         
+        console.log('📊 Total pacientes después de agregar:', allPacientes.length);
+
+        // Actualizar interfaz
         hideNewPacienteForm();
         renderPacienteSelector();
         showFichaClinica();
         
         alert(`✅ Paciente ${nombre} creado exitosamente`);
+        console.log('🎉 Paciente creado exitosamente:', nombre);
+        
       } catch (error) {
-        console.error('Error al crear paciente:', error);
-        alert('Error al crear el paciente. Intenta de nuevo.');
+        console.error('❌ Error al crear paciente:', error);
+        console.error('Stack trace:', error.stack);
+        alert(`❌ Error al crear el paciente: ${error.message}. Revisa la consola para más detalles.`);
       }
     }
 
@@ -4031,8 +4217,42 @@
 
     // Inicializar la aplicación médica
     function initMedicalApp() {
+      console.log('🚀 Inicializando aplicación médica...');
+      
+      // Verificar variables globales críticas
+      if (typeof allPacientes === 'undefined') {
+        console.log('⚠️ allPacientes no definido, inicializando...');
+        window.allPacientes = [];
+      }
+      
+      if (typeof allRecordatorios === 'undefined') {
+        console.log('⚠️ allRecordatorios no definido, inicializando...');
+        window.allRecordatorios = [];
+      }
+      
+      if (typeof allCitas === 'undefined') {
+        console.log('⚠️ allCitas no definido, inicializando...');
+        window.allCitas = [];
+      }
+      
+      if (typeof availableColors === 'undefined') {
+        console.error('❌ availableColors no definido - error crítico');
+        return;
+      }
+      
+      console.log('📊 Estado inicial:', {
+        pacientes: allPacientes.length,
+        recordatorios: allRecordatorios.length,
+        citas: allCitas.length,
+        colores: availableColors.length,
+        currentUser: !!currentUser,
+        isAuthenticated
+      });
+      
       renderPacienteSelector();
       renderColorPicker();
+      
+      console.log('✅ Aplicación médica inicializada correctamente');
     }
 
     // ===== SISTEMA DE GRÁFICOS =====
@@ -4138,6 +4358,24 @@
     function closeRecordatoriosModal() {
       document.getElementById('recordatoriosModal').style.display = 'none';
     }
+
+    // ===== FUNCIONES DEL MODAL DE INFORMACIÓN =====
+    
+    function showSoftwareInfo() {
+      document.getElementById('softwareInfoModal').style.display = 'block';
+    }
+
+    function closeSoftwareInfoModal() {
+      document.getElementById('softwareInfoModal').style.display = 'none';
+    }
+
+    // Cerrar modal de información al hacer click fuera de él
+    document.addEventListener('click', function(event) {
+      const modal = document.getElementById('softwareInfoModal');
+      if (event.target === modal) {
+        closeSoftwareInfoModal();
+      }
+    });
 
     function populateRecordatoriosPacientes() {
       const select = document.getElementById('recordatorioPaciente');
