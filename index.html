@@ -5,161 +5,398 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#f5f7fa">
   <title>CLINICAL DATA - Sistema de Gestión Médica</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-light: #3b82f6;
-      --background: #f5f7fa;
-      --surface: #fff;
-      --border: #e5e7eb;
-      --text: #222;
-      --text-light: #6b7280;
-      --radius: 18px;
-      --shadow: 0 2px 16px rgba(0,0,0,0.06);
+      /* Colores principales */
+      --primary: #667eea;
+      --primary-light: #764ba2;
+      --primary-dark: #5a67d8;
+      --accent: #4facfe;
+      --success: #48bb78;
+      --warning: #ed8936;
+      --danger: #f56565;
+      
+      /* Modo claro */
+      --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --surface: #ffffff;
+      --surface-secondary: #f7fafc;
+      --surface-tertiary: #edf2f7;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --text: #2d3748;
+      --text-light: #718096;
+      --text-muted: #a0aec0;
+      
+      /* Sombras modernas */
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      
+      /* Efectos glassmorphism */
+      --glass: rgba(255, 255, 255, 0.25);
+      --glass-border: rgba(255, 255, 255, 0.18);
+      
+      /* Radio y espaciado */
+      --radius: 16px;
+      --radius-lg: 20px;
+      --radius-xl: 24px;
+    }
+
+    /* Modo nocturno */
+    .dark-mode {
+      --background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+      --surface: #2d3748;
+      --surface-secondary: #4a5568;
+      --surface-tertiary: #718096;
+      --border: #4a5568;
+      --border-light: #718096;
+      --text: #f7fafc;
+      --text-light: #e2e8f0;
+      --text-muted: #cbd5e0;
+      --glass: rgba(45, 55, 72, 0.25);
+      --glass-border: rgba(45, 55, 72, 0.18);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
     }
     body {
-      font-family: 'Roboto', 'San Francisco', Arial, sans-serif;
+      font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       background: var(--background);
       color: var(--text);
       margin: 0;
       padding: 0;
       min-height: 100vh;
+      line-height: 1.6;
+      transition: all 0.3s ease;
+      overflow-x: hidden;
     }
+
+    /* Fondo animado con partículas sutiles */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--background);
+      z-index: -1;
+      opacity: 0.1;
+      background-image: 
+        radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
     .container {
-      max-width: 420px;
-      margin: 40px auto 0 auto;
+      max-width: 450px;
+      margin: 20px auto;
       background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 32px 24px 24px 24px;
-      border: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xl);
+      padding: 40px 32px;
+      border: 1px solid var(--glass-border);
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--glass);
+      border-radius: var(--radius-xl);
+      z-index: -1;
     }
     h1 {
-      font-size: 2.1em;
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: var(--primary);
-      letter-spacing: 0.5px;
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
       text-align: center;
+      line-height: 1.2;
     }
+
     h2, h3 {
-      color: var(--primary-light);
-      font-weight: 500;
-      margin-bottom: 10px;
+      color: var(--text);
+      font-weight: 600;
+      margin-bottom: 16px;
       text-align: center;
+      font-size: 1.5rem;
     }
+
+    h4 {
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin: 0 0 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     label {
-      font-weight: 500;
-      color: var(--text-light);
-      margin-bottom: 4px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
       display: block;
+      font-size: 0.875rem;
+      letter-spacing: 0.025em;
     }
-    input[type="text"], input[type="email"], input[type="password"], input[type="date"], textarea {
+
+    input[type="text"], 
+    input[type="email"], 
+    input[type="password"], 
+    input[type="date"], 
+    input[type="time"],
+    input[type="tel"],
+    textarea, 
+    select {
       width: 100%;
-      padding: 12px;
+      padding: 16px;
       border-radius: var(--radius);
-      border: 1.5px solid var(--border);
-      background: #f9fafb;
-      font-size: 1em;
-      margin-bottom: 18px;
+      border: 2px solid var(--border);
+      background: var(--surface-secondary);
+      font-size: 1rem;
+      margin-bottom: 20px;
       box-sizing: border-box;
-      transition: border 0.2s;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      color: var(--text);
+      backdrop-filter: blur(10px);
     }
-    input:focus, textarea:focus {
-      border: 1.5px solid var(--primary-light);
+
+    input:focus, 
+    textarea:focus, 
+    select:focus {
+      border-color: var(--primary);
+      background: var(--surface);
       outline: none;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      transform: translateY(-1px);
     }
+
     button {
       width: 100%;
-      padding: 12px;
+      padding: 16px 24px;
       border-radius: var(--radius);
       border: none;
-      background: var(--primary);
-      color: #fff;
-      font-size: 1.1em;
-      font-weight: 500;
-      margin-top: 8px;
-      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 8px 0;
       cursor: pointer;
-      box-shadow: 0 1px 4px rgba(37,99,235,0.08);
-      transition: background 0.2s;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 0.025em;
+      box-shadow: var(--shadow);
     }
+
+    button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
     button:hover {
-      background: var(--primary-light);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    button:hover::before {
+      left: 100%;
+    }
+
+    button:active {
+      transform: translateY(0);
     }
     .form-card {
       background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 24px 18px;
+      backdrop-filter: blur(20px);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 32px 24px;
       margin-bottom: 24px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--glass-border);
+      position: relative;
+      overflow: hidden;
     }
+
+    .form-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--glass);
+      z-index: -1;
+    }
+
     .center {
       text-align: center;
     }
+
     .link {
-      color: var(--primary-light);
-      text-decoration: underline;
+      color: var(--primary);
+      text-decoration: none;
       cursor: pointer;
-      font-size: 0.98em;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      position: relative;
     }
+
+    .link::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 2px;
+      bottom: -2px;
+      left: 0;
+      background: var(--primary);
+      transition: width 0.3s ease;
+    }
+
+    .link:hover::after {
+      width: 100%;
+    }
+
     .error-message {
-      background: #fee2e2;
+      background: rgba(254, 226, 226, 0.9);
       color: #b91c1c;
-      padding: 10px;
+      padding: 16px;
       border-radius: var(--radius);
       border: 1px solid #fecaca;
-      margin-bottom: 15px;
-      font-size: 14px;
+      margin-bottom: 20px;
+      font-size: 0.875rem;
       text-align: center;
+      backdrop-filter: blur(10px);
     }
+
     .success-message {
-      background: #d1fae5;
+      background: rgba(209, 250, 229, 0.9);
       color: #065f46;
-      padding: 10px;
+      padding: 16px;
       border-radius: var(--radius);
       border: 1px solid #bbf7d0;
-      margin-bottom: 15px;
-      font-size: 14px;
+      margin-bottom: 20px;
+      font-size: 0.875rem;
       text-align: center;
+      backdrop-filter: blur(10px);
     }
     .pacientes-section, #fichaPaciente {
       margin-top: 24px;
     }
     .paciente-card {
-      background: #f9fafb;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      padding: 16px 14px;
-      margin-bottom: 14px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--glass-border);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
       cursor: pointer;
-      transition: box-shadow 0.2s;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
+
+    .paciente-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--glass);
+      z-index: -1;
+    }
+
     .paciente-card:hover {
-      box-shadow: 0 2px 12px rgba(37,99,235,0.10);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-xl);
     }
     .modal {
       display: none;
       position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.18);
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
       z-index: 1000;
       justify-content: center;
       align-items: center;
+      animation: fadeIn 0.3s ease;
     }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
     .modal-content {
       background: var(--surface);
-      border-radius: var(--radius);
-      padding: 32px 24px;
-      max-width: 400px;
-      margin: 0 auto;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      border-radius: var(--radius-xl);
+      padding: 40px 32px;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      margin: 20px;
+      box-shadow: var(--shadow-xl);
+      border: 1px solid var(--glass-border);
       position: relative;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--glass);
+      border-radius: var(--radius-xl);
+      z-index: -1;
     }
     .close-modal {
       position: absolute;
@@ -178,82 +415,111 @@
     
     /* Estilos específicos para sistema médico */
     .form-section {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-light);
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 16px;
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
     }
-    
-    .form-section h4 {
-      margin: 0 0 12px 0;
-      color: var(--primary);
-      font-size: 16px;
-      font-weight: 600;
+
+    .form-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--glass);
+      z-index: -1;
     }
-    
-    .form-section h5 {
-      margin: 8px 0 6px 0;
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 500;
+
+    .form-section:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
     }
     
     .btn-primary {
-      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
       color: white;
       border: none;
-      padding: 12px 24px;
-      border-radius: 6px;
+      padding: 14px 28px;
+      border-radius: var(--radius);
       font-weight: 600;
       cursor: pointer;
-      font-size: 16px;
-      transition: all 0.2s ease;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
       width: 100%;
-      margin-top: 16px;
+      margin: 8px 0;
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 0.025em;
+      box-shadow: var(--shadow);
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
     }
     
     .btn-primary:hover {
-      background: var(--primary-dark);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-primary:hover::before {
+      left: 100%;
     }
     
     .btn-secondary {
-      background: var(--bg-secondary);
+      background: var(--surface-secondary);
       color: var(--text);
-      border: 1px solid var(--border-light);
-      padding: 8px 16px;
-      border-radius: 6px;
+      border: 2px solid var(--border);
+      padding: 12px 20px;
+      border-radius: var(--radius);
       font-weight: 500;
       cursor: pointer;
-      font-size: 14px;
-      transition: all 0.2s ease;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
       flex: 1;
+      backdrop-filter: blur(10px);
     }
     
     .btn-secondary:hover {
-      background: var(--bg-tertiary);
+      background: var(--surface);
       border-color: var(--primary);
       color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
     }
     
     .btn-danger {
-      background: #dc2626;
+      background: linear-gradient(135deg, var(--danger), #dc2626);
       color: white;
       border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
+      padding: 12px 20px;
+      border-radius: var(--radius);
       font-weight: 500;
       cursor: pointer;
-      font-size: 14px;
-      transition: all 0.2s ease;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
       flex: 1;
+      box-shadow: var(--shadow-sm);
     }
     
     .btn-danger:hover {
-      background: #b91c1c;
       transform: translateY(-1px);
+      box-shadow: var(--shadow);
     }
     
     input[type="file"] {
@@ -398,6 +664,91 @@
     .cita-item.today {
       border-left-color: #dc2626;
       background: #fef2f2;
+    }
+
+    /* Estilos adicionales para botón modo nocturno */
+    #toggleDarkMode:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: var(--shadow-xl);
+    }
+
+    /* Mejoras para el authContainer */
+    #authContainer {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 999;
+    }
+
+    #userInfo {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 200px;
+    }
+
+    #userAvatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+
+    #userName {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    #userEmail {
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+
+    /* Mejoras para responsive */
+    @media (max-width: 768px) {
+      .container {
+        margin: 10px;
+        padding: 24px 20px;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+
+      #toggleDarkMode {
+        bottom: 16px;
+        right: 16px;
+        width: 48px;
+        height: 48px;
+        font-size: 1.2rem;
+      }
+
+      #userInfo {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin: 16px;
+        width: auto;
+      }
+
+      .modal-content {
+        margin: 10px;
+        padding: 24px 20px;
+        max-width: calc(100vw - 20px);
+      }
     }
   </style>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -624,7 +975,27 @@
     
     <!-- Elementos adicionales -->
     <div id="ultimoRespaldo"></div>
-    <button id="toggleDarkMode" onclick="toggleDarkMode()">🌙</button>
+    
+    <!-- Botón de modo nocturno flotante mejorado -->
+    <button id="toggleDarkMode" onclick="toggleDarkMode()" style="
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: var(--shadow-lg);
+      transition: all 0.3s ease;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">🌙</button>
   </div>
 
   <!-- Modales -->
