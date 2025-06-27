@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#f5f7fa">
-  <title>CLINICAL DATA</title>
+  <title>CLINICAL DATA - Sistema de Gestión Médica</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <style>
@@ -175,15 +175,245 @@
       .container { padding: 12px 2px; }
       .modal-content { padding: 18px 6px; }
     }
+    
+    /* Estilos específicos para sistema médico */
+    .form-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .form-section h4 {
+      margin: 0 0 12px 0;
+      color: var(--primary);
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .form-section h5 {
+      margin: 8px 0 6px 0;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s ease;
+      width: 100%;
+      margin-top: 16px;
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+    }
+    
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text);
+      border: 1px solid var(--border-light);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      flex: 1;
+    }
+    
+    .btn-secondary:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      flex: 1;
+    }
+    
+    .btn-danger:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+    }
+    
+    input[type="file"] {
+      display: none;
+    }
+    
+    label[for="archivoEstudio"] {
+      display: inline-block;
+      background: var(--bg-secondary);
+      border: 2px dashed var(--border-light);
+      padding: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      color: var(--text-light);
+      transition: all 0.2s ease;
+      width: 100%;
+      margin-top: 8px;
+    }
+    
+    label[for="archivoEstudio"]:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    
+    #estadoSelect {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+    
+    #visitTime {
+      padding: 10px;
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      margin: 8px 0;
+    }
+    
+    /* Estilos para calendario */
+    #calendarioGrid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      margin: 16px 0;
+      background: var(--border-light);
+      border-radius: 8px;
+      padding: 4px;
+    }
+    
+    .calendar-day {
+      background: var(--bg);
+      padding: 8px;
+      text-align: center;
+      min-height: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-radius: 4px;
+    }
+    
+    .calendar-day:hover {
+      background: var(--bg-secondary);
+    }
+    
+    .calendar-day.today {
+      background: var(--primary);
+      color: white;
+      font-weight: bold;
+    }
+    
+    .calendar-day.has-cita {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .calendar-day.other-month {
+      color: var(--text-light);
+      background: var(--bg-tertiary);
+    }
+    
+    .cita-dot {
+      width: 6px;
+      height: 6px;
+      background: white;
+      border-radius: 50%;
+      margin-top: 2px;
+    }
+    
+    /* Estilos para recordatorios */
+    .recordatorio-item {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      padding: 12px;
+      margin: 8px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .recordatorio-item.urgent {
+      border-color: #dc2626;
+      background: #fef2f2;
+    }
+    
+    .recordatorio-item.today {
+      border-color: var(--primary);
+      background: #eff6ff;
+    }
+    
+    /* Canvas para gráficos */
+    #chartEvolucion {
+      max-width: 100%;
+      height: auto;
+    }
+    
+    /* Estilos para citas */
+    .cita-item {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      padding: 12px;
+      margin: 8px 0;
+      border-left: 4px solid var(--primary);
+    }
+    
+    .cita-item.past {
+      opacity: 0.7;
+      border-left-color: var(--text-light);
+    }
+    
+    .cita-item.today {
+      border-left-color: #dc2626;
+      background: #fef2f2;
+    }
   </style>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
+  
+  <!-- Librerías para funcionalidades adicionales -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <h1>CLINICAL DATA</h1>
+    <h1>📋 CLINICAL DATA</h1>
+    <p style="text-align: center; color: var(--text-light); margin-bottom: 24px;">Sistema de Gestión de Pacientes</p>
     <div id="loginCard" class="form-card">
       <h2>Iniciar Sesión</h2>
       <form id="loginForm">
@@ -243,102 +473,75 @@
   </div>
 
   <div id="mainContent" style="display: none;">
-    <!-- Selector de Bitácoras -->
-    <div id="bitacoraSelector"></div>
+    <!-- Barra de búsqueda de pacientes -->
+    <div id="searchContainer" class="form-section">
+      <h4>🔍 Buscar Pacientes</h4>
+      <input type="text" id="searchInput" placeholder="Buscar por nombre, DNI o diagnóstico..." oninput="searchPacientes()">
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button onclick="showNewPacienteForm()" class="btn-primary" style="flex: 1;">➕ Nuevo Paciente</button>
+        <button onclick="showRecordatorios()" class="btn-secondary" style="flex: 1;">⏰ Recordatorios</button>
+        <button onclick="showCalendario()" class="btn-secondary" style="flex: 1;">📅 Calendario</button>
+      </div>
+    </div>
     
-    <!-- Formulario Nueva Bitácora -->
-    <div id="newBitacoraForm" style="display: none;">
-      <h3>Nueva Bitácora</h3>
-      <input type="text" id="newBitacoraName" placeholder="Nombre de la bitácora">
+    <!-- Selector de Pacientes -->
+    <div id="pacienteSelector"></div>
+    
+    <!-- Ficha Clínica del Paciente -->
+    <div id="fichaClinica" style="display: none;">
+      <div class="form-section">
+        <h4>👤 Ficha Clínica</h4>
+        <div id="pacienteInfo"></div>
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button onclick="editPaciente()" class="btn-secondary">✏️ Editar</button>
+          <button onclick="exportHistoriaJSON()" class="btn-secondary">📄 JSON</button>
+          <button onclick="exportHistoriaPDF()" class="btn-secondary">📋 PDF</button>
+          <button onclick="deletePaciente()" class="btn-danger">🗑️ Eliminar</button>
+        </div>
+      </div>
+      
+      <div class="form-section">
+        <h4>📊 Estadísticas</h4>
+        <div id="estadisticasPaciente"></div>
+      </div>
+      
+      <div class="form-section">
+        <h4>📈 Evolución del Paciente</h4>
+        <canvas id="chartEvolucion" width="400" height="200"></canvas>
+      </div>
+      
+      <div class="form-section">
+        <h4>🔔 Próximos Recordatorios</h4>
+        <div id="proximosRecordatorios"></div>
+      </div>
+    </div>
+    
+    <!-- Formulario Nuevo Paciente -->
+    <div id="newPacienteForm" style="display: none;">
+      <h3>📝 Nuevo Paciente</h3>
+      
+      <!-- Datos Personales -->
+      <div class="form-section">
+        <h4>👤 Datos Personales</h4>
+        <input type="text" id="pacienteNombre" placeholder="Nombre completo" required>
+        <input type="text" id="pacienteDNI" placeholder="DNI" required>
+        <input type="text" id="pacienteDireccion" placeholder="Dirección">
+        <input type="tel" id="pacienteTelefono" placeholder="Número de teléfono">
+        <input type="text" id="pacienteObraSocial" placeholder="Obra social">
+        <textarea id="pacientePatologia" placeholder="Diagnóstico presuntivo / Patología"></textarea>
+      </div>
+      
       <div id="colorPicker"></div>
-      
-      <!-- Cepas -->
-      <div>
-        <input type="text" id="cepaNombre" placeholder="Nombre cepa">
-        <input type="number" id="cepaCantidad" value="1" min="1">
-        <select id="cepaTipo" onchange="toggleGerminacionField()">
-          <option value="clon">Clon</option>
-          <option value="semilla">Semilla</option>
-        </select>
-        <div id="semillaFields" style="display: none;">
-          <input type="text" id="cepaGerminacion" placeholder="Germinación">
-        </div>
-        <button onclick="addCepa()">Agregar Cepa</button>
-        <div id="cepasList"></div>
-      </div>
-      
-      <!-- Tipo de Cultivo -->
-      <select id="tipoCultivo" onchange="toggleInteriorFields()">
-        <option value="">Seleccionar tipo</option>
-        <option value="interior">Interior</option>
-        <option value="exterior">Exterior</option>
-        <option value="invernadero">Invernadero</option>
-      </select>
-      
-      <div id="interiorFields" style="display: none;">
-        <input type="number" id="numCarpas" onchange="toggleCarpasFields()">
-        <input type="checkbox" id="soloSala" onchange="toggleCarpasFields()">
-        <div id="carpasList"></div>
-        
-        <input type="number" id="lamparasVege">
-        <input type="text" id="wattsVege">
-        <input type="number" id="lamparasFlora">
-        <input type="text" id="wattsFlora">
-        <input type="number" id="ventiladores">
-        <input type="text" id="pulgadasVentilador">
-        
-        <select id="filtroAire">
-          <option value="no">No</option>
-          <option value="si">Sí</option>
-        </select>
-        
-        <select id="aireAcondicionado" onchange="toggleFrigorias()">
-          <option value="no">No</option>
-          <option value="si">Sí</option>
-        </select>
-        <input type="text" id="frigorias" style="display: none;">
-      </div>
-      
-      <!-- Extractores -->
-      <div>
-        <input type="number" id="extractorCantidad" value="1">
-        <input type="text" id="extractorPulgadas" placeholder="Pulgadas">
-        <button onclick="addExtractor()">Agregar Extractor</button>
-        <div id="extractoresList"></div>
-      </div>
-      
-      <!-- Riego -->
-      <div id="riegoOptions">
-        <input type="checkbox" value="manual"> Manual
-        <input type="checkbox" value="goteo"> Goteo
-        <input type="checkbox" value="hidroponica"> Hidropónica
-      </div>
-      <input type="text" id="detalleRiego" placeholder="Detalles del riego">
-      <input type="text" id="sustrato" placeholder="Sustrato">
-      
-      <!-- Luces -->
-      <div>
-        <button id="luzSolBtn" onclick="selectLuz('sol')">Sol</button>
-        <button id="luzArtificialBtn" onclick="selectLuz('luz')">Artificial</button>
-        <button id="luzMixtoBtn" onclick="selectLuz('mixto')">Mixto</button>
-        <div id="luzSolIcon" style="display: none;">☀️</div>
-        <div id="luzArtificialFields" style="display: none;">
-          <input type="text" id="luzNombre" placeholder="Nombre luz">
-          <input type="number" id="luzCantidad" value="1">
-          <input type="number" id="luzWatts" placeholder="Watts">
-          <button onclick="addLuz()">Agregar Luz</button>
-        </div>
-        <div id="lucesList"></div>
-      </div>
-      
-      <button onclick="createNewBitacora()">Crear Bitácora</button>
+             
+       <button onclick="createNewPaciente()" class="btn-primary">👤 Crear Paciente</button>
     </div>
     
     <!-- Botones de Etapa -->
     <div>
-      <button id="btn-vege" class="stage-btn" onclick="setStage('vege')">Vege</button>
-      <button id="btn-flora" class="stage-btn" onclick="setStage('flora')">Flora</button>
-      <button id="btn-general" class="stage-btn" onclick="setStage('general')">General</button>
+      <button id="btn-primera" class="stage-btn" onclick="setStage('primera')">🩺 Primera Consulta</button>
+      <button id="btn-seguimiento" class="stage-btn" onclick="setStage('seguimiento')">📋 Seguimiento</button>
+      <button id="btn-urgencia" class="stage-btn" onclick="setStage('urgencia')">🚨 Urgencia</button>
+      <button id="btn-control" class="stage-btn" onclick="setStage('control')">✅ Control</button>
     </div>
     
     <!-- Contenido según etapa -->
@@ -350,26 +553,40 @@
       <div id="bitacoraInfoContent"></div>
     </div>
     
-    <div id="entryForm">
-      <input type="date" id="date">
-      <div id="moodOptions"></div>
-      <textarea id="tasks" placeholder="Tareas realizadas"></textarea>
-      <textarea id="issues" placeholder="Problemas observados"></textarea>
-      <textarea id="notes" placeholder="Notas adicionales"></textarea>
-      
-      <div>
-        <input type="radio" name="water" value="true" onchange="setWater(true)"> Regué
-        <input type="radio" name="water" value="false" onchange="setWater(false)"> No regué
+    <div id="visitForm">
+      <div class="form-section">
+        <h4>📅 Datos de la Visita</h4>
+        <input type="date" id="date">
+        <input type="time" id="visitTime" value="09:00">
+        
+        <!-- Estados Clínicos -->
+        <div id="estadoClinico">
+          <h5>🏥 Estado Clínico</h5>
+          <select id="estadoSelect">
+            <option value="estable">✅ Estable</option>
+            <option value="critico">🚨 Crítico</option>
+            <option value="observacion">👁️ En Observación</option>
+            <option value="mejoria">📈 En Mejoría</option>
+            <option value="alta">🏠 Dado de Alta</option>
+          </select>
+        </div>
       </div>
       
-      <div id="waterDetails" style="display: none;">
-        <input type="text" id="waterAmount" placeholder="Cantidad agua">
-        <input type="text" id="nutrients" placeholder="Nutrientes">
-        <input type="text" id="ph" placeholder="pH">
-        <input type="text" id="ec" placeholder="EC">
+      <div class="form-section">
+        <h4>🩺 Información Clínica</h4>
+        <textarea id="sintomas" placeholder="Síntomas y problemas actuales reportados"></textarea>
+        <textarea id="observaciones" placeholder="Observaciones clínicas"></textarea>
+        <textarea id="tratamiento" placeholder="Tratamiento / Receta médica / Tareas pendientes"></textarea>
       </div>
       
-      <button onclick="saveEntry()">Guardar Entrada</button>
+      <div class="form-section">
+        <h4>📊 Estudios</h4>
+        <textarea id="estudios" placeholder="Resultados de estudios y análisis"></textarea>
+        <input type="file" id="archivoEstudio" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" multiple>
+        <label for="archivoEstudio">📎 Subir archivos (PDF, DOC, imágenes)</label>
+      </div>
+      
+      <button onclick="saveVisit()" class="btn-primary">💾 Guardar Visita</button>
     </div>
     
     <!-- Resumen Semanal -->
@@ -382,6 +599,27 @@
     
     <!-- Historial y Calendario -->
     <div id="history"></div>
+    
+    <!-- Calendario de Citas -->
+    <div id="calendarioSection" style="display: none;">
+      <div class="form-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h4>📅 Calendario de Citas</h4>
+          <button onclick="backToPacientes()" class="btn-secondary">⬅️ Volver a Pacientes</button>
+        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <input type="date" id="citaFecha">
+          <input type="time" id="citaHora" value="09:00">
+          <select id="citaPaciente">
+            <option value="">Seleccionar paciente...</option>
+          </select>
+          <button onclick="crearCita()" class="btn-primary">➕ Nueva Cita</button>
+        </div>
+        <div id="calendarioGrid"></div>
+        <div id="citasList"></div>
+      </div>
+    </div>
+    
     <div id="calendarVisual"></div>
     
     <!-- Elementos adicionales -->
@@ -425,6 +663,53 @@
     </div>
   </div>
 
+  <!-- Modal de Edición de Paciente -->
+  <div id="editPacienteModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <button onclick="closeEditPacienteModal()">✕</button>
+      <h3>✏️ Editar Paciente</h3>
+      
+      <div class="form-section">
+        <h4>👤 Datos Personales</h4>
+        <input type="text" id="editPacienteNombre" placeholder="Nombre completo" required>
+        <input type="text" id="editPacienteDNI" placeholder="DNI" required readonly>
+        <input type="text" id="editPacienteDireccion" placeholder="Dirección">
+        <input type="tel" id="editPacienteTelefono" placeholder="Número de teléfono">
+        <input type="text" id="editPacienteObraSocial" placeholder="Obra social">
+        <textarea id="editPacientePatologia" placeholder="Diagnóstico presuntivo / Patología"></textarea>
+      </div>
+      
+      <div style="display: flex; gap: 8px; margin-top: 16px;">
+        <button onclick="saveEditPaciente()" class="btn-primary">💾 Guardar Cambios</button>
+        <button onclick="closeEditPacienteModal()" class="btn-secondary">❌ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Recordatorios -->
+  <div id="recordatoriosModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <button onclick="closeRecordatoriosModal()">✕</button>
+      <h3>⏰ Recordatorios</h3>
+      
+      <div class="form-section">
+        <h4>Nuevo Recordatorio</h4>
+        <select id="recordatorioPaciente">
+          <option value="">Seleccionar paciente...</option>
+        </select>
+        <input type="date" id="recordatorioFecha">
+        <input type="time" id="recordatorioHora" value="09:00">
+        <textarea id="recordatorioNota" placeholder="Nota del recordatorio"></textarea>
+        <button onclick="crearRecordatorio()" class="btn-primary">➕ Crear Recordatorio</button>
+      </div>
+      
+      <div class="form-section">
+        <h4>📋 Recordatorios Pendientes</h4>
+        <div id="recordatoriosList"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Variables globales del sistema de autenticación
     let currentUser = null;
@@ -437,21 +722,28 @@
       deferredPrompt = e;
     });
 
-    // Variables globales
-    let selectedBitacora = null;
-    let selectedMood = null;
-    let selectedStage = 'vege';
-    let didWater = false;
-    let tipoLuz = '';
-    let luces = [];
-    let extractores = [];
+    // Variables globales para sistema médico
+    let selectedPaciente = null;
+    let selectedVisitType = 'primera';
+    let allPacientes = [];
+    let allRecordatorios = [];
+    let allCitas = [];
+    let currentChart = null;
 
-    const moodStates = [
-      { value: 1, icon: '😞', label: 'Mal día', color: '#f87171' },
-      { value: 2, icon: '⚠️', label: 'Regular', color: '#facc15' },
-      { value: 3, icon: '🌿', label: 'Bueno', color: '#4ade80' },
-      { value: 4, icon: '🌞', label: 'Muy bueno', color: '#22c55e' }
+    const visitTypes = [
+      { value: 'primera', label: 'Primera Consulta', icon: '🩺', color: '#4ade80' },
+      { value: 'seguimiento', label: 'Seguimiento', icon: '📋', color: '#0ea5e9' },
+      { value: 'urgencia', label: 'Urgencia', icon: '🚨', color: '#f87171' },
+      { value: 'control', label: 'Control', icon: '✅', color: '#22c55e' }
     ];
+
+    const estadosClinicosColors = {
+      'estable': '#22c55e',
+      'critico': '#dc2626',
+      'observacion': '#facc15',
+      'mejoria': '#4ade80',
+      'alta': '#6b7280'
+    };
 
     const availableColors = [
       '#4ade80', '#0ea5e9', '#f87171', '#facc15',
@@ -460,10 +752,10 @@
 
     // ===== FUNCIÓN DE GUARDADO AUTOMÁTICO =====
     async function autoSave() {
-      if (!currentUser || !selectedBitacora) return;
+      if (!currentUser || !selectedPaciente) return;
       
       try {
-        await saveBitacoraToFirestore(selectedBitacora);
+        await savePacienteToFirestore(selectedPaciente);
         console.log('Guardado automático completado');
       } catch (error) {
         console.error('Error en guardado automático:', error);
@@ -2629,9 +2921,1199 @@
     function clearUserData() {
       var el = document.getElementById('userInfo');
       if (el && el.style) el.style.display = 'none';
-      localStorage.removeItem('bitacoras');
-      localStorage.removeItem('bitacora_backups');
+      localStorage.removeItem('pacientes');
+      localStorage.removeItem('pacientes_backups');
     }
+
+    // ===== FUNCIONES DEL SISTEMA MÉDICO =====
+
+    // Mostrar/ocultar formulario de nuevo paciente
+    function showNewPacienteForm() {
+      const form = document.getElementById('newPacienteForm');
+      const selector = document.getElementById('pacienteSelector');
+      const ficha = document.getElementById('fichaClinica');
+      
+      if (form) form.style.display = 'block';
+      if (selector) selector.style.display = 'none';
+      if (ficha) ficha.style.display = 'none';
+      
+      clearPacienteForm();
+      renderColorPicker();
+    }
+
+    function hideNewPacienteForm() {
+      const form = document.getElementById('newPacienteForm');
+      if (form) form.style.display = 'none';
+      renderPacienteSelector();
+    }
+
+    // Limpiar formulario de paciente
+    function clearPacienteForm() {
+      const fields = ['pacienteNombre', 'pacienteDNI', 'pacienteDireccion', 
+                      'pacienteTelefono', 'pacienteObraSocial', 'pacientePatologia'];
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+    }
+
+    // Crear nuevo paciente
+    async function createNewPaciente() {
+      const nombre = document.getElementById('pacienteNombre')?.value?.trim();
+      const dni = document.getElementById('pacienteDNI')?.value?.trim();
+      const direccion = document.getElementById('pacienteDireccion')?.value?.trim();
+      const telefono = document.getElementById('pacienteTelefono')?.value?.trim();
+      const obraSocial = document.getElementById('pacienteObraSocial')?.value?.trim();
+      const patologia = document.getElementById('pacientePatologia')?.value?.trim();
+
+      if (!nombre || !dni) {
+        alert('Nombre y DNI son obligatorios');
+        return;
+      }
+
+      // Verificar DNI único
+      if (allPacientes.find(p => p.dni === dni)) {
+        alert('Ya existe un paciente con este DNI');
+        return;
+      }
+
+      const colorIndex = Math.floor(Math.random() * availableColors.length);
+      const color = availableColors[colorIndex];
+
+      const nuevoPaciente = {
+        id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        nombre,
+        dni,
+        direccion,
+        telefono,
+        obraSocial,
+        patologia,
+        color,
+        fechaCreacion: new Date().toISOString(),
+        visitas: {
+          primera: [],
+          seguimiento: [],
+          urgencia: [],
+          control: []
+        }
+      };
+
+      try {
+        if (currentUser) {
+          await savePacienteToFirestore(nuevoPaciente);
+        }
+        allPacientes.push(nuevoPaciente);
+        selectedPaciente = nuevoPaciente;
+        
+        hideNewPacienteForm();
+        renderPacienteSelector();
+        showFichaClinica();
+        
+        alert(`✅ Paciente ${nombre} creado exitosamente`);
+      } catch (error) {
+        console.error('Error al crear paciente:', error);
+        alert('Error al crear el paciente. Intenta de nuevo.');
+      }
+    }
+
+    // Renderizar selector de pacientes
+    function renderPacienteSelector() {
+      const container = document.getElementById('pacienteSelector');
+      if (!container) return;
+
+      const searchValue = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+      const filteredPacientes = allPacientes.filter(p => 
+        p.nombre.toLowerCase().includes(searchValue) ||
+        p.dni.includes(searchValue) ||
+        (p.patologia && p.patologia.toLowerCase().includes(searchValue))
+      );
+
+      if (filteredPacientes.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-light);">No hay pacientes registrados</p>';
+        container.style.display = 'block';
+        return;
+      }
+
+      container.innerHTML = '';
+      container.style.display = 'block';
+
+      filteredPacientes.forEach(paciente => {
+        const div = document.createElement('div');
+        div.className = 'paciente-card';
+        div.style.cssText = `
+          background: var(--bg-secondary);
+          border: 2px solid ${paciente.color};
+          border-radius: 8px;
+          padding: 16px;
+          margin: 8px 0;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        `;
+
+        const ultimaVisita = getUltimaVisita(paciente);
+        const totalVisitas = getTotalVisitas(paciente);
+
+        div.innerHTML = `
+          <div style="display: flex; justify-content: between; align-items: center;">
+            <div style="flex: 1;">
+              <h4 style="margin: 0; color: var(--text);">${paciente.nombre}</h4>
+              <p style="margin: 4px 0; color: var(--text-light);">DNI: ${paciente.dni}</p>
+              ${paciente.patologia ? `<p style="margin: 4px 0; color: var(--text-light);">🩺 ${paciente.patologia}</p>` : ''}
+            </div>
+            <div style="text-align: right;">
+              <div style="color: var(--text-light); font-size: 12px;">
+                ${totalVisitas} visitas
+              </div>
+              <div style="color: var(--text-light); font-size: 12px;">
+                ${ultimaVisita ? `Última: ${ultimaVisita}` : 'Sin visitas'}
+              </div>
+            </div>
+          </div>
+        `;
+
+        div.addEventListener('click', () => selectPaciente(paciente));
+        div.addEventListener('mouseenter', () => {
+          div.style.transform = 'translateY(-2px)';
+          div.style.boxShadow = `0 4px 12px ${paciente.color}40`;
+        });
+        div.addEventListener('mouseleave', () => {
+          div.style.transform = 'translateY(0)';
+          div.style.boxShadow = 'none';
+        });
+
+        container.appendChild(div);
+      });
+    }
+
+    // Seleccionar paciente
+    function selectPaciente(paciente) {
+      selectedPaciente = paciente;
+      document.getElementById('pacienteSelector').style.display = 'none';
+      document.getElementById('newPacienteForm').style.display = 'none';
+      showFichaClinica();
+      setStage('primera'); // Inicializar en primera consulta
+    }
+
+    // Mostrar ficha clínica del paciente
+    function showFichaClinica() {
+      if (!selectedPaciente) return;
+
+      const ficha = document.getElementById('fichaClinica');
+      const visitForm = document.getElementById('visitForm');
+      const calendario = document.getElementById('calendarioSection');
+      
+      if (ficha) ficha.style.display = 'block';
+      if (visitForm) visitForm.style.display = 'block';
+      if (calendario) calendario.style.display = 'none';
+
+      renderPacienteInfo();
+      renderEstadisticasPaciente();
+      initializeVisitForm();
+    }
+
+    // Renderizar información del paciente
+    function renderPacienteInfo() {
+      const container = document.getElementById('pacienteInfo');
+      if (!container || !selectedPaciente) return;
+
+      container.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div><strong>Nombre:</strong> ${selectedPaciente.nombre}</div>
+          <div><strong>DNI:</strong> ${selectedPaciente.dni}</div>
+          <div><strong>Dirección:</strong> ${selectedPaciente.direccion || 'No especificada'}</div>
+          <div><strong>Teléfono:</strong> ${selectedPaciente.telefono || 'No especificado'}</div>
+          <div><strong>Obra Social:</strong> ${selectedPaciente.obraSocial || 'No especificada'}</div>
+          <div><strong>Patología:</strong> ${selectedPaciente.patologia || 'No especificada'}</div>
+        </div>
+      `;
+    }
+
+    // Renderizar estadísticas del paciente
+    function renderEstadisticasPaciente() {
+      const container = document.getElementById('estadisticasPaciente');
+      if (!container || !selectedPaciente) return;
+
+      const totalVisitas = getTotalVisitas(selectedPaciente);
+      const ultimaVisita = getUltimaVisita(selectedPaciente);
+      const promedioVisitas = getPromedioEntreVisitas(selectedPaciente);
+
+      container.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px;">
+          <div style="text-align: center; padding: 8px; background: var(--bg); border-radius: 6px;">
+            <div style="font-size: 24px; font-weight: bold; color: var(--primary);">${totalVisitas}</div>
+            <div style="font-size: 12px; color: var(--text-light);">Total visitas</div>
+          </div>
+          <div style="text-align: center; padding: 8px; background: var(--bg); border-radius: 6px;">
+            <div style="font-size: 14px; font-weight: bold; color: var(--primary);">${ultimaVisita || 'Nunca'}</div>
+            <div style="font-size: 12px; color: var(--text-light);">Última visita</div>
+          </div>
+          <div style="text-align: center; padding: 8px; background: var(--bg); border-radius: 6px;">
+            <div style="font-size: 14px; font-weight: bold; color: var(--primary);">${promedioVisitas}</div>
+            <div style="font-size: 12px; color: var(--text-light);">Promedio entre visitas</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Funciones auxiliares para estadísticas
+    function getTotalVisitas(paciente) {
+      if (!paciente.visitas) return 0;
+      return Object.values(paciente.visitas).reduce((total, visits) => total + visits.length, 0);
+    }
+
+    function getUltimaVisita(paciente) {
+      if (!paciente.visitas) return null;
+      
+      let ultimaFecha = null;
+      Object.values(paciente.visitas).forEach(visits => {
+        visits.forEach(visit => {
+          const fecha = new Date(visit.date);
+          if (!ultimaFecha || fecha > ultimaFecha) {
+            ultimaFecha = fecha;
+          }
+        });
+      });
+
+      if (!ultimaFecha) return null;
+      
+      const hoy = new Date();
+      const diferencia = Math.floor((hoy - ultimaFecha) / (1000 * 60 * 60 * 24));
+      
+      if (diferencia === 0) return 'Hoy';
+      if (diferencia === 1) return 'Ayer';
+      if (diferencia < 7) return `Hace ${diferencia} días`;
+      return ultimaFecha.toLocaleDateString('es-ES');
+    }
+
+    function getPromedioEntreVisitas(paciente) {
+      if (!paciente.visitas) return 'N/A';
+      
+      const todasLasVisitas = [];
+      Object.values(paciente.visitas).forEach(visits => {
+        visits.forEach(visit => todasLasVisitas.push(new Date(visit.date)));
+      });
+
+      if (todasLasVisitas.length < 2) return 'N/A';
+
+      todasLasVisitas.sort((a, b) => a - b);
+      
+      const diferencias = [];
+      for (let i = 1; i < todasLasVisitas.length; i++) {
+        const diff = (todasLasVisitas[i] - todasLasVisitas[i-1]) / (1000 * 60 * 60 * 24);
+        diferencias.push(diff);
+      }
+
+      const promedio = diferencias.reduce((a, b) => a + b) / diferencias.length;
+      return `${Math.round(promedio)} días`;
+    }
+
+    // Inicializar formulario de visita
+    function initializeVisitForm() {
+      const dateInput = document.getElementById('date');
+      if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+      }
+    }
+
+    // Cambiar tipo de visita
+    function setStage(visitType) {
+      selectedVisitType = visitType;
+      
+      // Actualizar botones activos
+      document.querySelectorAll('.stage-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      const activeBtn = document.getElementById(`btn-${visitType}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      renderHistory();
+    }
+
+    // Buscar pacientes
+    function searchPacientes() {
+      renderPacienteSelector();
+    }
+
+    // Guardar visita médica
+    async function saveVisit() {
+      if (!selectedPaciente) return;
+
+      const date = document.getElementById('date')?.value;
+      const time = document.getElementById('visitTime')?.value;
+      const estado = document.getElementById('estadoSelect')?.value;
+      const sintomas = document.getElementById('sintomas')?.value?.trim();
+      const observaciones = document.getElementById('observaciones')?.value?.trim();
+      const tratamiento = document.getElementById('tratamiento')?.value?.trim();
+      const estudios = document.getElementById('estudios')?.value?.trim();
+      const archivos = document.getElementById('archivoEstudio')?.files;
+
+      if (!date) {
+        alert('La fecha es obligatoria');
+        return;
+      }
+
+      const visit = {
+        id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        date,
+        time: time || '09:00',
+        visitType: selectedVisitType,
+        estado,
+        sintomas,
+        observaciones,
+        tratamiento,
+        estudios,
+        archivos: archivos ? Array.from(archivos).map(f => f.name) : [],
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        if (!selectedPaciente.visitas[selectedVisitType]) {
+          selectedPaciente.visitas[selectedVisitType] = [];
+        }
+        
+        selectedPaciente.visitas[selectedVisitType].push(visit);
+
+        if (currentUser) {
+          await savePacienteToFirestore(selectedPaciente);
+        }
+
+        // Limpiar formulario
+        ['sintomas', 'observaciones', 'tratamiento', 'estudios'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        
+        const fileInput = document.getElementById('archivoEstudio');
+        if (fileInput) fileInput.value = '';
+
+        renderEstadisticasPaciente();
+        renderHistory();
+        
+        alert(`✅ Visita de ${visitTypes.find(v => v.value === selectedVisitType)?.label} guardada exitosamente`);
+      } catch (error) {
+        console.error('Error al guardar visita:', error);
+        alert('Error al guardar la visita. Intenta de nuevo.');
+      }
+    }
+
+    // Renderizar historial de visitas
+    function renderHistory() {
+      const container = document.getElementById('history');
+      if (!container || !selectedPaciente) return;
+
+      const visitas = selectedPaciente.visitas[selectedVisitType] || [];
+      
+      if (visitas.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-light);">No hay visitas registradas de este tipo</p>';
+        return;
+      }
+
+      const visitasOrdenadas = [...visitas].sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      container.innerHTML = `
+        <div class="form-section">
+          <h4>📋 Historial de ${visitTypes.find(v => v.value === selectedVisitType)?.label}</h4>
+          ${visitasOrdenadas.map(visita => `
+            <div style="background: var(--bg); padding: 12px; border-radius: 6px; margin: 8px 0; border-left: 4px solid ${estadosClinicosColors[visita.estado] || '#gray'};">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <strong>${new Date(visita.date).toLocaleDateString('es-ES')} ${visita.time}</strong>
+                <span style="background: ${estadosClinicosColors[visita.estado]}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                  ${document.getElementById('estadoSelect')?.querySelector(`option[value="${visita.estado}"]`)?.textContent || visita.estado}
+                </span>
+              </div>
+              ${visita.sintomas ? `<p><strong>Síntomas:</strong> ${visita.sintomas}</p>` : ''}
+              ${visita.observaciones ? `<p><strong>Observaciones:</strong> ${visita.observaciones}</p>` : ''}
+              ${visita.tratamiento ? `<p><strong>Tratamiento:</strong> ${visita.tratamiento}</p>` : ''}
+              ${visita.estudios ? `<p><strong>Estudios:</strong> ${visita.estudios}</p>` : ''}
+              ${visita.archivos && visita.archivos.length > 0 ? `<p><strong>Archivos:</strong> ${visita.archivos.join(', ')}</p>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // ===== FUNCIONES DE GESTIÓN DE PACIENTES =====
+    
+    // Editar paciente
+    function editPaciente() {
+      if (!selectedPaciente) return;
+      
+      // Cargar datos actuales en el modal
+      document.getElementById('editPacienteNombre').value = selectedPaciente.nombre;
+      document.getElementById('editPacienteDNI').value = selectedPaciente.dni;
+      document.getElementById('editPacienteDireccion').value = selectedPaciente.direccion || '';
+      document.getElementById('editPacienteTelefono').value = selectedPaciente.telefono || '';
+      document.getElementById('editPacienteObraSocial').value = selectedPaciente.obraSocial || '';
+      document.getElementById('editPacientePatologia').value = selectedPaciente.patologia || '';
+      
+      document.getElementById('editPacienteModal').style.display = 'block';
+    }
+
+    function closeEditPacienteModal() {
+      document.getElementById('editPacienteModal').style.display = 'none';
+    }
+
+    async function saveEditPaciente() {
+      const nombre = document.getElementById('editPacienteNombre').value.trim();
+      const direccion = document.getElementById('editPacienteDireccion').value.trim();
+      const telefono = document.getElementById('editPacienteTelefono').value.trim();
+      const obraSocial = document.getElementById('editPacienteObraSocial').value.trim();
+      const patologia = document.getElementById('editPacientePatologia').value.trim();
+
+      if (!nombre) {
+        alert('El nombre es obligatorio');
+        return;
+      }
+
+      // Actualizar datos del paciente
+      selectedPaciente.nombre = nombre;
+      selectedPaciente.direccion = direccion;
+      selectedPaciente.telefono = telefono;
+      selectedPaciente.obraSocial = obraSocial;
+      selectedPaciente.patologia = patologia;
+
+      try {
+        if (currentUser) {
+          await savePacienteToFirestore(selectedPaciente);
+        }
+
+        // Actualizar en la lista local
+        const index = allPacientes.findIndex(p => p.id === selectedPaciente.id);
+        if (index !== -1) {
+          allPacientes[index] = selectedPaciente;
+        }
+
+        renderPacienteInfo();
+        renderPacienteSelector();
+        closeEditPacienteModal();
+        
+        alert('✅ Paciente actualizado exitosamente');
+      } catch (error) {
+        console.error('Error al actualizar paciente:', error);
+        alert('Error al actualizar el paciente. Intenta de nuevo.');
+      }
+    }
+
+    // Exportar historia clínica en JSON
+    function exportHistoriaJSON() {
+      if (!selectedPaciente) return;
+      
+      const data = {
+        paciente: selectedPaciente,
+        exportDate: new Date().toISOString(),
+        totalVisitas: getTotalVisitas(selectedPaciente),
+        ultimaVisita: getUltimaVisita(selectedPaciente),
+        promedioEntreVisitas: getPromedioEntreVisitas(selectedPaciente)
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Historia_Clinica_${selectedPaciente.nombre.replace(/\s+/g, '_')}_${selectedPaciente.dni}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Exportar historia clínica en PDF
+    function exportHistoriaPDF() {
+      if (!selectedPaciente) return;
+      
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Título
+        doc.setFontSize(20);
+        doc.text('HISTORIA CLÍNICA', 20, 20);
+        
+        // Datos del paciente
+        doc.setFontSize(14);
+        doc.text('DATOS DEL PACIENTE', 20, 40);
+        doc.setFontSize(12);
+        
+        let y = 50;
+        doc.text(`Nombre: ${selectedPaciente.nombre}`, 20, y);
+        doc.text(`DNI: ${selectedPaciente.dni}`, 20, y + 10);
+        doc.text(`Dirección: ${selectedPaciente.direccion || 'No especificada'}`, 20, y + 20);
+        doc.text(`Teléfono: ${selectedPaciente.telefono || 'No especificado'}`, 20, y + 30);
+        doc.text(`Obra Social: ${selectedPaciente.obraSocial || 'No especificada'}`, 20, y + 40);
+        doc.text(`Patología: ${selectedPaciente.patologia || 'No especificada'}`, 20, y + 50);
+        
+        // Estadísticas
+        y += 70;
+        doc.setFontSize(14);
+        doc.text('ESTADÍSTICAS', 20, y);
+        doc.setFontSize(12);
+        y += 10;
+        
+        doc.text(`Total de visitas: ${getTotalVisitas(selectedPaciente)}`, 20, y);
+        doc.text(`Última visita: ${getUltimaVisita(selectedPaciente) || 'Nunca'}`, 20, y + 10);
+        doc.text(`Promedio entre visitas: ${getPromedioEntreVisitas(selectedPaciente)}`, 20, y + 20);
+        
+        // Historial de visitas
+        y += 40;
+        doc.setFontSize(14);
+        doc.text('HISTORIAL DE VISITAS', 20, y);
+        doc.setFontSize(10);
+        y += 10;
+        
+        if (selectedPaciente.visitas) {
+          Object.keys(selectedPaciente.visitas).forEach(tipoVisita => {
+            const visitas = selectedPaciente.visitas[tipoVisita];
+            if (visitas && visitas.length > 0) {
+              y += 10;
+              doc.setFontSize(12);
+              doc.text(`${visitTypes.find(v => v.value === tipoVisita)?.label || tipoVisita}:`, 20, y);
+              doc.setFontSize(10);
+              
+              visitas.forEach(visita => {
+                y += 8;
+                if (y > 270) { // Nueva página si es necesario
+                  doc.addPage();
+                  y = 20;
+                }
+                
+                const fecha = new Date(visita.date).toLocaleDateString('es-ES');
+                doc.text(`• ${fecha} - ${visita.estado}`, 25, y);
+                
+                if (visita.sintomas) {
+                  y += 6;
+                  doc.text(`  Síntomas: ${visita.sintomas.substring(0, 80)}${visita.sintomas.length > 80 ? '...' : ''}`, 25, y);
+                }
+                
+                if (visita.tratamiento) {
+                  y += 6;
+                  doc.text(`  Tratamiento: ${visita.tratamiento.substring(0, 80)}${visita.tratamiento.length > 80 ? '...' : ''}`, 25, y);
+                }
+              });
+            }
+          });
+        }
+        
+        // Pie de página
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.text(`Exportado el ${new Date().toLocaleString('es-ES')} - Página ${i} de ${pageCount}`, 20, 285);
+        }
+        
+        doc.save(`Historia_Clinica_${selectedPaciente.nombre.replace(/\s+/g, '_')}_${selectedPaciente.dni}.pdf`);
+        
+      } catch (error) {
+        console.error('Error al generar PDF:', error);
+        alert('Error al generar el PDF. Intenta de nuevo.');
+      }
+    }
+
+    function deletePaciente() {
+      if (!selectedPaciente) return;
+      
+      if (confirm(`¿Estás seguro de eliminar al paciente ${selectedPaciente.nombre}? Esta acción no se puede deshacer.`)) {
+        allPacientes = allPacientes.filter(p => p.id !== selectedPaciente.id);
+        selectedPaciente = null;
+        
+        document.getElementById('fichaClinica').style.display = 'none';
+        document.getElementById('visitForm').style.display = 'none';
+        renderPacienteSelector();
+        
+        alert('Paciente eliminado exitosamente');
+      }
+    }
+
+    // Funciones de Firebase para pacientes
+    async function savePacienteToFirestore(paciente) {
+      if (!currentUser || !paciente) return;
+      
+      try {
+        await db.collection('users').doc(currentUser.uid)
+                 .collection('pacientes').doc(paciente.id)
+                 .set(paciente);
+      } catch (error) {
+        console.error('Error al guardar paciente en Firestore:', error);
+        throw error;
+      }
+    }
+
+    async function loadPacientesFromFirestore() {
+      if (!currentUser) return;
+      
+      try {
+        const snapshot = await db.collection('users').doc(currentUser.uid)
+                                 .collection('pacientes').get();
+        
+        allPacientes = [];
+        snapshot.forEach(doc => {
+          allPacientes.push(doc.data());
+        });
+        
+        renderPacienteSelector();
+      } catch (error) {
+        console.error('Error al cargar pacientes:', error);
+      }
+    }
+
+    // Cargar datos cuando el usuario se autentica
+    const originalLoadUserData = loadUserData;
+    loadUserData = async function() {
+      if (originalLoadUserData) await originalLoadUserData();
+      await loadPacientesFromFirestore();
+    };
+
+    // Inicializar la aplicación médica
+    function initMedicalApp() {
+      renderPacienteSelector();
+      renderColorPicker();
+    }
+
+    // ===== SISTEMA DE GRÁFICOS =====
+    
+    function renderEvolutionChart() {
+      if (!selectedPaciente) return;
+      
+      const ctx = document.getElementById('chartEvolucion');
+      if (!ctx) return;
+
+      // Destruir gráfico anterior si existe
+      if (currentChart) {
+        currentChart.destroy();
+      }
+
+      // Recopilar datos de evolución
+      const visitasData = [];
+      if (selectedPaciente.visitas) {
+        Object.values(selectedPaciente.visitas).forEach(visits => {
+          visits.forEach(visit => {
+            visitasData.push({
+              date: visit.date,
+              estado: visit.estado,
+              tipo: visit.visitType
+            });
+          });
+        });
+      }
+
+      visitasData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const labels = visitasData.map(v => new Date(v.date).toLocaleDateString('es-ES'));
+      const estadoValues = visitasData.map(v => {
+        switch(v.estado) {
+          case 'critico': return 1;
+          case 'observacion': return 2;
+          case 'estable': return 3;
+          case 'mejoria': return 4;
+          case 'alta': return 5;
+          default: return 3;
+        }
+      });
+
+      const tipoColors = visitasData.map(v => visitTypes.find(t => t.value === v.tipo)?.color || '#gray');
+
+      currentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Evolución del Estado Clínico',
+            data: estadoValues,
+            borderColor: '#4ade80',
+            backgroundColor: tipoColors.map(color => color + '20'),
+            tension: 0.1,
+            pointBackgroundColor: tipoColors,
+            pointBorderColor: tipoColors,
+            pointRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              min: 0,
+              max: 6,
+              ticks: {
+                stepSize: 1,
+                callback: function(value) {
+                  const estados = ['', 'Crítico', 'Observación', 'Estable', 'Mejoría', 'Alta'];
+                  return estados[value] || '';
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const estados = ['', 'Crítico', 'Observación', 'Estable', 'Mejoría', 'Alta'];
+                  const visit = visitasData[context.dataIndex];
+                  return `${estados[context.parsed.y]} - ${visitTypes.find(t => t.value === visit.tipo)?.label}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ===== SISTEMA DE RECORDATORIOS =====
+    
+    function showRecordatorios() {
+      populateRecordatoriosPacientes();
+      renderRecordatoriosList();
+      document.getElementById('recordatoriosModal').style.display = 'block';
+    }
+
+    function closeRecordatoriosModal() {
+      document.getElementById('recordatoriosModal').style.display = 'none';
+    }
+
+    function populateRecordatoriosPacientes() {
+      const select = document.getElementById('recordatorioPaciente');
+      select.innerHTML = '<option value="">Seleccionar paciente...</option>';
+      
+      allPacientes.forEach(paciente => {
+        const option = document.createElement('option');
+        option.value = paciente.id;
+        option.textContent = `${paciente.nombre} (${paciente.dni})`;
+        select.appendChild(option);
+      });
+    }
+
+    async function crearRecordatorio() {
+      const pacienteId = document.getElementById('recordatorioPaciente').value;
+      const fecha = document.getElementById('recordatorioFecha').value;
+      const hora = document.getElementById('recordatorioHora').value;
+      const nota = document.getElementById('recordatorioNota').value.trim();
+
+      if (!pacienteId || !fecha || !nota) {
+        alert('Todos los campos son obligatorios');
+        return;
+      }
+
+      const paciente = allPacientes.find(p => p.id === pacienteId);
+      if (!paciente) return;
+
+      const recordatorio = {
+        id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        pacienteId,
+        pacienteNombre: paciente.nombre,
+        fecha,
+        hora,
+        nota,
+        completado: false,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        if (currentUser) {
+          await db.collection('users').doc(currentUser.uid)
+                   .collection('recordatorios').doc(recordatorio.id)
+                   .set(recordatorio);
+        }
+
+        allRecordatorios.push(recordatorio);
+        
+        // Limpiar formulario
+        document.getElementById('recordatorioPaciente').value = '';
+        document.getElementById('recordatorioFecha').value = '';
+        document.getElementById('recordatorioHora').value = '09:00';
+        document.getElementById('recordatorioNota').value = '';
+        
+        renderRecordatoriosList();
+        renderProximosRecordatorios();
+        
+        // Programar notificación
+        scheduleNotification(recordatorio);
+        
+        alert('✅ Recordatorio creado exitosamente');
+      } catch (error) {
+        console.error('Error al crear recordatorio:', error);
+        alert('Error al crear el recordatorio. Intenta de nuevo.');
+      }
+    }
+
+    function renderRecordatoriosList() {
+      const container = document.getElementById('recordatoriosList');
+      if (!container) return;
+
+      const recordatoriosPendientes = allRecordatorios
+        .filter(r => !r.completado)
+        .sort((a, b) => new Date(a.fecha + ' ' + a.hora) - new Date(b.fecha + ' ' + b.hora));
+
+      if (recordatoriosPendientes.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-light);">No hay recordatorios pendientes</p>';
+        return;
+      }
+
+      container.innerHTML = recordatoriosPendientes.map(recordatorio => {
+        const fechaRecordatorio = new Date(recordatorio.fecha + ' ' + recordatorio.hora);
+        const hoy = new Date();
+        const esHoy = fechaRecordatorio.toDateString() === hoy.toDateString();
+        const esUrgente = fechaRecordatorio < hoy;
+        
+        let className = 'recordatorio-item';
+        if (esUrgente) className += ' urgent';
+        else if (esHoy) className += ' today';
+
+        return `
+          <div class="${className}">
+            <div>
+              <strong>${recordatorio.pacienteNombre}</strong><br>
+              <small>${new Date(recordatorio.fecha).toLocaleDateString('es-ES')} ${recordatorio.hora}</small><br>
+              ${recordatorio.nota}
+            </div>
+            <div>
+              <button onclick="completarRecordatorio('${recordatorio.id}')" class="btn-secondary">✅</button>
+              <button onclick="eliminarRecordatorio('${recordatorio.id}')" class="btn-danger">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderProximosRecordatorios() {
+      const container = document.getElementById('proximosRecordatorios');
+      if (!container || !selectedPaciente) return;
+
+      const recordatoriosPaciente = allRecordatorios
+        .filter(r => r.pacienteId === selectedPaciente.id && !r.completado)
+        .sort((a, b) => new Date(a.fecha + ' ' + a.hora) - new Date(b.fecha + ' ' + b.hora))
+        .slice(0, 3);
+
+      if (recordatoriosPaciente.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-light);">No hay recordatorios pendientes para este paciente</p>';
+        return;
+      }
+
+      container.innerHTML = recordatoriosPaciente.map(recordatorio => `
+        <div class="recordatorio-item" style="margin: 4px 0;">
+          <div>
+            <strong>${new Date(recordatorio.fecha).toLocaleDateString('es-ES')} ${recordatorio.hora}</strong><br>
+            <small>${recordatorio.nota}</small>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function completarRecordatorio(recordatorioId) {
+      const recordatorio = allRecordatorios.find(r => r.id === recordatorioId);
+      if (!recordatorio) return;
+
+      recordatorio.completado = true;
+
+      try {
+        if (currentUser) {
+          await db.collection('users').doc(currentUser.uid)
+                   .collection('recordatorios').doc(recordatorioId)
+                   .update({ completado: true });
+        }
+
+        renderRecordatoriosList();
+        renderProximosRecordatorios();
+      } catch (error) {
+        console.error('Error al completar recordatorio:', error);
+      }
+    }
+
+    async function eliminarRecordatorio(recordatorioId) {
+      if (!confirm('¿Eliminar este recordatorio?')) return;
+
+      try {
+        if (currentUser) {
+          await db.collection('users').doc(currentUser.uid)
+                   .collection('recordatorios').doc(recordatorioId)
+                   .delete();
+        }
+
+        allRecordatorios = allRecordatorios.filter(r => r.id !== recordatorioId);
+        renderRecordatoriosList();
+        renderProximosRecordatorios();
+      } catch (error) {
+        console.error('Error al eliminar recordatorio:', error);
+      }
+    }
+
+    function scheduleNotification(recordatorio) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const fechaRecordatorio = new Date(recordatorio.fecha + ' ' + recordatorio.hora);
+        const ahora = new Date();
+        const tiempoHasta = fechaRecordatorio.getTime() - ahora.getTime();
+
+        if (tiempoHasta > 0) {
+          setTimeout(() => {
+            new Notification('Recordatorio Médico', {
+              body: `${recordatorio.pacienteNombre}: ${recordatorio.nota}`,
+              icon: '/favicon.svg'
+            });
+          }, tiempoHasta);
+        }
+      }
+    }
+
+    // ===== SISTEMA DE CALENDARIO Y CITAS =====
+    
+    function showCalendario() {
+      populateCitasPacientes();
+      renderCalendario();
+      renderCitasList();
+      document.getElementById('calendarioSection').style.display = 'block';
+      document.getElementById('pacienteSelector').style.display = 'none';
+      document.getElementById('fichaClinica').style.display = 'none';
+      document.getElementById('visitForm').style.display = 'none';
+    }
+
+    function backToPacientes() {
+      document.getElementById('calendarioSection').style.display = 'none';
+      document.getElementById('pacienteSelector').style.display = 'block';
+      
+      if (selectedPaciente) {
+        showFichaClinica();
+      }
+    }
+
+    function populateCitasPacientes() {
+      const select = document.getElementById('citaPaciente');
+      select.innerHTML = '<option value="">Seleccionar paciente...</option>';
+      
+      allPacientes.forEach(paciente => {
+        const option = document.createElement('option');
+        option.value = paciente.id;
+        option.textContent = `${paciente.nombre} (${paciente.dni})`;
+        select.appendChild(option);
+      });
+    }
+
+    function renderCalendario() {
+      const container = document.getElementById('calendarioGrid');
+      if (!container) return;
+
+      const hoy = new Date();
+      const año = hoy.getFullYear();
+      const mes = hoy.getMonth();
+      
+      const primerDia = new Date(año, mes, 1);
+      const ultimoDia = new Date(año, mes + 1, 0);
+      const primerDiaSemana = primerDia.getDay();
+
+      container.innerHTML = '';
+
+      // Headers de días de la semana
+      ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].forEach(dia => {
+        const header = document.createElement('div');
+        header.textContent = dia;
+        header.style.fontWeight = 'bold';
+        header.style.padding = '8px';
+        header.style.textAlign = 'center';
+        header.style.background = 'var(--primary)';
+        header.style.color = 'white';
+        container.appendChild(header);
+      });
+
+      // Días vacíos del mes anterior
+      for (let i = 0; i < primerDiaSemana; i++) {
+        const dia = document.createElement('div');
+        dia.className = 'calendar-day other-month';
+        container.appendChild(dia);
+      }
+
+      // Días del mes actual
+      for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+        const diaElement = document.createElement('div');
+        diaElement.className = 'calendar-day';
+        diaElement.textContent = dia;
+
+        const fechaDia = new Date(año, mes, dia);
+        const fechaString = fechaDia.toISOString().split('T')[0];
+
+        // Marcar día actual
+        if (fechaDia.toDateString() === hoy.toDateString()) {
+          diaElement.classList.add('today');
+        }
+
+        // Verificar si hay citas este día
+        const citasDelDia = allCitas.filter(c => c.fecha === fechaString);
+        if (citasDelDia.length > 0) {
+          diaElement.classList.add('has-cita');
+          const dot = document.createElement('div');
+          dot.className = 'cita-dot';
+          diaElement.appendChild(dot);
+        }
+
+        diaElement.addEventListener('click', () => {
+          document.getElementById('citaFecha').value = fechaString;
+        });
+
+        container.appendChild(diaElement);
+      }
+    }
+
+    async function crearCita() {
+      const pacienteId = document.getElementById('citaPaciente').value;
+      const fecha = document.getElementById('citaFecha').value;
+      const hora = document.getElementById('citaHora').value;
+
+      if (!pacienteId || !fecha) {
+        alert('Paciente y fecha son obligatorios');
+        return;
+      }
+
+      const paciente = allPacientes.find(p => p.id === pacienteId);
+      if (!paciente) return;
+
+      const cita = {
+        id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        pacienteId,
+        pacienteNombre: paciente.nombre,
+        fecha,
+        hora,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        if (currentUser) {
+          await db.collection('users').doc(currentUser.uid)
+                   .collection('citas').doc(cita.id)
+                   .set(cita);
+        }
+
+        allCitas.push(cita);
+        
+        // Limpiar formulario
+        document.getElementById('citaPaciente').value = '';
+        document.getElementById('citaFecha').value = '';
+        document.getElementById('citaHora').value = '09:00';
+        
+        renderCalendario();
+        renderCitasList();
+        
+        alert('✅ Cita creada exitosamente');
+      } catch (error) {
+        console.error('Error al crear cita:', error);
+        alert('Error al crear la cita. Intenta de nuevo.');
+      }
+    }
+
+    function renderCitasList() {
+      const container = document.getElementById('citasList');
+      if (!container) return;
+
+      const citasOrdenadas = [...allCitas]
+        .sort((a, b) => new Date(a.fecha + ' ' + a.hora) - new Date(b.fecha + ' ' + b.hora));
+
+      if (citasOrdenadas.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-light);">No hay citas programadas</p>';
+        return;
+      }
+
+      const hoy = new Date();
+      container.innerHTML = citasOrdenadas.map(cita => {
+        const fechaCita = new Date(cita.fecha + ' ' + cita.hora);
+        const esHoy = fechaCita.toDateString() === hoy.toDateString();
+        const esPasada = fechaCita < hoy;
+        
+        let className = 'cita-item';
+        if (esPasada) className += ' past';
+        else if (esHoy) className += ' today';
+
+        return `
+          <div class="${className}">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>${cita.pacienteNombre}</strong><br>
+                <small>${new Date(cita.fecha).toLocaleDateString('es-ES')} ${cita.hora}</small>
+              </div>
+              <button onclick="eliminarCita('${cita.id}')" class="btn-danger">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function eliminarCita(citaId) {
+      if (!confirm('¿Eliminar esta cita?')) return;
+
+      try {
+        if (currentUser) {
+          await db.collection('users').doc(currentUser.uid)
+                   .collection('citas').doc(citaId)
+                   .delete();
+        }
+
+        allCitas = allCitas.filter(c => c.id !== citaId);
+        renderCalendario();
+        renderCitasList();
+      } catch (error) {
+        console.error('Error al eliminar cita:', error);
+      }
+    }
+
+    // ===== CARGA DE DATOS DESDE FIREBASE =====
+    
+    async function loadRecordatoriosFromFirestore() {
+      if (!currentUser) return;
+      
+      try {
+        const snapshot = await db.collection('users').doc(currentUser.uid)
+                                 .collection('recordatorios').get();
+        
+        allRecordatorios = [];
+        snapshot.forEach(doc => {
+          allRecordatorios.push(doc.data());
+        });
+      } catch (error) {
+        console.error('Error al cargar recordatorios:', error);
+      }
+    }
+
+    async function loadCitasFromFirestore() {
+      if (!currentUser) return;
+      
+      try {
+        const snapshot = await db.collection('users').doc(currentUser.uid)
+                                 .collection('citas').get();
+        
+        allCitas = [];
+        snapshot.forEach(doc => {
+          allCitas.push(doc.data());
+        });
+      } catch (error) {
+        console.error('Error al cargar citas:', error);
+      }
+    }
+
+    // Actualizar showFichaClinica para incluir gráficos y recordatorios
+    const originalShowFichaClinica = showFichaClinica;
+    showFichaClinica = function() {
+      originalShowFichaClinica();
+      setTimeout(() => {
+        renderEvolutionChart();
+        renderProximosRecordatorios();
+      }, 100);
+    };
+
+    // Actualizar loadUserData para cargar todos los datos
+    const originalLoadUserData2 = loadUserData;
+    loadUserData = async function() {
+      if (originalLoadUserData2) await originalLoadUserData2();
+      await loadPacientesFromFirestore();
+      await loadRecordatoriosFromFirestore();
+      await loadCitasFromFirestore();
+    };
+
+    // Solicitar permisos de notificación
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    // Ejecutar cuando se carga la app
+    setTimeout(initMedicalApp, 1000);
   </script>
 </body>
 </html>
