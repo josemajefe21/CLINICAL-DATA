@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#f5f7fa">
   <title>CLINICAL DATA</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <style>
     :root {
       --primary: #2563eb;
@@ -175,6 +176,10 @@
       .modal-content { padding: 18px 6px; }
     }
   </style>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
 </head>
 <body>
   <div class="container">
@@ -215,19 +220,6 @@
     // Variables globales del sistema de autenticación
     let currentUser = null;
     let isAuthenticated = false;
-
-    // Registrar el Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('ServiceWorker registrado:', registration);
-          })
-          .catch(error => {
-            console.log('Error al registrar ServiceWorker:', error);
-          });
-      });
-    }
 
     // Manejar la instalación de la PWA
     let deferredPrompt;
@@ -292,12 +284,14 @@
 
     // Funciones de autenticación
     function showAuthContainer() {
-      document.getElementById('authContainer').classList.add('active');
+      const el = document.getElementById('authContainer');
+      if (el) el.classList.add('active');
       document.querySelector('.container').style.display = 'none';
     }
 
     function hideAuthContainer() {
-      document.getElementById('authContainer').classList.remove('active');
+      const el = document.getElementById('authContainer');
+      if (el) el.classList.remove('active');
       document.querySelector('.container').style.display = 'block';
     }
 
@@ -508,7 +502,10 @@
         if (bitacoras.length > 0) {
           selectBitacora(bitacoras[0].id);
         } else {
-          showNewBitacoraForm();
+          // Solo mostrar formulario si el elemento existe
+          if (document.getElementById('newBitacoraForm')) {
+            showNewBitacoraForm();
+          }
         }
 
       } catch (error) {
@@ -678,9 +675,11 @@
         localStorage.setItem('bitacoras', JSON.stringify(existingBitacoras));
         
         // Limpiar formulario
-        document.getElementById('newBitacoraName').value = '';
+        const nameInput = document.getElementById('newBitacoraName');
+        if (nameInput) nameInput.value = '';
         document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-        document.getElementById('newBitacoraForm').classList.remove('active');
+        const formElement = document.getElementById('newBitacoraForm');
+        if (formElement) formElement.classList.remove('active');
         
         // Limpiar variables globales
         cepas = [];
@@ -770,25 +769,34 @@
         return entryDate >= weekStart && entryDate <= today;
       });
 
-      document.getElementById('totalEntries').textContent = weekEntries.length;
+      const totalEntriesEl = document.getElementById('totalEntries');
+      if (totalEntriesEl) totalEntriesEl.textContent = weekEntries.length;
       
       const moods = weekEntries.map(e => e.mood).filter(m => m);
       const avgMood = moods.length ? (moods.reduce((a, b) => a + b, 0) / moods.length).toFixed(1) : '-';
-      document.getElementById('averageMood').textContent = avgMood;
+      const avgMoodEl = document.getElementById('averageMood');
+      if (avgMoodEl) avgMoodEl.textContent = avgMood;
       
       const wateredDays = weekEntries.filter(e => e.didWater).length;
-      document.getElementById('wateredDays').textContent = wateredDays;
+      const wateredDaysEl = document.getElementById('wateredDays');
+      if (wateredDaysEl) wateredDaysEl.textContent = wateredDays;
 
       const timeline = document.getElementById('emotionTimeline');
-      timeline.innerHTML = weekEntries.map(entry => `
-        <div class="emotion-dot" style="background-color: ${moodStates.find(m => m.value === entry.mood)?.color}"
-             title="${entry.date}"></div>
-      `).join('');
+      if (timeline) {
+        timeline.innerHTML = weekEntries.map(entry => `
+          <div class="emotion-dot" style="background-color: ${moodStates.find(m => m.value === entry.mood)?.color}"
+               title="${entry.date}"></div>
+        `).join('');
+      }
     }
 
     function renderHistory() {
       const entries = getEntries().sort((a,b) => new Date(b.date) - new Date(a.date));
       const container = document.getElementById('history');
+      if (!container) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       container.innerHTML = '';
       const floraStart = selectedBitacora?.floraStart;
 
@@ -822,6 +830,10 @@
       entries.forEach(e => { map[e.date] = e.mood; });
 
       const container = document.getElementById('calendarVisual');
+      if (!container) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       container.innerHTML = '<div class="calendar">';
       for (let i = 34; i >= 0; i--) {
         const d = new Date();
@@ -914,9 +926,11 @@
       bitacoras.push(newBitacora);
       localStorage.setItem('bitacoras', JSON.stringify(bitacoras));
       
-      document.getElementById('newBitacoraName').value = '';
+      const nameInput = document.getElementById('newBitacoraName');
+      if (nameInput) nameInput.value = '';
       document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-      document.getElementById('newBitacoraForm').classList.remove('active');
+      const formElement = document.getElementById('newBitacoraForm');
+      if (formElement) formElement.classList.remove('active');
       
       renderBitacoraSelector();
       selectBitacora(newBitacora.id);
@@ -924,8 +938,11 @@
 
     function renderBitacoraSelector() {
       const container = document.getElementById('bitacoraSelector');
+      if (!container) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       const bitacoras = JSON.parse(localStorage.getItem('bitacoras') || '[]');
-      
       container.innerHTML = '';
       
       const newButton = document.createElement('button');
@@ -1002,19 +1019,29 @@
 
     function showNewBitacoraForm() {
       const form = document.getElementById('newBitacoraForm');
+      if (!form) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       form.classList.add('active');
-      document.getElementById('newBitacoraName').value = '';
+      const nameInput = document.getElementById('newBitacoraName');
+      if (nameInput) nameInput.value = '';
       renderColorPicker();
       document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
       
       // Limpiar cepas
       cepas = [];
       renderCepasList();
-      document.getElementById('cepaNombre').value = '';
-      document.getElementById('cepaCantidad').value = 1;
-      document.getElementById('cepaTipo').value = 'clon';
-      document.getElementById('cepaGerminacion').value = '';
-      document.getElementById('semillaFields').style.display = 'none';
+      const cepaNombre = document.getElementById('cepaNombre');
+      if (cepaNombre) cepaNombre.value = '';
+      const cepaCantidad = document.getElementById('cepaCantidad');
+      if (cepaCantidad) cepaCantidad.value = 1;
+      const cepaTipo = document.getElementById('cepaTipo');
+      if (cepaTipo) cepaTipo.value = 'clon';
+      const cepaGerminacion = document.getElementById('cepaGerminacion');
+      if (cepaGerminacion) cepaGerminacion.value = '';
+      const semillaFields = document.getElementById('semillaFields');
+      if (semillaFields) semillaFields.style.display = 'none';
       
       // Limpiar tipo de cultivo
       document.getElementById('tipoCultivo').value = '';
@@ -1063,6 +1090,10 @@
 
     function renderColorPicker() {
       const colorPicker = document.getElementById('colorPicker');
+      if (!colorPicker) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       colorPicker.innerHTML = availableColors.map(color => `
         <div class="color-option" style="background-color: ${color}" onclick="selectColor(this)"></div>
       `).join('');
@@ -1116,6 +1147,10 @@
     
     function renderCepasList() {
       const list = document.getElementById('cepasList');
+      if (!list) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       list.innerHTML = '';
       cepas.forEach((cepa, idx) => {
         const div = document.createElement('div');
@@ -1162,6 +1197,10 @@
     
     function renderExtractoresList() {
       const list = document.getElementById('extractoresList');
+      if (!list) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       list.innerHTML = '';
       extractores.forEach((extractor, idx) => {
         const div = document.createElement('div');
@@ -1221,6 +1260,10 @@
 
     function renderMoodButtons() {
       const div = document.getElementById('moodOptions');
+      if (!div) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       div.innerHTML = '';
       moodStates.forEach(state => {
         const span = document.createElement('span');
@@ -1559,7 +1602,10 @@
         if (backup.data.length > 0) {
           selectBitacora(backup.data[0].id);
         } else {
-          showNewBitacoraForm();
+          // Solo mostrar formulario si el elemento existe
+          if (document.getElementById('newBitacoraForm')) {
+            showNewBitacoraForm();
+          }
         }
         
         alert('Respaldo restaurado exitosamente');
@@ -1652,6 +1698,10 @@
     
     function renderLucesList() {
       const list = document.getElementById('lucesList');
+      if (!list) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       list.innerHTML = '';
       luces.forEach((luz, idx) => {
         const div = document.createElement('div');
@@ -1665,6 +1715,10 @@
       if (!selectedBitacora) return;
       
       const container = document.getElementById('bitacoraInfoContent');
+      if (!container) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       container.innerHTML = '';
       
       // Verificar si la bitácora tiene características guardadas
@@ -1912,6 +1966,10 @@
     // Mostrar la fecha del último respaldo
     function setUltimoRespaldo(fecha) {
       const el = document.getElementById('ultimoRespaldo');
+      if (!el) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       if (fecha) {
         el.textContent = 'Último respaldo: ' + fecha;
         localStorage.setItem('ultimoRespaldo', fecha);
@@ -1920,8 +1978,10 @@
         el.textContent = 'Último respaldo: ' + (guardado || '-');
       }
     }
-    // Llamar al cargar la página
-    setUltimoRespaldo();
+    // Llamar al cargar la página solo si el elemento existe
+    if (document.getElementById('ultimoRespaldo')) {
+      setUltimoRespaldo();
+    }
     // Modificar createBackup para actualizar la fecha
     const originalCreateBackup = window.createBackup;
     window.createBackup = function() {
@@ -1932,15 +1992,27 @@
 
     // Funciones auxiliares para el formulario
     function toggleInteriorFields() {
-      const tipoCultivo = document.getElementById('tipoCultivo').value;
+      const tipoCultivo = document.getElementById('tipoCultivo');
       const interiorFields = document.getElementById('interiorFields');
-      interiorFields.style.display = tipoCultivo === 'interior' ? 'block' : 'none';
+      if (!tipoCultivo || !interiorFields) {
+        // Salir silenciosamente si no encontramos los elementos
+        return;
+      }
+      interiorFields.style.display = tipoCultivo.value === 'interior' ? 'block' : 'none';
     }
 
     function toggleCarpasFields() {
-      const numCarpas = parseInt(document.getElementById('numCarpas').value) || 0;
-      const soloSala = document.getElementById('soloSala').checked;
+      const numCarpasEl = document.getElementById('numCarpas');
+      const soloSalaEl = document.getElementById('soloSala');
       const carpasList = document.getElementById('carpasList');
+      
+      if (!numCarpasEl || !soloSalaEl || !carpasList) {
+        // Salir silenciosamente si no encontramos los elementos
+        return;
+      }
+      
+      const numCarpas = parseInt(numCarpasEl.value) || 0;
+      const soloSala = soloSalaEl.checked;
       
       carpasList.innerHTML = '';
       
@@ -1968,9 +2040,15 @@
     }
 
     function toggleFrigorias() {
-      const aireAcondicionado = document.getElementById('aireAcondicionado').value;
-      const frigorias = document.getElementById('frigorias');
-      frigorias.style.display = aireAcondicionado === 'si' ? 'block' : 'none';
+      const aireAcondicionadoEl = document.getElementById('aireAcondicionado');
+      const frigoriasList = document.getElementById('frigorias');
+      
+      if (!aireAcondicionadoEl || !frigoriasList) {
+        // Salir silenciosamente si no encontramos los elementos
+        return;
+      }
+      
+      frigoriasList.style.display = aireAcondicionadoEl.value === 'si' ? 'block' : 'none';
     }
 
     // Funciones para edición de bitácora
@@ -2089,8 +2167,12 @@
     // Modo nocturno
     function toggleDarkMode() {
       const body = document.body;
-      body.classList.toggle('dark-mode');
       const btn = document.getElementById('toggleDarkMode');
+      if (!btn) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
+      body.classList.toggle('dark-mode');
       if (body.classList.contains('dark-mode')) {
         btn.textContent = '☀️';
         localStorage.setItem('darkMode', '1');
@@ -2102,12 +2184,17 @@
     // Al cargar, aplicar modo guardado
     if (localStorage.getItem('darkMode') === '1') {
       document.body.classList.add('dark-mode');
-      document.getElementById('toggleDarkMode').textContent = '☀️';
+      const toggleBtn = document.getElementById('toggleDarkMode');
+      if (toggleBtn) toggleBtn.textContent = '☀️';
     }
 
     // Alternar formulario de nueva bitácora
     function toggleNewBitacoraForm() {
       const form = document.getElementById('newBitacoraForm');
+      if (!form) {
+        // Salir silenciosamente si no encontramos el elemento
+        return;
+      }
       const btn = document.getElementById('btnNuevaBitacora');
       if (form.style.display === 'block' || form.classList.contains('active')) {
         form.style.display = 'none';

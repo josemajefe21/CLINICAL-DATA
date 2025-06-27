@@ -1,4 +1,4 @@
-import { auth } from './js/auth.js';
+import './firebase-config.js';
 import { storage } from './js/storage.js';
 import { showNotification } from './notifications.js';
 
@@ -12,7 +12,7 @@ function toggleElement(elementId, show) {
 
 // Inicialización de la app
 window.addEventListener('DOMContentLoaded', () => {
-    const user = auth.getCurrentUser();
+    const user = window.auth.getCurrentUser();
     if (user) {
         mostrarApp();
     } else {
@@ -24,23 +24,31 @@ window.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.onsubmit = async (e) => {
             e.preventDefault();
-            const username = document.getElementById('loginUser').value.trim();
-            const password = document.getElementById('loginPassword').value;
+            const userInput = document.getElementById('loginUser');
+            const passInput = document.getElementById('loginPassword');
+            if (!userInput || !passInput) {
+                // Salir silenciosamente si no encontramos los elementos
+                return;
+            }
+            const username = userInput.value.trim();
+            const password = passInput.value;
             const errorDiv = document.getElementById('loginError');
-            errorDiv.style.display = 'none';
+            if (errorDiv) errorDiv.style.display = 'none';
             try {
-                await auth.login(username, password);
+                await window.auth.login(username, password);
                 mostrarApp();
             } catch (err) {
-                errorDiv.textContent = err.message;
-                errorDiv.style.display = 'block';
+                if (errorDiv) {
+                    errorDiv.textContent = err.message;
+                    errorDiv.style.display = 'block';
+                }
             }
         };
     }
 
     // Logout handler
     window.logout = () => {
-        auth.logout();
+        window.auth.logout();
         mostrarLogin();
     };
 });
@@ -62,18 +70,21 @@ function mostrarLogin() {
 
 // CRUD de pacientes (estructura básica, se completará en el siguiente paso)
 window.mostrarFormularioPaciente = function() {
-    document.getElementById('formPaciente').reset();
+    const el = document.getElementById('formPaciente');
+    if (el) { el.reset(); }
     document.getElementById('pacienteId').value = '';
     document.getElementById('tituloModalPaciente').textContent = 'Nuevo Paciente';
     document.getElementById('modalPaciente').style.display = 'block';
 };
 
 window.cerrarModalPaciente = function() {
-    document.getElementById('modalPaciente').style.display = 'none';
+    const el = document.getElementById('modalPaciente');
+    if (el) { el.style.display = 'none'; }
 };
 
 window.volverAListaPacientes = function() {
-    document.getElementById('fichaPaciente').style.display = 'none';
+    const el = document.getElementById('fichaPaciente');
+    if (el) { el.style.display = 'none'; }
     document.querySelector('.pacientes-section').style.display = 'block';
 };
 
@@ -89,7 +100,7 @@ window.handleLogin = async (event) => {
     }
 
     try {
-        await auth.login(email, password);
+        await window.auth.login(email, password);
         showNotification('Inicio de sesión exitoso', 'success');
         toggleElement('auth-container', false);
         toggleElement('main-content', true);
@@ -111,7 +122,7 @@ window.handleRegister = async (event) => {
     }
 
     try {
-        await auth.register(email, password);
+        await window.auth.register(email, password);
         showNotification('Registro exitoso', 'success');
         toggleElement('auth-container', false);
         toggleElement('main-content', true);
@@ -124,7 +135,7 @@ window.handleRegister = async (event) => {
 
 window.handleLogout = async () => {
     try {
-        await auth.logout();
+        await window.auth.logout();
         showNotification('Sesión cerrada exitosamente', 'success');
         toggleElement('auth-container', true);
         toggleElement('main-content', false);
@@ -206,15 +217,24 @@ window.editarPaciente = function(e, id) {
     const pacientes = getPacientes();
     const p = pacientes.find(p => p.id === id);
     if (!p) return;
-    document.getElementById('pacienteId').value = p.id;
-    document.getElementById('pacienteNombre').value = p.nombre;
-    document.getElementById('pacienteDNI').value = p.dni;
-    document.getElementById('pacienteDireccion').value = p.direccion;
-    document.getElementById('pacienteTelefono').value = p.telefono;
-    document.getElementById('pacienteObraSocial').value = p.obraSocial;
-    document.getElementById('pacientePatologia').value = p.patologia;
-    document.getElementById('tituloModalPaciente').textContent = 'Editar Paciente';
-    document.getElementById('modalPaciente').style.display = 'block';
+    const el = document.getElementById('pacienteId');
+    if (el) { el.value = p.id; }
+    const elNombre = document.getElementById('pacienteNombre');
+    if (elNombre) { elNombre.value = p.nombre; }
+    const elDNI = document.getElementById('pacienteDNI');
+    if (elDNI) { elDNI.value = p.dni; }
+    const elDireccion = document.getElementById('pacienteDireccion');
+    if (elDireccion) { elDireccion.value = p.direccion; }
+    const elTelefono = document.getElementById('pacienteTelefono');
+    if (elTelefono) { elTelefono.value = p.telefono; }
+    const elObraSocial = document.getElementById('pacienteObraSocial');
+    if (elObraSocial) { elObraSocial.value = p.obraSocial; }
+    const elPatologia = document.getElementById('pacientePatologia');
+    if (elPatologia) { elPatologia.value = p.patologia; }
+    const elTitulo = document.getElementById('tituloModalPaciente');
+    if (elTitulo) { elTitulo.textContent = 'Editar Paciente'; }
+    const elModal = document.getElementById('modalPaciente');
+    if (elModal) { elModal.style.display = 'block'; }
 };
 
 window.eliminarPaciente = function(e, id) {
@@ -230,16 +250,20 @@ window.verFichaPaciente = function(id) {
     const pacientes = getPacientes();
     const p = pacientes.find(p => p.id === id);
     if (!p) return;
-    document.querySelector('.pacientes-section').style.display = 'none';
-    document.getElementById('fichaPaciente').style.display = 'block';
-    document.getElementById('nombreFichaPaciente').textContent = p.nombre;
-    document.getElementById('datosPaciente').innerHTML = `
-        <b>DNI:</b> ${p.dni}<br>
-        <b>Dirección:</b> ${p.direccion}<br>
-        <b>Teléfono:</b> ${p.telefono}<br>
-        <b>Obra social:</b> ${p.obraSocial}<br>
-        <b>Patología:</b> ${p.patologia}
-    `;
+    const el = document.getElementById('fichaPaciente');
+    if (el) { el.style.display = 'block'; }
+    const elNombre = document.getElementById('nombreFichaPaciente');
+    if (elNombre) { elNombre.textContent = p.nombre; }
+    const elDatos = document.getElementById('datosPaciente');
+    if (elDatos) {
+        elDatos.innerHTML = `
+            <b>DNI:</b> ${p.dni}<br>
+            <b>Dirección:</b> ${p.direccion}<br>
+            <b>Teléfono:</b> ${p.telefono}<br>
+            <b>Obra social:</b> ${p.obraSocial}<br>
+            <b>Patología:</b> ${p.patologia}
+        `;
+    }
     mostrarEstudios(p);
     mostrarVisitas(p);
 };
@@ -256,21 +280,25 @@ function mostrarEstudios(paciente) {
             </div>
         `).join('');
     // Handler de subida
-    document.getElementById('formEstudio').onsubmit = function(ev) {
-        ev.preventDefault();
-        const nombre = document.getElementById('nombreEstudio').value.trim();
-        const archivo = document.getElementById('archivoEstudio').files[0];
-        if (!nombre || !archivo) return alert('Completa nombre y archivo');
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const url = e.target.result;
-            paciente.estudios.push({ nombre, url });
-            guardarPaciente(paciente);
-            mostrarEstudios(paciente);
-            document.getElementById('formEstudio').reset();
+    const el = document.getElementById('formEstudio');
+    if (el) {
+        el.onsubmit = function(ev) {
+            ev.preventDefault();
+            const nombre = document.getElementById('nombreEstudio').value.trim();
+            const archivo = document.getElementById('archivoEstudio').files[0];
+            if (!nombre || !archivo) return alert('Completa nombre y archivo');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const url = e.target.result;
+                paciente.estudios.push({ nombre, url });
+                guardarPaciente(paciente);
+                mostrarEstudios(paciente);
+                const elReset = document.getElementById('formEstudio');
+                if (elReset) { elReset.reset(); }
+            };
+            reader.readAsDataURL(archivo);
         };
-        reader.readAsDataURL(archivo);
-    };
+    }
 }
 
 window.eliminarEstudio = function(pacienteId, idx) {
@@ -310,38 +338,45 @@ function mostrarVisitas(paciente) {
         `).join('');
     mostrarEstadisticasVisitas(paciente);
     // Handler de nueva visita
-    document.getElementById('formVisita').onsubmit = function(ev) {
-        ev.preventDefault();
-        const idVisita = document.getElementById('visitaId').value;
-        const fecha = document.getElementById('visitaFecha').value;
-        const tipo = document.getElementById('visitaTipo').value;
-        const estado = document.getElementById('visitaEstado').value;
-        const observaciones = document.getElementById('visitaObservaciones').value;
-        const problemas = document.getElementById('visitaProblemas').value;
-        const tratamiento = document.getElementById('visitaTratamiento').value;
-        if (!fecha) return alert('La fecha es obligatoria');
-        if (!tipo) return alert('Selecciona el tipo de visita');
-        if (!estado) return alert('Selecciona el estado clínico');
-        if (idVisita) {
-            paciente.visitas[idVisita] = { fecha, tipo, estado, observaciones, problemas, tratamiento };
-        } else {
-            paciente.visitas.push({ fecha, tipo, estado, observaciones, problemas, tratamiento });
-        }
-        guardarPaciente(paciente);
-        cerrarModalVisita();
-        mostrarVisitas(paciente);
-    };
+    const el = document.getElementById('formVisita');
+    if (el) {
+        el.onsubmit = function(ev) {
+            ev.preventDefault();
+            const idVisita = document.getElementById('visitaId').value;
+            const fecha = document.getElementById('visitaFecha').value;
+            const tipo = document.getElementById('visitaTipo').value;
+            const estado = document.getElementById('visitaEstado').value;
+            const observaciones = document.getElementById('visitaObservaciones').value;
+            const problemas = document.getElementById('visitaProblemas').value;
+            const tratamiento = document.getElementById('visitaTratamiento').value;
+            if (!fecha) return alert('La fecha es obligatoria');
+            if (!tipo) return alert('Selecciona el tipo de visita');
+            if (!estado) return alert('Selecciona el estado clínico');
+            if (idVisita) {
+                paciente.visitas[idVisita] = { fecha, tipo, estado, observaciones, problemas, tratamiento };
+            } else {
+                paciente.visitas.push({ fecha, tipo, estado, observaciones, problemas, tratamiento });
+            }
+            guardarPaciente(paciente);
+            cerrarModalVisita();
+            mostrarVisitas(paciente);
+        };
+    }
 }
 
 window.mostrarFormularioVisita = function() {
-    document.getElementById('formVisita').reset();
+    const el = document.getElementById('formVisita');
+    if (el) { el.reset(); }
     document.getElementById('visitaId').value = '';
-    document.getElementById('tituloModalVisita').textContent = 'Nueva Visita';
-    document.getElementById('modalVisita').style.display = 'block';
+    const elTitulo = document.getElementById('tituloModalVisita');
+    if (elTitulo) { elTitulo.textContent = 'Nueva Visita'; }
+    const elModal = document.getElementById('modalVisita');
+    if (elModal) { elModal.style.display = 'block'; }
 };
 
 window.cerrarModalVisita = function() {
-    document.getElementById('modalVisita').style.display = 'none';
+    const el = document.getElementById('modalVisita');
+    if (el) { el.style.display = 'none'; }
 };
 
 window.editarVisita = function(pacienteId, idx) {
@@ -349,15 +384,24 @@ window.editarVisita = function(pacienteId, idx) {
     const p = pacientes.find(p => p.id === pacienteId);
     if (!p) return;
     const v = p.visitas[idx];
-    document.getElementById('visitaId').value = idx;
-    document.getElementById('visitaFecha').value = v.fecha;
-    document.getElementById('visitaTipo').value = v.tipo;
-    document.getElementById('visitaEstado').value = v.estado;
-    document.getElementById('visitaObservaciones').value = v.observaciones;
-    document.getElementById('visitaProblemas').value = v.problemas;
-    document.getElementById('visitaTratamiento').value = v.tratamiento;
-    document.getElementById('tituloModalVisita').textContent = 'Editar Visita';
-    document.getElementById('modalVisita').style.display = 'block';
+    const el = document.getElementById('visitaId');
+    if (el) { el.value = idx; }
+    const elFecha = document.getElementById('visitaFecha');
+    if (elFecha) { elFecha.value = v.fecha; }
+    const elTipo = document.getElementById('visitaTipo');
+    if (elTipo) { elTipo.value = v.tipo; }
+    const elEstado = document.getElementById('visitaEstado');
+    if (elEstado) { elEstado.value = v.estado; }
+    const elObservaciones = document.getElementById('visitaObservaciones');
+    if (elObservaciones) { elObservaciones.value = v.observaciones; }
+    const elProblemas = document.getElementById('visitaProblemas');
+    if (elProblemas) { elProblemas.value = v.problemas; }
+    const elTratamiento = document.getElementById('visitaTratamiento');
+    if (elTratamiento) { elTratamiento.value = v.tratamiento; }
+    const elTitulo = document.getElementById('tituloModalVisita');
+    if (elTitulo) { elTitulo.textContent = 'Editar Visita'; }
+    const elModal = document.getElementById('modalVisita');
+    if (elModal) { elModal.style.display = 'block'; }
 };
 
 window.eliminarVisita = function(pacienteId, idx) {
@@ -391,11 +435,14 @@ function mostrarEstadisticasVisitas(paciente) {
     }
     const ultima = visitas[visitas.length - 1];
     const diasUltima = Math.floor((new Date() - new Date(ultima.fecha)) / (1000 * 60 * 60 * 24));
-    div.innerHTML = `
-        <b>Total de visitas:</b> ${total}<br>
-        <b>Promedio entre visitas:</b> ${promedio}<br>
-        <b>Última visita:</b> ${ultima.fecha} (${diasUltima} días atrás)
-    `;
+    const el = document.getElementById('estadisticasVisitas');
+    if (el) {
+        el.innerHTML = `
+            <b>Total de visitas:</b> ${total}<br>
+            <b>Promedio entre visitas:</b> ${promedio}<br>
+            <b>Última visita:</b> ${ultima.fecha} (${diasUltima} días atrás)
+        `;
+    }
 }
 
 // --- EXPORTACIÓN ---
@@ -425,13 +472,17 @@ window.exportarHistoriaClinica = function(tipo) {
 
 // --- AUTENTICACIÓN Y REGISTRO CON FIREBASE ---
 function showRegister() {
-    document.getElementById('loginCard').style.display = 'none';
-    document.getElementById('registerCard').style.display = 'block';
+    const el = document.getElementById('loginCard');
+    if (el) { el.style.display = 'none'; }
+    const elRegister = document.getElementById('registerCard');
+    if (elRegister) { elRegister.style.display = 'block'; }
 }
 
 function showLogin() {
-    document.getElementById('registerCard').style.display = 'none';
-    document.getElementById('loginCard').style.display = 'block';
+    const el = document.getElementById('registerCard');
+    if (el) { el.style.display = 'none'; }
+    const elLogin = document.getElementById('loginCard');
+    if (elLogin) { elLogin.style.display = 'block'; }
 }
 
 document.getElementById('registerForm').onsubmit = async function(e) {
@@ -442,8 +493,8 @@ document.getElementById('registerForm').onsubmit = async function(e) {
     const errorDiv = document.getElementById('registerError');
     errorDiv.style.display = 'none';
     try {
-        await auth.createUserWithEmailAndPassword(email, password);
-        await auth.currentUser.updateProfile({ displayName: name });
+        await window.auth.createUserWithEmailAndPassword(email, password);
+        await window.auth.currentUser.updateProfile({ displayName: name });
         showLogin();
     } catch (err) {
         errorDiv.textContent = err.message;
@@ -458,7 +509,7 @@ document.getElementById('loginForm').onsubmit = async function(e) {
     const errorDiv = document.getElementById('loginError');
     errorDiv.style.display = 'none';
     try {
-        await auth.signInWithEmailAndPassword(email, password);
+        await window.auth.signInWithEmailAndPassword(email, password);
         location.reload();
     } catch (err) {
         errorDiv.textContent = err.message;
@@ -466,7 +517,7 @@ document.getElementById('loginForm').onsubmit = async function(e) {
     }
 };
 
-auth.onAuthStateChanged(user => {
+window.auth.onAuthStateChanged(user => {
     if (user) {
         document.querySelector('.container').style.display = 'none';
         // Aquí puedes mostrar la app principal y cargar pacientes del usuario
@@ -478,7 +529,7 @@ auth.onAuthStateChanged(user => {
 
 // --- PACIENTES Y VISITAS EN FIRESTORE ---
 async function cargarPacientesFirestore() {
-    const user = auth.currentUser;
+    const user = window.auth.currentUser;
     if (!user) return;
     const pacientesRef = db.collection('usuarios').doc(user.uid).collection('pacientes');
     const snapshot = await pacientesRef.get();
@@ -496,7 +547,7 @@ async function cargarPacientesFirestore() {
 }
 
 window.verFichaPacienteFirestore = async function(id) {
-    const user = auth.currentUser;
+    const user = window.auth.currentUser;
     if (!user) return;
     const doc = await db.collection('usuarios').doc(user.uid).collection('pacientes').doc(id).get();
     if (!doc.exists) return;
@@ -515,7 +566,7 @@ window.verFichaPacienteFirestore = async function(id) {
 };
 
 async function mostrarVisitasFirestore(pacienteId) {
-    const user = auth.currentUser;
+    const user = window.auth.currentUser;
     if (!user) return;
     const visitasRef = db.collection('usuarios').doc(user.uid).collection('pacientes').doc(pacienteId).collection('visitas');
     const snapshot = await visitasRef.orderBy('fecha').get();
@@ -537,7 +588,7 @@ async function mostrarVisitasFirestore(pacienteId) {
 
 document.getElementById('formVisita').onsubmit = async function(e) {
     e.preventDefault();
-    const user = auth.currentUser;
+    const user = window.auth.currentUser;
     if (!user) return;
     const pacienteId = document.getElementById('nombreFichaPaciente').dataset.id;
     const idVisita = document.getElementById('visitaId').value;
@@ -558,7 +609,7 @@ document.getElementById('formVisita').onsubmit = async function(e) {
 };
 
 window.editarVisitaFirestore = async function(pacienteId, visitaId) {
-    const user = auth.currentUser;
+    const user = window.auth.currentUser;
     if (!user) return;
     const doc = await db.collection('usuarios').doc(user.uid).collection('pacientes').doc(pacienteId).collection('visitas').doc(visitaId).get();
     if (!doc.exists) return;
@@ -575,7 +626,7 @@ window.editarVisitaFirestore = async function(pacienteId, visitaId) {
 };
 
 window.eliminarVisitaFirestore = async function(pacienteId, visitaId) {
-    const user = auth.currentUser;
+    const user = window.auth.currentUser;
     if (!user) return;
     await db.collection('usuarios').doc(user.uid).collection('pacientes').doc(pacienteId).collection('visitas').doc(visitaId).delete();
     mostrarVisitasFirestore(pacienteId);

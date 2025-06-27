@@ -1,28 +1,37 @@
 // Configuración de Firebase para CLINICAL DATA
-// Reemplaza estos valores por los de tu propio proyecto en https://console.firebase.google.com/
-const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_STORAGE_BUCKET",
-  messagingSenderId: "TU_MESSAGING_SENDER_ID",
-  appId: "TU_APP_ID"
+// Este archivo debe cargarse DESPUÉS de los scripts de Firebase CDN y ANTES de cualquier script que use 'auth' o 'db'.
+
+// Tu configuración de Firebase
+var firebaseConfig = {
+  apiKey: "AIzaSyDpwMc60IPAJiBwYU6PPc0QHrHSqhKjE8s",
+  authDomain: "clinical-70644.firebaseapp.com",
+  projectId: "clinical-70644",
+  storageBucket: "clinical-70644.firebasestorage.app",
+  messagingSenderId: "166670165939",
+  appId: "1:166670165939:web:05e9352a1a96dbd2a58dc6",
+  measurementId: "G-XJDZ9Z4KJJ"
 };
 
-// Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
+// Inicializar Firebase solo si no está inicializado
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
-// Obtener servicios
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Servicios globales
+window.auth = firebase.auth();
+window.db = firebase.firestore();
 
 // Configuración de Firestore
-db.settings({
+// Comentamos la configuración de settings para evitar warnings
+// Firebase usará configuraciones por defecto que son adecuadas
+/*
+window.db.settings({
   cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
 });
+*/
 
 // Habilitar persistencia offline
-db.enablePersistence()
+window.db.enablePersistence()
   .catch((err) => {
     if (err.code == 'failed-precondition') {
       console.log('Persistencia falló - múltiples pestañas abiertas');
