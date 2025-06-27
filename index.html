@@ -216,6 +216,201 @@
     </div>
   </div>
 
+  <!-- Estructura principal de la aplicación (oculta inicialmente) -->
+  <div id="authContainer" style="display: none;">
+    <div id="userInfo" style="display: none;">
+      <div id="userAvatar"></div>
+      <div>
+        <div id="userName"></div>
+        <div id="userEmail"></div>
+      </div>
+      <button onclick="logout()">Cerrar Sesión</button>
+    </div>
+  </div>
+
+  <div id="mainContent" style="display: none;">
+    <!-- Selector de Bitácoras -->
+    <div id="bitacoraSelector"></div>
+    
+    <!-- Formulario Nueva Bitácora -->
+    <div id="newBitacoraForm" style="display: none;">
+      <h3>Nueva Bitácora</h3>
+      <input type="text" id="newBitacoraName" placeholder="Nombre de la bitácora">
+      <div id="colorPicker"></div>
+      
+      <!-- Cepas -->
+      <div>
+        <input type="text" id="cepaNombre" placeholder="Nombre cepa">
+        <input type="number" id="cepaCantidad" value="1" min="1">
+        <select id="cepaTipo" onchange="toggleGerminacionField()">
+          <option value="clon">Clon</option>
+          <option value="semilla">Semilla</option>
+        </select>
+        <div id="semillaFields" style="display: none;">
+          <input type="text" id="cepaGerminacion" placeholder="Germinación">
+        </div>
+        <button onclick="addCepa()">Agregar Cepa</button>
+        <div id="cepasList"></div>
+      </div>
+      
+      <!-- Tipo de Cultivo -->
+      <select id="tipoCultivo" onchange="toggleInteriorFields()">
+        <option value="">Seleccionar tipo</option>
+        <option value="interior">Interior</option>
+        <option value="exterior">Exterior</option>
+        <option value="invernadero">Invernadero</option>
+      </select>
+      
+      <div id="interiorFields" style="display: none;">
+        <input type="number" id="numCarpas" onchange="toggleCarpasFields()">
+        <input type="checkbox" id="soloSala" onchange="toggleCarpasFields()">
+        <div id="carpasList"></div>
+        
+        <input type="number" id="lamparasVege">
+        <input type="text" id="wattsVege">
+        <input type="number" id="lamparasFlora">
+        <input type="text" id="wattsFlora">
+        <input type="number" id="ventiladores">
+        <input type="text" id="pulgadasVentilador">
+        
+        <select id="filtroAire">
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+        
+        <select id="aireAcondicionado" onchange="toggleFrigorias()">
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+        <input type="text" id="frigorias" style="display: none;">
+      </div>
+      
+      <!-- Extractores -->
+      <div>
+        <input type="number" id="extractorCantidad" value="1">
+        <input type="text" id="extractorPulgadas" placeholder="Pulgadas">
+        <button onclick="addExtractor()">Agregar Extractor</button>
+        <div id="extractoresList"></div>
+      </div>
+      
+      <!-- Riego -->
+      <div id="riegoOptions">
+        <input type="checkbox" value="manual"> Manual
+        <input type="checkbox" value="goteo"> Goteo
+        <input type="checkbox" value="hidroponica"> Hidropónica
+      </div>
+      <input type="text" id="detalleRiego" placeholder="Detalles del riego">
+      <input type="text" id="sustrato" placeholder="Sustrato">
+      
+      <!-- Luces -->
+      <div>
+        <button id="luzSolBtn" onclick="selectLuz('sol')">Sol</button>
+        <button id="luzArtificialBtn" onclick="selectLuz('luz')">Artificial</button>
+        <button id="luzMixtoBtn" onclick="selectLuz('mixto')">Mixto</button>
+        <div id="luzSolIcon" style="display: none;">☀️</div>
+        <div id="luzArtificialFields" style="display: none;">
+          <input type="text" id="luzNombre" placeholder="Nombre luz">
+          <input type="number" id="luzCantidad" value="1">
+          <input type="number" id="luzWatts" placeholder="Watts">
+          <button onclick="addLuz()">Agregar Luz</button>
+        </div>
+        <div id="lucesList"></div>
+      </div>
+      
+      <button onclick="createNewBitacora()">Crear Bitácora</button>
+    </div>
+    
+    <!-- Botones de Etapa -->
+    <div>
+      <button id="btn-vege" class="stage-btn" onclick="setStage('vege')">Vege</button>
+      <button id="btn-flora" class="stage-btn" onclick="setStage('flora')">Flora</button>
+      <button id="btn-general" class="stage-btn" onclick="setStage('general')">General</button>
+    </div>
+    
+    <!-- Contenido según etapa -->
+    <div id="floraStartContainer" style="display: none;">
+      <input type="date" id="floraStart" onchange="setFloraStart()">
+    </div>
+    
+    <div id="bitacoraInfo" style="display: none;">
+      <div id="bitacoraInfoContent"></div>
+    </div>
+    
+    <div id="entryForm">
+      <input type="date" id="date">
+      <div id="moodOptions"></div>
+      <textarea id="tasks" placeholder="Tareas realizadas"></textarea>
+      <textarea id="issues" placeholder="Problemas observados"></textarea>
+      <textarea id="notes" placeholder="Notas adicionales"></textarea>
+      
+      <div>
+        <input type="radio" name="water" value="true" onchange="setWater(true)"> Regué
+        <input type="radio" name="water" value="false" onchange="setWater(false)"> No regué
+      </div>
+      
+      <div id="waterDetails" style="display: none;">
+        <input type="text" id="waterAmount" placeholder="Cantidad agua">
+        <input type="text" id="nutrients" placeholder="Nutrientes">
+        <input type="text" id="ph" placeholder="pH">
+        <input type="text" id="ec" placeholder="EC">
+      </div>
+      
+      <button onclick="saveEntry()">Guardar Entrada</button>
+    </div>
+    
+    <!-- Resumen Semanal -->
+    <div>
+      <div id="totalEntries"></div>
+      <div id="averageMood"></div>
+      <div id="wateredDays"></div>
+      <div id="emotionTimeline"></div>
+    </div>
+    
+    <!-- Historial y Calendario -->
+    <div id="history"></div>
+    <div id="calendarVisual"></div>
+    
+    <!-- Elementos adicionales -->
+    <div id="ultimoRespaldo"></div>
+    <button id="toggleDarkMode" onclick="toggleDarkMode()">🌙</button>
+  </div>
+
+  <!-- Modales -->
+  <div id="editModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <button onclick="closeEditModal()">✕</button>
+      <input type="password" id="editPassword" placeholder="Contraseña">
+      <button onclick="verifyEditPassword()">Verificar</button>
+      <div id="editForm" style="display: none;">
+        <!-- Formulario de edición -->
+      </div>
+    </div>
+  </div>
+  
+  <div id="editBitacoraModal" class="modal" style="display: none;">
+    <div class="modal-content edit-bitacora-content">
+      <button onclick="closeEditBitacoraModal()">✕</button>
+      <input type="text" id="editBitacoraName" placeholder="Nombre">
+      <div id="editColorPicker"></div>
+      <button onclick="saveBitacoraEdit()">Guardar</button>
+    </div>
+  </div>
+  
+  <div id="backupModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <button onclick="closeBackupModal()">✕</button>
+      <div id="backupList"></div>
+    </div>
+  </div>
+  
+  <div id="helpModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <button onclick="closeHelpModal()">✕</button>
+      <h3>Ayuda</h3>
+      <p>Instrucciones de uso...</p>
+    </div>
+  </div>
+
   <script>
     // Variables globales del sistema de autenticación
     let currentUser = null;
@@ -284,15 +479,23 @@
 
     // Funciones de autenticación
     function showAuthContainer() {
-      const el = document.getElementById('authContainer');
-      if (el) el.classList.add('active');
-      document.querySelector('.container').style.display = 'none';
+      const loginContainer = document.querySelector('.container');
+      const mainContent = document.getElementById('mainContent');
+      const authContainer = document.getElementById('authContainer');
+      
+      if (loginContainer) loginContainer.style.display = 'block';
+      if (mainContent) mainContent.style.display = 'none';
+      if (authContainer) authContainer.style.display = 'none';
     }
 
     function hideAuthContainer() {
-      const el = document.getElementById('authContainer');
-      if (el) el.classList.remove('active');
-      document.querySelector('.container').style.display = 'block';
+      const loginContainer = document.querySelector('.container');
+      const mainContent = document.getElementById('mainContent');
+      const authContainer = document.getElementById('authContainer');
+      
+      if (loginContainer) loginContainer.style.display = 'none';
+      if (mainContent) mainContent.style.display = 'block';
+      if (authContainer) authContainer.style.display = 'block';
     }
 
     function showUserInfo(user) {
@@ -301,16 +504,18 @@
       const userName = document.getElementById('userName');
       const userEmail = document.getElementById('userEmail');
 
+      if (!userInfo) return;
+
       // Mostrar información del usuario
       userInfo.style.display = 'flex';
       
       // Avatar con iniciales
       const displayName = user.displayName || user.email.split('@')[0];
-      userAvatar.textContent = displayName.charAt(0).toUpperCase();
+      if (userAvatar) userAvatar.textContent = displayName.charAt(0).toUpperCase();
       
       // Nombre y email
-      userName.textContent = displayName;
-      userEmail.textContent = user.email;
+      if (userName) userName.textContent = displayName;
+      if (userEmail) userEmail.textContent = user.email;
     }
 
     function hideUserInfo() {
@@ -338,34 +543,22 @@
     // Login
     document.getElementById('loginForm')?.addEventListener('submit', async function(e) {
       e.preventDefault();
-      var userInput = document.getElementById('loginUser');
+      var userInput = document.getElementById('loginEmail');
       var passInput = document.getElementById('loginPassword');
       if (!userInput || !passInput) return;
-      var username = userInput.value.trim();
+      var email = userInput.value.trim();
       var password = passInput.value;
-      const loginBtn = document.getElementById('loginBtn');
-      const loginBtnText = document.getElementById('loginBtnText');
-      const loginBtnLoading = document.getElementById('loginBtnLoading');
       const loginError = document.getElementById('loginError');
 
-      // Mostrar loading
-      loginBtn.disabled = true;
-      loginBtnText.style.display = 'none';
-      loginBtnLoading.style.display = 'inline-block';
-      loginError.style.display = 'none';
-
       try {
-        await auth.signInWithEmailAndPassword(username, password);
+        await auth.signInWithEmailAndPassword(email, password);
         // El onAuthStateChanged se encargará del resto
       } catch (error) {
         console.error('Error de login:', error);
-        loginError.textContent = getErrorMessage(error.code);
-        loginError.style.display = 'block';
-      } finally {
-        // Ocultar loading
-        loginBtn.disabled = false;
-        loginBtnText.style.display = 'inline';
-        loginBtnLoading.style.display = 'none';
+        if (loginError) {
+          loginError.textContent = getErrorMessage(error.code);
+          loginError.style.display = 'block';
+        }
       }
     });
 
@@ -376,24 +569,7 @@
       const name = document.getElementById('registerName').value;
       const email = document.getElementById('registerEmail').value;
       const password = document.getElementById('registerPassword').value;
-      const confirmPassword = document.getElementById('registerConfirmPassword').value;
-      const registerBtn = document.getElementById('registerBtn');
-      const registerBtnText = document.getElementById('registerBtnText');
-      const registerBtnLoading = document.getElementById('registerBtnLoading');
       const registerError = document.getElementById('registerError');
-
-      // Validar contraseñas
-      if (password !== confirmPassword) {
-        registerError.textContent = 'Las contraseñas no coinciden';
-        registerError.style.display = 'block';
-        return;
-      }
-
-      // Mostrar loading
-      registerBtn.disabled = true;
-      registerBtnText.style.display = 'none';
-      registerBtnLoading.style.display = 'inline-block';
-      registerError.style.display = 'none';
 
       try {
         // Crear usuario
@@ -417,13 +593,10 @@
 
       } catch (error) {
         console.error('Error de registro:', error);
-        registerError.textContent = getErrorMessage(error.code);
-        registerError.style.display = 'block';
-      } finally {
-        // Ocultar loading
-        registerBtn.disabled = false;
-        registerBtnText.style.display = 'inline';
-        registerBtnLoading.style.display = 'none';
+        if (registerError) {
+          registerError.textContent = getErrorMessage(error.code);
+          registerError.style.display = 'block';
+        }
       }
     });
 
@@ -566,8 +739,12 @@
       localStorage.removeItem('bitacoras');
       localStorage.removeItem('bitacora_backups');
       selectedBitacora = null;
-      document.getElementById('mainContent').style.display = 'none';
-      document.getElementById('bitacoraSelector').innerHTML = '';
+      
+      const mainContent = document.getElementById('mainContent');
+      if (mainContent) mainContent.style.display = 'none';
+      
+      const bitacoraSelector = document.getElementById('bitacoraSelector');
+      if (bitacoraSelector) bitacoraSelector.innerHTML = '';
     }
 
     // ===== FUNCIONES MODIFICADAS PARA FIRESTORE =====
