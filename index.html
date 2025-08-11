@@ -840,7 +840,83 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="firebase-config.js"></script>
+  
+  <!-- Firebase Configuration Inline -->
+  <script>
+    console.log('🔥 Inicializando Firebase inline...');
+    
+    // Tu configuración de Firebase
+    var firebaseConfig = {
+      apiKey: "AIzaSyDpwMc60IPAJiBwYU6PPc0QHrHSqhKjE8s",
+      authDomain: "clinical-70644.firebaseapp.com",
+      projectId: "clinical-70644",
+      storageBucket: "clinical-70644.firebasestorage.app",
+      messagingSenderId: "166670165939",
+      appId: "1:166670165639:web:05e9352a1a96dbd2a58dc6",
+      measurementId: "G-XJDZ9Z4KJJ"
+    };
+
+    // Función de inicialización robusta
+    function initFirebase() {
+      try {
+        console.log('🚀 Firebase disponible:', typeof firebase !== 'undefined');
+        console.log('🚀 Firebase.apps:', firebase?.apps?.length || 0);
+        
+        if (typeof firebase === 'undefined') {
+          console.error('❌ Firebase no está cargado');
+          return false;
+        }
+
+        // Inicializar Firebase solo si no está inicializado
+        if (!firebase.apps.length) {
+          console.log('🚀 Inicializando Firebase...');
+          firebase.initializeApp(firebaseConfig);
+          console.log('✅ Firebase inicializado correctamente');
+        } else {
+          console.log('✅ Firebase ya estaba inicializado');
+        }
+
+        // Servicios globales
+        window.auth = firebase.auth();
+        window.db = firebase.firestore();
+        
+        console.log('✅ Firebase Auth disponible:', !!window.auth);
+        console.log('✅ Firebase Firestore disponible:', !!window.db);
+        
+        // Configuración básica de Firestore
+        try {
+          window.db.settings({
+            experimentalAutoDetectLongPolling: true
+          });
+          console.log('✅ Configuración de Firestore aplicada');
+        } catch (e) {
+          console.warn('⚠️ No se pudieron aplicar ajustes de Firestore:', e);
+        }
+
+        // Persistencia offline
+        window.db.enablePersistence({ synchronizeTabs: true })
+          .then(() => console.log('✅ Persistencia offline habilitada'))
+          .catch((err) => {
+            console.warn('⚠️ Persistencia offline no disponible:', err.code);
+          });
+          
+        return true;
+        
+      } catch (error) {
+        console.error('❌ Error al inicializar Firebase:', error);
+        return false;
+      }
+    }
+
+    // Intentar inicializar inmediatamente
+    if (!initFirebase()) {
+      // Si falla, reintentar después de un momento
+      setTimeout(() => {
+        console.log('🔄 Reintentando inicialización de Firebase...');
+        initFirebase();
+      }, 1000);
+    }
+  </script>
   
   <!-- Librerías para funcionalidades adicionales -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1351,30 +1427,18 @@
     // Verificar que Firebase esté cargado antes de inicializar
     function initializeAuth() {
       if (typeof firebase === 'undefined') {
-        console.error('Firebase no está cargado');
+        console.error('❌ Firebase no está cargado');
         setTimeout(initializeAuth, 1000); // Reintentar en 1 segundo
         return;
       }
 
       if (!window.auth) {
         console.error('❌ Firebase Auth no está disponible');
-        console.log('🔄 Intentando reinicializar Firebase...');
-        
-        // Intentar reinicializar
-        setTimeout(() => {
-          if (typeof firebase !== 'undefined' && firebase.auth) {
-            window.auth = firebase.auth();
-            window.db = firebase.firestore();
-            console.log('✅ Firebase reinicializado correctamente');
-            initializeAuth(); // Reintentar
-          } else {
-            console.error('❌ Firebase sigue no disponible después de reintento');
-          }
-        }, 2000);
+        setTimeout(initializeAuth, 2000); // Reintentar en 2 segundos
         return;
       }
 
-      console.log('Firebase inicializado correctamente');
+      console.log('✅ Firebase Auth inicializado correctamente');
       
       // Función de prueba para verificar conectividad
       window.testFirebaseConnection = async function() {
