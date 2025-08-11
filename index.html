@@ -1357,7 +1357,20 @@
       }
 
       if (!window.auth) {
-        console.error('Firebase Auth no está disponible');
+        console.error('❌ Firebase Auth no está disponible');
+        console.log('🔄 Intentando reinicializar Firebase...');
+        
+        // Intentar reinicializar
+        setTimeout(() => {
+          if (typeof firebase !== 'undefined' && firebase.auth) {
+            window.auth = firebase.auth();
+            window.db = firebase.firestore();
+            console.log('✅ Firebase reinicializado correctamente');
+            initializeAuth(); // Reintentar
+          } else {
+            console.error('❌ Firebase sigue no disponible después de reintento');
+          }
+        }, 2000);
         return;
       }
 
