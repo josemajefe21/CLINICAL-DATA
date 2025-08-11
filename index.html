@@ -3672,7 +3672,8 @@
         }
 
         // Verificar DNI único
-        const pacienteExistente = allPacientes.find(p => p.dni === dni && p.id !== id);
+        const pacientesArray = window.allPacientes || allPacientes || [];
+        const pacienteExistente = pacientesArray.find(p => p.dni === dni && p.id !== id);
         if (pacienteExistente) {
           alert('❌ Ya existe un paciente con este DNI');
           return;
@@ -3696,27 +3697,37 @@
           // PASO 1: GUARDAR SIEMPRE EN localStorage PRIMERO (persistencia garantizada)
           console.log('💾 Guardando en localStorage...');
           
-          // Agregar/actualizar en la lista local
+          // ASEGURAR QUE EXISTAN LOS ARRAYS GLOBALES
+          if (!window.allPacientes) window.allPacientes = [];
+          if (!allPacientes) allPacientes = [];
+
+          // Agregar/actualizar en AMBAS listas locales
           if (id) {
             // Editar existente
-            const index = allPacientes.findIndex(p => p.id === id);
-            if (index !== -1) {
-              allPacientes[index] = { ...allPacientes[index], ...nuevoPaciente };
-              console.log('✅ Paciente actualizado localmente');
+            const indexWindow = window.allPacientes.findIndex(p => p.id === id);
+            const indexGlobal = allPacientes.findIndex(p => p.id === id);
+            
+            if (indexWindow !== -1) {
+              window.allPacientes[indexWindow] = { ...window.allPacientes[indexWindow], ...nuevoPaciente };
             }
+            if (indexGlobal !== -1) {
+              allPacientes[indexGlobal] = { ...allPacientes[indexGlobal], ...nuevoPaciente };
+            }
+            console.log('✅ Paciente actualizado localmente');
           } else {
             // Nuevo paciente
+            window.allPacientes.push(nuevoPaciente);
             allPacientes.push(nuevoPaciente);
             console.log('✅ Nuevo paciente agregado localmente');
           }
           
           // GUARDAR INMEDIATAMENTE EN localStorage (CRÍTICO PARA PERSISTENCIA)
-          localStorage.setItem('allPacientes', JSON.stringify(allPacientes));
+          localStorage.setItem('allPacientes', JSON.stringify(window.allPacientes));
           console.log('💾 ✅ Pacientes guardados en localStorage');
           
           // BACKUP UNIFICADO TAMBIÉN
           const backupData = {
-            pacientes: allPacientes,
+            pacientes: window.allPacientes,
             recordatorios: window.allRecordatorios || [],
             citas: window.allCitas || [],
             timestamp: new Date().toISOString()
@@ -3725,7 +3736,7 @@
           console.log('💾 ✅ Backup unificado actualizado');
           
           selectedPaciente = nuevoPaciente;
-          console.log('📊 Total pacientes después de agregar:', allPacientes.length);
+          console.log('📊 Total pacientes después de agregar:', window.allPacientes.length);
           
           // PASO 2: Intentar guardar en Firebase (secundario, puede fallar)
           if (window.currentUser && window.setDoc) {
@@ -3959,12 +3970,23 @@
     }
 
     // Renderizar selector de pacientes
-    function renderPacienteSelector() {
+    window.renderPacienteSelector = function renderPacienteSelector() {
+      console.log('🔄 renderPacienteSelector llamado');
       const container = document.getElementById('pacienteSelector');
       if (!container) return;
 
+      // SINCRONIZAR VARIABLES GLOBALES
+      if (window.allPacientes && window.allPacientes.length > 0) {
+        allPacientes = window.allPacientes;  // Sincronizar global con window
+      } else if (allPacientes && allPacientes.length > 0) {
+        window.allPacientes = allPacientes;  // Sincronizar window con global
+      }
+      
+      const pacientesArray = window.allPacientes || allPacientes || [];
+      console.log('📊 Pacientes disponibles para renderizar:', pacientesArray.length);
+
       const searchValue = document.getElementById('searchInput')?.value?.toLowerCase() || '';
-      const filteredPacientes = allPacientes.filter(p => 
+      const filteredPacientes = pacientesArray.filter(p => 
         p.nombre.toLowerCase().includes(searchValue) ||
         p.dni.includes(searchValue) ||
         (p.patologia && p.patologia.toLowerCase().includes(searchValue))
