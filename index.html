@@ -841,7 +841,7 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, enableNetwork, disableNetwork, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDpwMc60IPAJiBwYU6PPc0QHrHSqhKjE8s",
@@ -856,6 +856,15 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    // Configuración avanzada para Firebase v9 - MEJORAR CONECTIVIDAD
+    try {
+      // Intentar habilitar red si está deshabilitada
+      await enableNetwork(db);
+      console.log('🌐 Red Firebase habilitada');
+    } catch (e) {
+      console.warn('⚠️ No se pudo habilitar red Firebase:', e);
+    }
 
     // Make globally available
     window.auth = auth;
@@ -914,26 +923,58 @@
             recordatorios: window.allRecordatorios.length,
             citas: window.allCitas.length
           });
+
+          // DETECTOR AUTOMÁTICO - Si no hay datos, verificar backup local
+          if (window.allPacientes.length === 0 && window.allRecordatorios.length === 0 && window.allCitas.length === 0) {
+            console.log('⚠️ No se encontraron datos en Firebase, verificando backup local...');
+            const backupData = localStorage.getItem('clinicalDataBackup');
+            if (backupData) {
+              try {
+                const parsed = JSON.parse(backupData);
+                if (parsed.pacientes && parsed.pacientes.length > 0) {
+                  console.log('📦 Encontrados datos en backup local, restaurando...');
+                  window.allPacientes = parsed.pacientes || [];
+                  window.allRecordatorios = parsed.recordatorios || [];
+                  window.allCitas = parsed.citas || [];
+                  console.log('✅ Datos restaurados desde backup:', {
+                    pacientes: window.allPacientes.length,
+                    recordatorios: window.allRecordatorios.length,
+                    citas: window.allCitas.length
+                  });
+                }
+              } catch (e) {
+                console.error('❌ Error al restaurar backup:', e);
+              }
+            }
+          }
           
           // Actualizar interfaz FORZADO
           setTimeout(() => {
             if (window.renderPacienteSelector) {
               window.renderPacienteSelector();
             }
-            // También actualizar otros elementos de la interfaz
+            // ACTUALIZAR INTERFAZ SIEMPRE (con o sin datos)
             const pacienteSelector = document.getElementById('pacienteSelector');
-            if (pacienteSelector && window.allPacientes && window.allPacientes.length > 0) {
+            if (pacienteSelector) {
               console.log('🔄 Actualizando selector de pacientes...');
-              let html = '';
-              window.allPacientes.forEach(paciente => {
-                html += `
-                  <div class="paciente-card" onclick="selectPaciente('${paciente.id}')">
-                    <h4>${paciente.nombre}</h4>
-                    <p>DNI: ${paciente.dni}</p>
-                    <p>${paciente.patologia || 'Sin patología especificada'}</p>
-                  </div>
-                `;
-              });
+              let html = '<h3>Pacientes</h3>';
+              
+              if (window.allPacientes && window.allPacientes.length > 0) {
+                window.allPacientes.forEach(paciente => {
+                  html += `
+                    <div class="paciente-card" onclick="selectPaciente('${paciente.id}')">
+                      <h4>${paciente.nombre}</h4>
+                      <p>DNI: ${paciente.dni}</p>
+                      <p>${paciente.patologia || 'Sin patología especificada'}</p>
+                    </div>
+                  `;
+                });
+                console.log(`✅ Mostrando ${window.allPacientes.length} pacientes`);
+              } else {
+                html += '<p style="color: #666; font-style: italic;">No hay pacientes registrados</p>';
+                console.log('ℹ️ No hay pacientes para mostrar');
+              }
+              
               pacienteSelector.innerHTML = html;
               console.log('✅ Selector de pacientes actualizado');
             }
