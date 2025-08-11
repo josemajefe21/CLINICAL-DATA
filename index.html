@@ -876,14 +876,9 @@
     console.log('✅ Firestore disponible:', !!window.db);
   </script>
   
-  <!-- Librerías para funcionalidades adicionales -->
+  <!-- Librerías UMD sin conflictos -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
-    <script>
-      // Compatibilidad global para Chart.js UMD
-      window.Chart = window.Chart || this.Chart;
-    </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     
   </head>
 <body>
@@ -1382,21 +1377,8 @@
 
     // ===== SISTEMA DE AUTENTICACIÓN =====
 
-    // Verificar que Firebase esté cargado antes de inicializar
-    function initializeAuth() {
-      if (typeof firebase === 'undefined') {
-        console.error('❌ Firebase no está cargado');
-        setTimeout(initializeAuth, 1000); // Reintentar en 1 segundo
-        return;
-      }
-
-      if (!window.auth) {
-        console.error('❌ Firebase Auth no está disponible');
-        setTimeout(initializeAuth, 2000); // Reintentar en 2 segundos
-        return;
-      }
-
-      console.log('✅ Firebase Auth inicializado correctamente');
+    // Firebase v9 ya está inicializado - no necesita verificación adicional
+    console.log('✅ Sistema de autenticación listo');
       
       // Función de prueba para verificar conectividad
       window.testFirebaseConnection = async function() {
@@ -1455,11 +1437,7 @@
     }
 
     // Inicializar cuando la página esté cargada
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initializeAuth);
-    } else {
-      initializeAuth();
-    }
+    // Firebase v9 ya está inicializado automáticamente
 
     // Funciones de autenticación
     function showAuthContainer() {
