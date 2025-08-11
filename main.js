@@ -50,25 +50,68 @@ if (loginForm) {
 
 // Logout handler
 window.logout = () => {
-    window.auth.logout();
-    mostrarLogin();
+    window.auth.signOut().then(() => {
+        mostrarLogin();
+    }).catch((error) => {
+        console.error('Error al cerrar sesión:', error);
+    });
+};
+
+// Función para mostrar el formulario de registro
+window.showRegister = () => {
+    toggleElement('loginCard', false);
+    toggleElement('registerCard', true);
+};
+
+// Función para mostrar el formulario de login
+window.showLogin = () => {
+    toggleElement('loginCard', true);
+    toggleElement('registerCard', false);
 };
 
 function mostrarApp() {
-    toggleElement('authContainer', false);
+    // Ocultar formularios de login/registro
+    toggleElement('loginCard', false);
+    toggleElement('registerCard', false);
+    
+    // Mostrar información del usuario y contenido principal
+    toggleElement('authContainer', true);
     toggleElement('userInfo', true);
     toggleElement('fichaPaciente', false);
     const mainContent = document.getElementById('mainContent');
     if (mainContent) mainContent.style.display = 'block';
-    cargarPacientes();
+    
+    // Actualizar información del usuario
+    updateUserInfo();
+    
+    // Cargar pacientes si la función existe
+    if (typeof cargarPacientes === 'function') {
+        cargarPacientes();
+    }
+}
+
+function updateUserInfo() {
+    const user = window.auth.currentUser;
+    if (user) {
+        const userNameEl = document.getElementById('userName');
+        const userEmailEl = document.getElementById('userEmail');
+        
+        if (userNameEl) userNameEl.textContent = user.displayName || 'Usuario';
+        if (userEmailEl) userEmailEl.textContent = user.email || '';
+    }
 }
 
 function mostrarLogin() {
-    toggleElement('authContainer', true);
+    // Ocultar contenido de la aplicación y información del usuario
+    toggleElement('authContainer', false);
     toggleElement('userInfo', false);
     const mainContent = document.getElementById('mainContent');
     if (mainContent) mainContent.style.display = 'none';
     toggleElement('fichaPaciente', false);
+    
+    // Mostrar formulario de login
+    toggleElement('loginCard', true);
+    toggleElement('registerCard', false);
 }
 
 // CRUD de pacientes (estructura básica, se completará en el siguiente paso)
