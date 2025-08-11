@@ -3643,11 +3643,17 @@
 
         console.log('👤 Nuevo paciente creado:', nuevoPaciente);
 
-        // Guardar en Firebase si hay usuario autenticado
+        // Guardar en Firebase si hay usuario autenticado (merge para evitar override host warning)
         if (currentUser) {
           console.log('☁️ Guardando en Firebase...');
-          await savePacienteToFirestore(nuevoPaciente);
-          console.log('✅ Guardado en Firebase exitoso');
+          try {
+            await db.collection('users').doc(currentUser.uid)
+                    .collection('pacientes').doc(nuevoPaciente.id)
+                    .set(nuevoPaciente, { merge: true });
+            console.log('✅ Guardado en Firebase exitoso');
+          } catch (e) {
+            console.warn('No se pudo guardar en Firebase, continuando con guardado local:', e);
+          }
         } else {
           console.log('⚠️ No hay usuario autenticado, guardando solo localmente');
         }
@@ -3659,8 +3665,12 @@
         
         console.log('📊 Total pacientes después de agregar:', allPacientes.length);
 
-        // Actualizar interfaz
+        // Actualizar interfaz y limpiar formulario
         hideNewPacienteForm();
+        try {
+          ['pacienteNombre','pacienteDNI','pacienteDireccion','pacienteTelefono','pacienteObraSocial','pacientePatologia']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        } catch {}
         renderPacienteSelector();
         showFichaClinica();
         
