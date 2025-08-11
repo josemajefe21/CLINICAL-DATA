@@ -253,7 +253,7 @@ window.verFichaPaciente = function(id) {
     const el = document.getElementById('fichaPaciente');
     if (el) { el.style.display = 'block'; }
     const elNombre = document.getElementById('nombreFichaPaciente');
-    if (elNombre) { elNombre.textContent = p.nombre; }
+    if (elNombre) { elNombre.textContent = p.nombre; elNombre.dataset.id = p.id; }
     const elDatos = document.getElementById('datosPaciente');
     if (elDatos) {
         elDatos.innerHTML = `
@@ -554,7 +554,11 @@ window.verFichaPacienteFirestore = async function(id) {
     const p = doc.data();
     document.querySelector('.pacientes-section').style.display = 'none';
     document.getElementById('fichaPaciente').style.display = 'block';
-    document.getElementById('nombreFichaPaciente').textContent = p.nombre;
+    const nombreEl = document.getElementById('nombreFichaPaciente');
+    if (nombreEl) {
+        nombreEl.textContent = p.nombre;
+        nombreEl.dataset.id = p.id;
+    }
     document.getElementById('datosPaciente').innerHTML = `
         <b>DNI:</b> ${p.dni}<br>
         <b>Dirección:</b> ${p.direccion}<br>
@@ -571,8 +575,14 @@ async function mostrarVisitasFirestore(pacienteId) {
     const visitasRef = db.collection('usuarios').doc(user.uid).collection('pacientes').doc(pacienteId).collection('visitas');
     const snapshot = await visitasRef.orderBy('fecha').get();
     const div = document.getElementById('historialVisitas');
+    const nombreEl = document.getElementById('nombreFichaPaciente');
+    if (nombreEl) nombreEl.dataset.id = pacienteId;
     div.innerHTML = '';
-    snapshot.forEach((doc, i) => {
+    if (snapshot.empty) {
+        div.innerHTML = '<div class="no-info">Sin visitas registradas.</div>';
+        return;
+    }
+    snapshot.forEach((doc) => {
         const v = doc.data();
         const entry = document.createElement('div');
         entry.className = 'entry';
@@ -580,8 +590,8 @@ async function mostrarVisitasFirestore(pacienteId) {
             <b>Observaciones:</b> ${v.observaciones}<br>
             <b>Problemas:</b> ${v.problemas}<br>
             <b>Tratamiento:</b> ${v.tratamiento}<br>
-            <button onclick="editarVisitaFirestore('${pacienteId}','${doc.id}')">✏️</button>
-            <button onclick="eliminarVisitaFirestore('${pacienteId}','${doc.id}')">🗑️</button>`;
+            <button onclick=\"editarVisitaFirestore('${pacienteId}','${doc.id}')\">✏️</button>
+            <button onclick=\"eliminarVisitaFirestore('${pacienteId}','${doc.id}')\">🗑️</button>`;
         div.appendChild(entry);
     });
 }
@@ -591,6 +601,10 @@ document.getElementById('formVisita').onsubmit = async function(e) {
     const user = window.auth.currentUser;
     if (!user) return;
     const pacienteId = document.getElementById('nombreFichaPaciente').dataset.id;
+    if (!pacienteId) {
+        alert('No se pudo identificar el paciente. Vuelve a abrir la ficha e inténtalo de nuevo.');
+        return;
+    }
     const idVisita = document.getElementById('visitaId').value;
     const fecha = document.getElementById('visitaFecha').value;
     const tipo = document.getElementById('visitaTipo').value;
@@ -602,10 +616,11 @@ document.getElementById('formVisita').onsubmit = async function(e) {
     if (idVisita) {
         await visitasRef.doc(idVisita).set({ fecha, tipo, estado, observaciones, problemas, tratamiento });
     } else {
-        await visitasRef.add({ fecha, tipo, estado, observaciones, problemas, tratamiento });
+        const newDoc = await visitasRef.add({ fecha, tipo, estado, observaciones, problemas, tratamiento });
+        document.getElementById('visitaId').value = newDoc.id;
     }
     cerrarModalVisita();
-    mostrarVisitasFirestore(pacienteId);
+    await mostrarVisitasFirestore(pacienteId);
 };
 
 window.editarVisitaFirestore = async function(pacienteId, visitaId) {

@@ -844,9 +844,14 @@
   
   <!-- Librerías para funcionalidades adicionales -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
-</head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <script>
+      // Compatibilidad global para Chart.js UMD
+      window.Chart = window.Chart || this.Chart;
+    </script>
+    
+  </head>
 <body>
   <div class="container">
     <h1>📋 CLINICAL DATA</h1>
@@ -1008,7 +1013,7 @@
     
     <!-- Botones de Etapa -->
     <div>
-      <button id="btn-primera" class="stage-btn" onclick="setStage('primera')">🩺 Primera Consulta</button>
+      <button id="btn-consulta" class="stage-btn" onclick="setStage('consulta')">🩺 Consulta</button>
       <button id="btn-seguimiento" class="stage-btn" onclick="setStage('seguimiento')">📋 Seguimiento</button>
       <button id="btn-urgencia" class="stage-btn" onclick="setStage('urgencia')">🚨 Urgencia</button>
       <button id="btn-control" class="stage-btn" onclick="setStage('control')">✅ Control</button>
@@ -1226,7 +1231,7 @@
           <div style="background: var(--bg-secondary); padding: 16px; border-radius: 12px; border-left: 4px solid #0ea5e9;">
             <h4>🩺 Sistema de Visitas Médicas</h4>
             <ul style="margin: 8px 0; padding-left: 20px; color: var(--text-light);">
-              <li><strong>Primera Consulta:</strong> Evaluación inicial del paciente</li>
+              <li><strong>Consulta:</strong> Evaluación del paciente</li>
               <li><strong>Seguimiento:</strong> Control y evolución del tratamiento</li>
               <li><strong>Urgencia:</strong> Atención médica urgente</li>
               <li><strong>Control:</strong> Revisiones programadas</li>
@@ -1303,14 +1308,14 @@
 
     // Variables globales para sistema médico
     let selectedPaciente = null;
-    let selectedVisitType = 'primera';
+    let selectedVisitType = null;
     let allPacientes = [];
     let allRecordatorios = [];
     let allCitas = [];
     let currentChart = null;
 
     const visitTypes = [
-      { value: 'primera', label: 'Primera Consulta', icon: '🩺', color: '#4ade80' },
+      { value: 'consulta', label: 'Consulta', icon: '🩺', color: '#4ade80' },
       { value: 'seguimiento', label: 'Seguimiento', icon: '📋', color: '#0ea5e9' },
       { value: 'urgencia', label: 'Urgencia', icon: '🚨', color: '#f87171' },
       { value: 'control', label: 'Control', icon: '✅', color: '#22c55e' }
@@ -2480,7 +2485,8 @@
     function setStage(stage) {
       selectedStage = stage;
       document.querySelectorAll('.stage-btn').forEach(btn => btn.classList.remove('stage-selected'));
-      document.getElementById('btn-' + stage).classList.add('stage-selected');
+      const btnEl = document.getElementById('btn-' + stage) || document.getElementById('btn-consulta');
+      if (btnEl) btnEl.classList.add('stage-selected');
       
       
       // Mostrar/ocultar elementos según la etapa
@@ -3628,7 +3634,7 @@
           color,
           fechaCreacion: new Date().toISOString(),
           visitas: {
-            primera: [],
+            consulta: [],
             seguimiento: [],
             urgencia: [],
             control: []
@@ -3742,7 +3748,7 @@
       document.getElementById('pacienteSelector').style.display = 'none';
       document.getElementById('newPacienteForm').style.display = 'none';
       showFichaClinica();
-      setStage('primera'); // Inicializar en primera consulta
+      setStage('consulta'); selectedVisitType = 'consulta'; // Inicializar en consulta
     }
 
     // Mostrar ficha clínica del paciente
@@ -3754,7 +3760,7 @@
       const calendario = document.getElementById('calendarioSection');
       
       if (ficha) ficha.style.display = 'block';
-      if (visitForm) visitForm.style.display = 'block';
+      if (visitForm) visitForm.style.display = (selectedVisitType === 'consulta') ? 'block' : 'none';
       if (calendario) calendario.style.display = 'none';
 
       renderPacienteInfo();
@@ -3875,8 +3881,11 @@
         btn.classList.remove('active');
       });
       
-      const activeBtn = document.getElementById(`btn-${visitType}`);
+      const activeBtn = document.getElementById(`btn-${visitType}`) || document.getElementById('btn-consulta');
       if (activeBtn) activeBtn.classList.add('active');
+
+      const visitForm = document.getElementById('visitForm');
+      if (visitForm) visitForm.style.display = (selectedVisitType === 'consulta') ? 'block' : 'none';
 
       renderHistory();
     }
@@ -4817,6 +4826,90 @@
 
     // Ejecutar cuando se carga la app
     setTimeout(initMedicalApp, 1000);
+
+    // Enganches de respaldo local tras cargas de Firestore
+    const _loadUserData = window.loadUserData;
+    window.loadUserData = async function(){
+      try { if (_loadUserData) await _loadUserData(); } catch {}
+      try {
+        window.backupAfterAction({
+          pacientes: (window.allPacientes || []),
+          recordatorios: (window.allRecordatorios || []),
+          citas: (window.allCitas || [])
+        });
+      } catch {}
+    };
+  </script>
+
+  <script>
+    // ===== RESPALDO LOCAL Y SINCRONIZACIÓN =====
+    (function(){
+      const KEY_PACIENTES = 'backup_pacientes';
+      const KEY_RECORDATORIOS = 'backup_recordatorios';
+      const KEY_CITAS = 'backup_citas';
+
+      function safeGet(key, fallback) {
+        try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; } catch { return fallback; }
+      }
+      function safeSet(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { console.warn('No se pudo escribir backup local', key, e); }
+      }
+
+      // Hook de guardado inmediato tras cada acción
+      window.backupAfterAction = function(state){
+        if (!state) return;
+        if (state.pacientes) safeSet(KEY_PACIENTES, state.pacientes);
+        if (state.recordatorios) safeSet(KEY_RECORDATORIOS, state.recordatorios);
+        if (state.citas) safeSet(KEY_CITAS, state.citas);
+      };
+
+      // Restaurar de backup local al iniciar si Firestore no está disponible
+      window.restoreFromBackupIfNeeded = function(){
+        try {
+          const offline = typeof firebase === 'undefined' || !window.db || !window.auth || (firebase.firestore && firebase.firestore._isTerminated);
+          if (offline) {
+            window.allPacientes = safeGet(KEY_PACIENTES, window.allPacientes || []);
+            window.allRecordatorios = safeGet(KEY_RECORDATORIOS, window.allRecordatorios || []);
+            window.allCitas = safeGet(KEY_CITAS, window.allCitas || []);
+            console.log('✔️ Datos restaurados desde backup local (modo offline)');
+          }
+        } catch (e) {
+          console.warn('No se pudo restaurar backup local:', e);
+        }
+      };
+
+      // Sincronizar cuando vuelve la conexión
+      window.addEventListener('online', async () => {
+        if (!window.db || !window.auth || !window.auth.currentUser) return;
+        const uid = window.auth.currentUser.uid;
+        try {
+          const pacientes = safeGet(KEY_PACIENTES, null);
+          if (Array.isArray(pacientes)) {
+            for (const p of pacientes) {
+              await db.collection('users').doc(uid).collection('pacientes').doc(p.id).set(p, { merge: true });
+            }
+          }
+          const recordatorios = safeGet(KEY_RECORDATORIOS, null);
+          if (Array.isArray(recordatorios)) {
+            for (const r of recordatorios) {
+              await db.collection('users').doc(uid).collection('recordatorios').doc(r.id).set(r, { merge: true });
+            }
+          }
+          const citas = safeGet(KEY_CITAS, null);
+          if (Array.isArray(citas)) {
+            for (const c of citas) {
+              await db.collection('users').doc(uid).collection('citas').doc(c.id).set(c, { merge: true });
+            }
+          }
+          console.log('🔄 Sincronización de backups locales completada');
+        } catch (e) {
+          console.warn('Fallo al sincronizar backups locales:', e);
+        }
+      });
+
+      // Intentar restaurar en el arranque temprano
+      try { window.restoreFromBackupIfNeeded(); } catch {}
+    })();
   </script>
 </body>
 </html>

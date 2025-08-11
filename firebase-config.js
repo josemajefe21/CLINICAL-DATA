@@ -28,21 +28,23 @@ window.db = firebase.firestore();
 console.log('Firebase Auth disponible:', !!window.auth);
 console.log('Firebase Firestore disponible:', !!window.db);
 
-// Configuración de Firestore
-// Comentamos la configuración de settings para evitar warnings
-// Firebase usará configuraciones por defecto que son adecuadas
-/*
-window.db.settings({
-  cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
-});
-*/
+// Ajustes de Firestore para redes/restricciones (mitiga errores 400 y proxies)
+try {
+  window.db.settings({
+    experimentalAutoDetectLongPolling: true
+  });
+} catch (e) {
+  console.warn('No se pudieron aplicar ajustes de Firestore:', e);
+}
 
-// Habilitar persistencia offline
-window.db.enablePersistence()
+// Habilitar persistencia offline (sincronizada entre pestañas)
+window.db.enablePersistence({ synchronizeTabs: true })
   .catch((err) => {
     if (err.code == 'failed-precondition') {
-      console.log('Persistencia falló - múltiples pestañas abiertas');
+      console.log('Persistencia falló - múltiples pestañas abiertas sin sincronización');
     } else if (err.code == 'unimplemented') {
       console.log('Persistencia no soportada por el navegador');
+    } else {
+      console.warn('Error al habilitar persistencia:', err);
     }
   }); 
