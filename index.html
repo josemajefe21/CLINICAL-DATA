@@ -1367,8 +1367,8 @@
       window.testFirebaseConnection = async function() {
         try {
           console.log('Probando conexión a Firebase...');
-          console.log('Auth domain:', auth.app.options.authDomain);
-          console.log('Project ID:', auth.app.options.projectId);
+          console.log('Auth domain:', window.auth.app.options.authDomain);
+          console.log('Project ID:', window.auth.app.options.projectId);
           return true;
         } catch (error) {
           console.error('Error al probar conexión:', error);
@@ -1383,7 +1383,7 @@
           const testPassword = 'test123456';
           console.log('Probando creación de usuario con:', testEmail);
           
-          const userCredential = await auth.createUserWithEmailAndPassword(testEmail, testPassword);
+          const userCredential = await window.auth.createUserWithEmailAndPassword(testEmail, testPassword);
           console.log('Usuario de prueba creado exitosamente:', userCredential.user.uid);
           
           // Eliminar usuario de prueba
@@ -1398,7 +1398,7 @@
       };
 
       // Observar cambios en el estado de autenticación
-      auth.onAuthStateChanged((user) => {
+      window.auth.onAuthStateChanged((user) => {
         if (user) {
           // Usuario autenticado
           console.log('Usuario autenticado:', user.email);
@@ -1529,7 +1529,7 @@
 
       try {
         console.log('Intentando iniciar sesión con:', email);
-        await auth.signInWithEmailAndPassword(email, password);
+        await window.auth.signInWithEmailAndPassword(email, password);
         console.log('Login exitoso');
         // El onAuthStateChanged se encargará del resto
       } catch (error) {
@@ -1594,7 +1594,7 @@
         console.log('Intentando crear usuario con:', { email, password: '***', name });
         
         // Crear usuario
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
         console.log('Usuario creado exitosamente:', userCredential.user.uid);
         
         // Actualizar perfil
@@ -1647,7 +1647,7 @@
     // Logout
     async function logout() {
       try {
-        await auth.signOut();
+        await window.auth.signOut();
         // El onAuthStateChanged se encargará del resto
       } catch (error) {
         console.error('Error de logout:', error);
@@ -3464,19 +3464,19 @@
       }
     }
 
-    var formPaciente = document.getElementById('formPaciente');
-    if (formPaciente) {
-      formPaciente.addEventListener('submit', async function(e) {
+    var formPacienteModal = document.getElementById('formPacienteModal');
+    if (formPacienteModal) {
+      formPacienteModal.addEventListener('submit', async function(e) {
         e.preventDefault();
         console.log('📝 Guardando paciente...');
         
-        var nombreInput = document.getElementById('pacienteNombre');
-        var dniInput = document.getElementById('pacienteDNI');
-        var direccionInput = document.getElementById('pacienteDireccion');
-        var telefonoInput = document.getElementById('pacienteTelefono');
-        var obraSocialInput = document.getElementById('pacienteObraSocial');
-        var patologiaInput = document.getElementById('pacientePatologia');
-        var idInput = document.getElementById('pacienteId');
+        var nombreInput = document.getElementById('modalPacienteNombre');
+        var dniInput = document.getElementById('modalPacienteDNI');
+        var direccionInput = document.getElementById('modalPacienteDireccion');
+        var telefonoInput = document.getElementById('modalPacienteTelefono');
+        var obraSocialInput = document.getElementById('modalPacienteObraSocial');
+        var patologiaInput = document.getElementById('modalPacientePatologia');
+        var idInput = document.getElementById('modalPacienteId');
         
         if (!nombreInput || !dniInput) return;
         
@@ -3568,9 +3568,9 @@
       var modal = document.getElementById('modalPaciente');
       if (modal) modal.style.display = 'block';
       // Limpiar formulario
-      const form = document.getElementById('formPaciente');
+      const form = document.getElementById('formPacienteModal');
       if (form) form.reset();
-      document.getElementById('pacienteId').value = '';
+      document.getElementById('modalPacienteId').value = '';
       document.getElementById('tituloModalPaciente').textContent = 'Nuevo Paciente';
     };
 
@@ -5061,14 +5061,14 @@
     <div class="modal-content">
       <span class="close-modal" onclick="cerrarModalPaciente()">&times;</span>
       <h3 id="tituloModalPaciente">Nuevo Paciente</h3>
-      <form id="formPaciente">
-        <input type="hidden" id="pacienteId">
-        <input type="text" id="pacienteNombre" placeholder="Nombre completo" required>
-        <input type="text" id="pacienteDNI" placeholder="DNI" required>
-        <input type="text" id="pacienteDireccion" placeholder="Dirección">
-        <input type="tel" id="pacienteTelefono" placeholder="Teléfono">
-        <input type="text" id="pacienteObraSocial" placeholder="Obra Social">
-        <input type="text" id="pacientePatologia" placeholder="Patología principal">
+      <form id="formPacienteModal">
+        <input type="hidden" id="modalPacienteId">
+        <input type="text" id="modalPacienteNombre" placeholder="Nombre completo" required>
+        <input type="text" id="modalPacienteDNI" placeholder="DNI" required>
+        <input type="text" id="modalPacienteDireccion" placeholder="Dirección">
+        <input type="tel" id="modalPacienteTelefono" placeholder="Teléfono">
+        <input type="text" id="modalPacienteObraSocial" placeholder="Obra Social">
+        <input type="text" id="modalPacientePatologia" placeholder="Patología principal">
         <button type="submit" class="btn-primary">Guardar Paciente</button>
         <button type="button" onclick="cerrarModalPaciente()" class="btn-secondary">Cancelar</button>
       </form>
