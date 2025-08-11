@@ -3478,18 +3478,7 @@
       });
     }
 
-    var loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-      loginForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        var userInput = document.getElementById('loginUser');
-        var passInput = document.getElementById('loginPassword');
-        if (!userInput || !passInput) return;
-        var username = userInput.value.trim();
-        var password = passInput.value;
-        // ... resto del código ...
-      });
-    }
+    // Login handler movido a main.js para evitar duplicación
 
     window.mostrarFormularioPaciente = function() {
       var modal = document.getElementById('modalPaciente');

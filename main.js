@@ -58,14 +58,16 @@ function mostrarApp() {
     toggleElement('authContainer', false);
     toggleElement('userInfo', true);
     toggleElement('fichaPaciente', false);
-    document.querySelector('.pacientes-section').style.display = 'block';
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) mainContent.style.display = 'block';
     cargarPacientes();
 }
 
 function mostrarLogin() {
     toggleElement('authContainer', true);
     toggleElement('userInfo', false);
-    document.querySelector('.pacientes-section').style.display = 'none';
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) mainContent.style.display = 'none';
     toggleElement('fichaPaciente', false);
 }
 
@@ -486,12 +488,14 @@ function showLogin() {
     if (elLogin) { elLogin.style.display = 'block'; }
 }
 
-document.getElementById('registerForm').onsubmit = async function(e) {
-    e.preventDefault();
-    const name = document.getElementById('registerName').value.trim();
-    const email = document.getElementById('registerEmail').value.trim();
-    const password = document.getElementById('registerPassword').value;
-    const errorDiv = document.getElementById('registerError');
+const registerForm = document.getElementById('registerForm');
+if (registerForm) {
+    registerForm.onsubmit = async function(e) {
+        e.preventDefault();
+        const name = document.getElementById('registerName').value.trim();
+        const email = document.getElementById('registerEmail').value.trim();
+        const password = document.getElementById('registerPassword').value;
+        const errorDiv = document.getElementById('registerError');
     errorDiv.style.display = 'none';
     try {
         await window.auth.createUserWithEmailAndPassword(email, password);
@@ -501,7 +505,8 @@ document.getElementById('registerForm').onsubmit = async function(e) {
         errorDiv.textContent = err.message;
         errorDiv.style.display = 'block';
     }
-};
+    };
+}
 
 // Manejador de login movido al inicio del archivo para evitar conflictos
 
