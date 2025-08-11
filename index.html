@@ -1013,10 +1013,10 @@
     
     <!-- Botones de Etapa -->
     <div>
-      <button id="btn-consulta" class="stage-btn" onclick="setVisitType('consulta')">🩺 Consulta</button>
-      <button id="btn-seguimiento" class="stage-btn" onclick="setVisitType('seguimiento')">📋 Seguimiento</button>
-      <button id="btn-urgencia" class="stage-btn" onclick="setVisitType('urgencia')">🚨 Urgencia</button>
-      <button id="btn-control" class="stage-btn" onclick="setVisitType('control')">✅ Control</button>
+      <button id="btn-primera" class="stage-btn" onclick="setStage('primera')">🩺 Primera Consulta</button>
+      <button id="btn-seguimiento" class="stage-btn" onclick="setStage('seguimiento')">📋 Seguimiento</button>
+      <button id="btn-urgencia" class="stage-btn" onclick="setStage('urgencia')">🚨 Urgencia</button>
+      <button id="btn-control" class="stage-btn" onclick="setStage('control')">✅ Control</button>
     </div>
     
     <!-- Contenido según etapa -->
@@ -1231,7 +1231,7 @@
           <div style="background: var(--bg-secondary); padding: 16px; border-radius: 12px; border-left: 4px solid #0ea5e9;">
             <h4>🩺 Sistema de Visitas Médicas</h4>
             <ul style="margin: 8px 0; padding-left: 20px; color: var(--text-light);">
-              <li><strong>Consulta:</strong> Evaluación del paciente</li>
+              <li><strong>Primera Consulta:</strong> Evaluación inicial del paciente</li>
               <li><strong>Seguimiento:</strong> Control y evolución del tratamiento</li>
               <li><strong>Urgencia:</strong> Atención médica urgente</li>
               <li><strong>Control:</strong> Revisiones programadas</li>
@@ -1308,14 +1308,14 @@
 
     // Variables globales para sistema médico
     let selectedPaciente = null;
-    let selectedVisitType = null;
+    let selectedVisitType = 'primera';
     let allPacientes = [];
     let allRecordatorios = [];
     let allCitas = [];
     let currentChart = null;
 
     const visitTypes = [
-      { value: 'consulta', label: 'Consulta', icon: '🩺', color: '#4ade80' },
+      { value: 'primera', label: 'Primera Consulta', icon: '🩺', color: '#4ade80' },
       { value: 'seguimiento', label: 'Seguimiento', icon: '📋', color: '#0ea5e9' },
       { value: 'urgencia', label: 'Urgencia', icon: '🚨', color: '#f87171' },
       { value: 'control', label: 'Control', icon: '✅', color: '#22c55e' }
@@ -2485,8 +2485,7 @@
     function setStage(stage) {
       selectedStage = stage;
       document.querySelectorAll('.stage-btn').forEach(btn => btn.classList.remove('stage-selected'));
-      const btnEl = document.getElementById('btn-' + stage) || document.getElementById('btn-consulta');
-      if (btnEl) btnEl.classList.add('stage-selected');
+      document.getElementById('btn-' + stage).classList.add('stage-selected');
       
       
       // Mostrar/ocultar elementos según la etapa
@@ -3634,7 +3633,7 @@
           color,
           fechaCreacion: new Date().toISOString(),
           visitas: {
-            consulta: [],
+            primera: [],
             seguimiento: [],
             urgencia: [],
             control: []
@@ -3643,15 +3642,11 @@
 
         console.log('👤 Nuevo paciente creado:', nuevoPaciente);
 
-        // Guardar en Firebase si hay usuario autenticado (modo offline-first para demo)
+        // Guardar en Firebase si hay usuario autenticado
         if (currentUser) {
-          console.log('☁️ Intentando guardar en Firebase...');
-          try {
-            await savePacienteToFirestore(nuevoPaciente);
-            console.log('✅ Guardado en Firebase exitoso');
-          } catch (error) {
-            console.warn('⚠️ Firebase offline, continuando con guardado local para demo:', error);
-          }
+          console.log('☁️ Guardando en Firebase...');
+          await savePacienteToFirestore(nuevoPaciente);
+          console.log('✅ Guardado en Firebase exitoso');
         } else {
           console.log('⚠️ No hay usuario autenticado, guardando solo localmente');
         }
@@ -3659,7 +3654,6 @@
         // Agregar a la lista local
         allPacientes.push(nuevoPaciente);
         selectedPaciente = nuevoPaciente;
-        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
         
         console.log('📊 Total pacientes después de agregar:', allPacientes.length);
 
@@ -3753,7 +3747,7 @@
       document.getElementById('pacienteSelector').style.display = 'none';
       document.getElementById('newPacienteForm').style.display = 'none';
       showFichaClinica();
-      setVisitType('consulta'); selectedVisitType = 'consulta'; // Inicializar en consulta
+      setStage('primera'); // Inicializar en primera consulta
     }
 
     // Mostrar ficha clínica del paciente
@@ -3765,13 +3759,12 @@
       const calendario = document.getElementById('calendarioSection');
       
       if (ficha) ficha.style.display = 'block';
-      if (visitForm) visitForm.style.display = 'none';
-       if (calendario) calendario.style.display = 'none';
+      if (visitForm) visitForm.style.display = 'block';
+      if (calendario) calendario.style.display = 'none';
 
       renderPacienteInfo();
       renderEstadisticasPaciente();
       initializeVisitForm();
-      restoreVisitType();
     }
 
     // Renderizar información del paciente
@@ -3879,55 +3872,85 @@
     }
 
     // Cambiar tipo de visita
-    async function setVisitType(visitType) {
+    function setStage(visitType) {
       selectedVisitType = visitType;
-      try { localStorage.setItem('selectedVisitType', visitType); } catch {}
-      
-      if (currentUser) {
-        try {
-          db.collection('users').doc(currentUser.uid).set({ uiState: { selectedVisitType: visitType } }, { merge: true });
-        } catch (e) { console.warn('No se pudo guardar uiState en Firestore:', e); }
-      }
       
       // Actualizar botones activos
       document.querySelectorAll('.stage-btn').forEach(btn => {
         btn.classList.remove('active');
       });
       
-      const activeBtn = document.getElementById(`btn-${visitType}`) || document.getElementById('btn-consulta');
+      const activeBtn = document.getElementById(`btn-${visitType}`);
       if (activeBtn) activeBtn.classList.add('active');
-
-      const visitForm = document.getElementById('visitForm');
-      if (visitForm) visitForm.style.display = (selectedVisitType === 'consulta') ? 'block' : 'none';
-
-      try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
-      // Re-guardar paciente actual en Firestore para garantizar persistencia inmediata
-      if (currentUser && selectedPaciente) {
-        try { await db.collection('users').doc(currentUser.uid).collection('pacientes').doc(selectedPaciente.id).set(selectedPaciente, { merge: true }); } catch (e) { console.warn('No se pudo persistir paciente tras setVisitType:', e); }
-      }
-      
-      // Persistir estado completo de UI
-      persistUIState();
 
       renderHistory();
     }
 
-    // Guardar estado completo de UI local + nube
-    function persistUIState() {
+    // Buscar pacientes
+    function searchPacientes() {
+      renderPacienteSelector();
+    }
+
+    // Guardar visita médica
+    async function saveVisit() {
+      if (!selectedPaciente) return;
+
+      const date = document.getElementById('date')?.value;
+      const time = document.getElementById('visitTime')?.value;
+      const estado = document.getElementById('estadoSelect')?.value;
+      const sintomas = document.getElementById('sintomas')?.value?.trim();
+      const observaciones = document.getElementById('observaciones')?.value?.trim();
+      const tratamiento = document.getElementById('tratamiento')?.value?.trim();
+      const estudios = document.getElementById('estudios')?.value?.trim();
+      const archivos = document.getElementById('archivoEstudio')?.files;
+
+      if (!date) {
+        alert('La fecha es obligatoria');
+        return;
+      }
+
+      const visit = {
+        id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        date,
+        time: time || '09:00',
+        visitType: selectedVisitType,
+        estado,
+        sintomas,
+        observaciones,
+        tratamiento,
+        estudios,
+        archivos: archivos ? Array.from(archivos).map(f => f.name) : [],
+        timestamp: new Date().toISOString()
+      };
+
       try {
-        const uiView = (document.getElementById('calendarioSection')?.style.display === 'block') ? 'calendario' : 'ficha';
-        const selectedCalendarDate = localStorage.getItem('selectedCalendarDate') || null;
-        const state = {
-          selectedVisitType: selectedVisitType || 'consulta',
-          view: uiView,
-          selectedCalendarDate,
-          selectedPacienteId: selectedPaciente?.id || null
-        };
-        localStorage.setItem('uiState', JSON.stringify(state));
-        if (currentUser) {
-          db.collection('users').doc(currentUser.uid).set({ uiState: state }, { merge: true }).catch(()=>{});
+        if (!selectedPaciente.visitas[selectedVisitType]) {
+          selectedPaciente.visitas[selectedVisitType] = [];
         }
-      } catch (e) { console.warn('No se pudo persistir UI state:', e); }
+        
+        selectedPaciente.visitas[selectedVisitType].push(visit);
+
+        if (currentUser) {
+          await savePacienteToFirestore(selectedPaciente);
+        }
+
+        // Limpiar formulario
+        ['sintomas', 'observaciones', 'tratamiento', 'estudios'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        
+        const fileInput = document.getElementById('archivoEstudio');
+        if (fileInput) fileInput.value = '';
+
+        renderEstadisticasPaciente();
+        renderHistory();
+        
+        alert(`✅ Visita de ${visitTypes.find(v => v.value === selectedVisitType)?.label} guardada exitosamente`);
+      } catch (error) {
+        console.error('Error al guardar visita:', error);
+        alert('Error al guardar la visita. Intenta de nuevo.');
+      }
     }
 
     // Renderizar historial de visitas
@@ -4148,8 +4171,6 @@
       
       if (confirm(`¿Estás seguro de eliminar al paciente ${selectedPaciente.nombre}? Esta acción no se puede deshacer.`)) {
         allPacientes = allPacientes.filter(p => p.id !== selectedPaciente.id);
-        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
-        if (currentUser) { try { db.collection('users').doc(currentUser.uid).collection('pacientes').doc(selectedPaciente.id).delete(); } catch {} }
         selectedPaciente = null;
         
         document.getElementById('fichaClinica').style.display = 'none';
@@ -4169,9 +4190,8 @@
                  .collection('pacientes').doc(paciente.id)
                  .set(paciente);
       } catch (error) {
-        console.error('Error al guardar paciente en Firestore (modo offline):', error);
-        // No lanzar error para permitir funcionamiento offline durante demo
-        return;
+        console.error('Error al guardar paciente en Firestore:', error);
+        throw error;
       }
     }
 
@@ -4182,39 +4202,12 @@
         const snapshot = await db.collection('users').doc(currentUser.uid)
                                  .collection('pacientes').get();
         
-        const nuevos = [];
+        allPacientes = [];
         snapshot.forEach(doc => {
-          nuevos.push(doc.data());
+          allPacientes.push(doc.data());
         });
         
-        if (nuevos.length > 0) {
-          allPacientes = nuevos;
-          try { localStorage.setItem('backup_pacientes', JSON.stringify(allPacientes)); } catch {}
-        } else {
-          // No sobreescribir si Firestore no tiene datos; usar respaldo local si existe
-          try {
-            const backup = JSON.parse(localStorage.getItem('backup_pacientes') || 'null');
-            if (Array.isArray(backup) && backup.length > 0) {
-              allPacientes = backup;
-              // Restaurar en Firestore desde backup local
-              if (currentUser) {
-                for (const p of backup) {
-                  try {
-                    await db.collection('users').doc(currentUser.uid)
-                             .collection('pacientes').doc(p.id)
-                             .set(p, { merge: true });
-                  } catch (e) {
-                    console.warn('No se pudo restaurar paciente en Firestore:', p.id, e);
-                  }
-                }
-              }
-            }
-          } catch {}
-        }
-        
         renderPacienteSelector();
-        // Intentar restaurar paciente previamente seleccionado
-        try { if (typeof restoreSelectedPaciente === 'function') restoreSelectedPaciente(); } catch {}
       } catch (error) {
         console.error('Error al cargar pacientes:', error);
       }
@@ -4434,7 +4427,6 @@
         }
 
         allRecordatorios.push(recordatorio);
-        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
         
         // Limpiar formulario
         document.getElementById('recordatorioPaciente').value = '';
@@ -4549,7 +4541,6 @@
         }
 
         allRecordatorios = allRecordatorios.filter(r => r.id !== recordatorioId);
-        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
         renderRecordatoriosList();
         renderProximosRecordatorios();
       } catch (error) {
@@ -4584,10 +4575,6 @@
       document.getElementById('pacienteSelector').style.display = 'none';
       document.getElementById('fichaClinica').style.display = 'none';
       document.getElementById('visitForm').style.display = 'none';
-      try { localStorage.setItem('uiView', 'calendario'); } catch {}
-      if (currentUser) {
-        try { db.collection('users').doc(currentUser.uid).set({ uiState: { view: 'calendario' } }, { merge: true }); } catch {}
-      }
     }
 
     function backToPacientes() {
@@ -4596,10 +4583,6 @@
       
       if (selectedPaciente) {
         showFichaClinica();
-      }
-      try { localStorage.setItem('uiView', 'ficha'); } catch {}
-      if (currentUser) {
-        try { db.collection('users').doc(currentUser.uid).set({ uiState: { view: 'ficha' } }, { merge: true }); } catch {}
       }
     }
 
@@ -4616,8 +4599,6 @@
     }
 
     function renderCalendario() {
-      let selectedDate = null; try { selectedDate = localStorage.getItem('selectedCalendarDate'); } catch {}
-
       const container = document.getElementById('calendarioGrid');
       if (!container) return;
 
@@ -4672,14 +4653,9 @@
           dot.className = 'cita-dot';
           diaElement.appendChild(dot);
         }
-        // Resaltar fecha seleccionada
-        if (selectedDate && selectedDate === fechaString) {
-          diaElement.classList.add('today');
-        }
 
         diaElement.addEventListener('click', () => {
           document.getElementById('citaFecha').value = fechaString;
-          try { localStorage.setItem('selectedCalendarDate', fechaString); } catch {}
         });
 
         container.appendChild(diaElement);
@@ -4859,79 +4835,6 @@
         });
       } catch {}
     };
-
-    // Restaurar vista de calendario/ficha al inicio
-    (function restoreUIView(){
-      let view = null;
-      try { view = localStorage.getItem('uiView'); } catch {}
-      if (view === 'calendario') {
-        setTimeout(() => showCalendario(), 0);
-      }
-    })();
-
-    // Guardar visita médica (reinsertado)
-    async function saveVisit() {
-      if (!selectedPaciente) return;
-
-      const date = document.getElementById('date')?.value;
-      const time = document.getElementById('visitTime')?.value;
-      const estado = document.getElementById('estadoSelect')?.value;
-      const sintomas = document.getElementById('sintomas')?.value?.trim();
-      const observaciones = document.getElementById('observaciones')?.value?.trim();
-      const tratamiento = document.getElementById('tratamiento')?.value?.trim();
-      const estudios = document.getElementById('estudios')?.value?.trim();
-      const archivos = document.getElementById('archivoEstudio')?.files;
-
-      if (!date) {
-        alert('La fecha es obligatoria');
-        return;
-      }
-
-      const visit = {
-        id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        date,
-        time: time || '09:00',
-        visitType: selectedVisitType,
-        estado,
-        sintomas,
-        observaciones,
-        tratamiento,
-        estudios,
-        archivos: archivos ? Array.from(archivos).map(f => f.name) : [],
-        timestamp: new Date().toISOString()
-      };
-
-      try {
-        if (!selectedPaciente.visitas[selectedVisitType]) {
-          selectedPaciente.visitas[selectedVisitType] = [];
-        }
-        
-        selectedPaciente.visitas[selectedVisitType].push(visit);
-
-        if (currentUser) {
-          await savePacienteToFirestore(selectedPaciente);
-        }
-        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
-
-        // Limpiar formulario
-        ['sintomas', 'observaciones', 'tratamiento', 'estudios'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.value = '';
-        });
-        
-        const fileInput = document.getElementById('archivoEstudio');
-        if (fileInput) fileInput.value = '';
-
-        renderEstadisticasPaciente();
-        renderHistory();
-        persistUIState();
-        
-        alert(`✅ Visita de ${visitTypes.find(v => v.value === selectedVisitType)?.label} guardada exitosamente`);
-      } catch (error) {
-        console.error('Error al guardar visita:', error);
-        alert('Error al guardar la visita. Intenta de nuevo.');
-      }
-    }
   </script>
 
   <script>
