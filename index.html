@@ -1013,10 +1013,10 @@
     
     <!-- Botones de Etapa -->
     <div>
-      <button id="btn-consulta" class="stage-btn" onclick="setStage('consulta')">🩺 Consulta</button>
-      <button id="btn-seguimiento" class="stage-btn" onclick="setStage('seguimiento')">📋 Seguimiento</button>
-      <button id="btn-urgencia" class="stage-btn" onclick="setStage('urgencia')">🚨 Urgencia</button>
-      <button id="btn-control" class="stage-btn" onclick="setStage('control')">✅ Control</button>
+      <button id="btn-consulta" class="stage-btn" onclick="setVisitType('consulta')">🩺 Consulta</button>
+      <button id="btn-seguimiento" class="stage-btn" onclick="setVisitType('seguimiento')">📋 Seguimiento</button>
+      <button id="btn-urgencia" class="stage-btn" onclick="setVisitType('urgencia')">🚨 Urgencia</button>
+      <button id="btn-control" class="stage-btn" onclick="setVisitType('control')">✅ Control</button>
     </div>
     
     <!-- Contenido según etapa -->
@@ -3748,7 +3748,7 @@
       document.getElementById('pacienteSelector').style.display = 'none';
       document.getElementById('newPacienteForm').style.display = 'none';
       showFichaClinica();
-      setStage('consulta'); selectedVisitType = 'consulta'; // Inicializar en consulta
+      setVisitType('consulta'); selectedVisitType = 'consulta'; // Inicializar en consulta
     }
 
     // Mostrar ficha clínica del paciente
@@ -3760,8 +3760,8 @@
       const calendario = document.getElementById('calendarioSection');
       
       if (ficha) ficha.style.display = 'block';
-      if (visitForm) visitForm.style.display = (selectedVisitType === 'consulta') ? 'block' : 'none';
-      if (calendario) calendario.style.display = 'none';
+      if (visitForm) visitForm.style.display = 'none';
+       if (calendario) calendario.style.display = 'none';
 
       renderPacienteInfo();
       renderEstadisticasPaciente();
@@ -3873,7 +3873,7 @@
     }
 
     // Cambiar tipo de visita
-    function setStage(visitType) {
+    function setVisitType(visitType) {
       selectedVisitType = visitType;
       
       // Actualizar botones activos
