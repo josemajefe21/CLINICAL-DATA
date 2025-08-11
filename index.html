@@ -3895,6 +3895,8 @@
       const visitForm = document.getElementById('visitForm');
       if (visitForm) visitForm.style.display = (selectedVisitType === 'consulta') ? 'block' : 'none';
 
+      try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
+
       renderHistory();
     }
 
@@ -4222,10 +4224,23 @@
         const snapshot = await db.collection('users').doc(currentUser.uid)
                                  .collection('pacientes').get();
         
-        allPacientes = [];
+        const nuevos = [];
         snapshot.forEach(doc => {
-          allPacientes.push(doc.data());
+          nuevos.push(doc.data());
         });
+        
+        if (nuevos.length > 0) {
+          allPacientes = nuevos;
+          try { localStorage.setItem('backup_pacientes', JSON.stringify(allPacientes)); } catch {}
+        } else {
+          // No sobreescribir si Firestore no tiene datos; usar respaldo local si existe
+          try {
+            const backup = JSON.parse(localStorage.getItem('backup_pacientes') || 'null');
+            if (Array.isArray(backup) && backup.length > 0) {
+              allPacientes = backup;
+            }
+          } catch {}
+        }
         
         renderPacienteSelector();
       } catch (error) {
@@ -4627,6 +4642,8 @@
     }
 
     function renderCalendario() {
+      let selectedDate = null; try { selectedDate = localStorage.getItem('selectedCalendarDate'); } catch {}
+
       const container = document.getElementById('calendarioGrid');
       if (!container) return;
 
@@ -4681,9 +4698,14 @@
           dot.className = 'cita-dot';
           diaElement.appendChild(dot);
         }
+        // Resaltar fecha seleccionada
+        if (selectedDate && selectedDate === fechaString) {
+          diaElement.classList.add('today');
+        }
 
         diaElement.addEventListener('click', () => {
           document.getElementById('citaFecha').value = fechaString;
+          try { localStorage.setItem('selectedCalendarDate', fechaString); } catch {}
         });
 
         container.appendChild(diaElement);
