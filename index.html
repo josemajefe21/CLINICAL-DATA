@@ -924,27 +924,54 @@
             citas: window.allCitas.length
           });
 
-          // DETECTOR AUTOMÁTICO - Si no hay datos, verificar backup local
+          // DETECTOR AUTOMÁTICO - Si no hay datos en Firebase, usar localStorage DIRECTO
           if (window.allPacientes.length === 0 && window.allRecordatorios.length === 0 && window.allCitas.length === 0) {
-            console.log('⚠️ No se encontraron datos en Firebase, verificando backup local...');
-            const backupData = localStorage.getItem('clinicalDataBackup');
-            if (backupData) {
-              try {
-                const parsed = JSON.parse(backupData);
-                if (parsed.pacientes && parsed.pacientes.length > 0) {
-                  console.log('📦 Encontrados datos en backup local, restaurando...');
-                  window.allPacientes = parsed.pacientes || [];
-                  window.allRecordatorios = parsed.recordatorios || [];
-                  window.allCitas = parsed.citas || [];
-                  console.log('✅ Datos restaurados desde backup:', {
-                    pacientes: window.allPacientes.length,
-                    recordatorios: window.allRecordatorios.length,
-                    citas: window.allCitas.length
-                  });
-                }
-              } catch (e) {
-                console.error('❌ Error al restaurar backup:', e);
+            console.log('⚠️ No se encontraron datos en Firebase, verificando localStorage...');
+            
+            // CARGAR DIRECTAMENTE DESDE localStorage (método más confiable)
+            try {
+              const localPacientes = localStorage.getItem('allPacientes');
+              const localRecordatorios = localStorage.getItem('allRecordatorios');
+              const localCitas = localStorage.getItem('allCitas');
+              
+              if (localPacientes) {
+                window.allPacientes = JSON.parse(localPacientes) || [];
+                console.log(`📦 Pacientes cargados desde localStorage: ${window.allPacientes.length}`);
               }
+              if (localRecordatorios) {
+                window.allRecordatorios = JSON.parse(localRecordatorios) || [];
+                console.log(`📦 Recordatorios cargados desde localStorage: ${window.allRecordatorios.length}`);
+              }
+              if (localCitas) {
+                window.allCitas = JSON.parse(localCitas) || [];
+                console.log(`📦 Citas cargadas desde localStorage: ${window.allCitas.length}`);
+              }
+              
+              // También intentar backup unificado como fallback
+              if (window.allPacientes.length === 0) {
+                const backupData = localStorage.getItem('clinicalDataBackup');
+                if (backupData) {
+                  const parsed = JSON.parse(backupData);
+                  if (parsed.pacientes && parsed.pacientes.length > 0) {
+                    window.allPacientes = parsed.pacientes || [];
+                    window.allRecordatorios = parsed.recordatorios || [];
+                    window.allCitas = parsed.citas || [];
+                    console.log('📦 Datos restaurados desde backup unificado');
+                  }
+                }
+              }
+              
+              console.log('✅ Datos finales cargados:', {
+                pacientes: window.allPacientes.length,
+                recordatorios: window.allRecordatorios.length,
+                citas: window.allCitas.length
+              });
+            } catch (e) {
+              console.error('❌ Error al cargar desde localStorage:', e);
+              // Inicializar arrays vacíos si hay error
+              window.allPacientes = [];
+              window.allRecordatorios = [];
+              window.allCitas = [];
             }
           }
           
@@ -3666,28 +3693,52 @@
         };
 
         try {
-          // Guardar en Firebase si hay usuario autenticado
-          if (window.currentUser) {
-            console.log('☁️ Guardando en Firebase...');
-            await window.setDoc(window.doc(window.db, 'users', window.currentUser.uid, 'pacientes', nuevoPaciente.id), nuevoPaciente);
-            console.log('✅ Guardado en Firebase exitoso');
-          }
-
+          // PASO 1: GUARDAR SIEMPRE EN localStorage PRIMERO (persistencia garantizada)
+          console.log('💾 Guardando en localStorage...');
+          
           // Agregar/actualizar en la lista local
           if (id) {
             // Editar existente
             const index = allPacientes.findIndex(p => p.id === id);
             if (index !== -1) {
               allPacientes[index] = { ...allPacientes[index], ...nuevoPaciente };
+              console.log('✅ Paciente actualizado localmente');
             }
           } else {
             // Nuevo paciente
             allPacientes.push(nuevoPaciente);
+            console.log('✅ Nuevo paciente agregado localmente');
           }
           
-          selectedPaciente = nuevoPaciente;
+          // GUARDAR INMEDIATAMENTE EN localStorage (CRÍTICO PARA PERSISTENCIA)
+          localStorage.setItem('allPacientes', JSON.stringify(allPacientes));
+          console.log('💾 ✅ Pacientes guardados en localStorage');
           
+          // BACKUP UNIFICADO TAMBIÉN
+          const backupData = {
+            pacientes: allPacientes,
+            recordatorios: window.allRecordatorios || [],
+            citas: window.allCitas || [],
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem('clinicalDataBackup', JSON.stringify(backupData));
+          console.log('💾 ✅ Backup unificado actualizado');
+          
+          selectedPaciente = nuevoPaciente;
           console.log('📊 Total pacientes después de agregar:', allPacientes.length);
+          
+          // PASO 2: Intentar guardar en Firebase (secundario, puede fallar)
+          if (window.currentUser && window.setDoc) {
+            try {
+              console.log('☁️ Intentando guardar en Firebase...');
+              await window.setDoc(window.doc(window.db, 'users', window.currentUser.uid, 'pacientes', nuevoPaciente.id), nuevoPaciente);
+              console.log('☁️ ✅ Paciente guardado en Firebase');
+            } catch (firebaseError) {
+              console.warn('⚠️ Firebase no disponible, datos guardados solo localmente:', firebaseError);
+            }
+          } else {
+            console.log('⚠️ Firebase no disponible, usando solo localStorage');
+          }
 
           // Actualizar interfaz
           cerrarModalPaciente();
