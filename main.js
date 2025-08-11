@@ -203,26 +203,12 @@ function setPacientes(pacientes) {
 }
 
 function cargarPacientes(filtro = '') {
-    const lista = document.getElementById('listaPacientes');
-    let pacientes = getPacientes();
-    if (filtro) {
-        const f = filtro.toLowerCase();
-        pacientes = pacientes.filter(p =>
-            p.nombre.toLowerCase().includes(f) ||
-            p.dni.includes(f) ||
-            (p.patologia && p.patologia.toLowerCase().includes(f))
-        );
+    // Esta función ahora delega al sistema moderno de renderPacienteSelector
+    if (typeof renderPacienteSelector === 'function') {
+        renderPacienteSelector();
+    } else {
+        console.log('Sistema de pacientes moderno no disponible');
     }
-    lista.innerHTML = pacientes.length === 0 ? '<div class="no-info">No hay pacientes registrados.</div>' :
-        pacientes.map(p => `
-            <div class="bitacora-card" onclick="verFichaPaciente('${p.id}')">
-                <b>${p.nombre}</b><br>DNI: ${p.dni}<br><span style='font-size:0.95em;'>${p.patologia || ''}</span>
-                <div class="bitacora-actions">
-                    <button class="action-btn edit-btn" onclick="editarPaciente(event, '${p.id}')">✏️</button>
-                    <button class="action-btn delete-btn" onclick="eliminarPaciente(event, '${p.id}')">🗑️</button>
-                </div>
-            </div>
-        `).join('');
 }
 
 window.filtrarPacientes = function() {
@@ -632,11 +618,14 @@ async function mostrarVisitasFirestore(pacienteId) {
     });
 }
 
-document.getElementById('formVisita').onsubmit = async function(e) {
-    e.preventDefault();
-    const user = window.auth.currentUser;
-    if (!user) return;
-    const pacienteId = document.getElementById('nombreFichaPaciente').dataset.id;
+// Formulario de visita manejado en index.html
+const formVisita = document.getElementById('formVisita');
+if (formVisita) {
+    formVisita.onsubmit = async function(e) {
+        e.preventDefault();
+        const user = window.auth.currentUser;
+        if (!user) return;
+        const pacienteId = document.getElementById('nombreFichaPaciente')?.dataset?.id;
     if (!pacienteId) {
         alert('No se pudo identificar el paciente. Vuelve a abrir la ficha e inténtalo de nuevo.');
         return;
@@ -657,7 +646,8 @@ document.getElementById('formVisita').onsubmit = async function(e) {
     }
     cerrarModalVisita();
     await mostrarVisitasFirestore(pacienteId);
-};
+    };
+}
 
 window.editarVisitaFirestore = async function(pacienteId, visitaId) {
     const user = window.auth.currentUser;
