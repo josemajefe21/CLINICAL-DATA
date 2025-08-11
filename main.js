@@ -19,12 +19,12 @@ window.addEventListener('DOMContentLoaded', () => {
             mostrarLogin();
         }
     });
-}
+});
 
-    // Login handler
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.onsubmit = async (e) => {
+// Login handler
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+    loginForm.onsubmit = async (e) => {
             e.preventDefault();
             const userInput = document.getElementById('loginEmail');
             const passInput = document.getElementById('loginPassword');
@@ -46,14 +46,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             }
         };
-    }
+}
 
-    // Logout handler
-    window.logout = () => {
-        window.auth.logout();
-        mostrarLogin();
-    };
-});
+// Logout handler
+window.logout = () => {
+    window.auth.logout();
+    mostrarLogin();
+};
 
 function mostrarApp() {
     toggleElement('authContainer', false);
