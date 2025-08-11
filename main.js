@@ -1,5 +1,6 @@
-// Archivos cargados directamente en index.html - no necesitamos imports aquí
-// Los objetos window.auth, window.db están disponibles globalmente
+import './firebase-config.js';
+import { storage } from './js/storage.js';
+import { showNotification } from './notifications.js';
 
 // Mostrar/ocultar elementos
 function toggleElement(elementId, show) {
@@ -11,22 +12,19 @@ function toggleElement(elementId, show) {
 
 // Inicialización de la app
 window.addEventListener('DOMContentLoaded', () => {
-    // Usar onAuthStateChanged en lugar de getCurrentUser
-    window.auth.onAuthStateChanged(user => {
-        if (user) {
-            mostrarApp();
-        } else {
-            mostrarLogin();
-        }
-    });
-});
+    const user = window.auth.getCurrentUser();
+    if (user) {
+        mostrarApp();
+    } else {
+        mostrarLogin();
+    }
 
-// Login handler
-const loginForm = document.getElementById('loginForm');
-if (loginForm) {
-    loginForm.onsubmit = async (e) => {
+    // Login handler
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.onsubmit = async (e) => {
             e.preventDefault();
-            const userInput = document.getElementById('loginEmail');
+            const userInput = document.getElementById('loginUser');
             const passInput = document.getElementById('loginPassword');
             if (!userInput || !passInput) {
                 // Salir silenciosamente si no encontramos los elementos
@@ -46,72 +44,28 @@ if (loginForm) {
                 }
             }
         };
-}
+    }
 
-// Logout handler
-window.logout = () => {
-    window.auth.signOut().then(() => {
+    // Logout handler
+    window.logout = () => {
+        window.auth.logout();
         mostrarLogin();
-    }).catch((error) => {
-        console.error('Error al cerrar sesión:', error);
-    });
-};
-
-// Función para mostrar el formulario de registro
-window.showRegister = () => {
-    toggleElement('loginCard', false);
-    toggleElement('registerCard', true);
-};
-
-// Función para mostrar el formulario de login
-window.showLogin = () => {
-    toggleElement('loginCard', true);
-    toggleElement('registerCard', false);
-};
+    };
+});
 
 function mostrarApp() {
-    // Ocultar formularios de login/registro
-    toggleElement('loginCard', false);
-    toggleElement('registerCard', false);
-    
-    // Mostrar información del usuario y contenido principal
-    toggleElement('authContainer', true);
+    toggleElement('authContainer', false);
     toggleElement('userInfo', true);
     toggleElement('fichaPaciente', false);
-    const mainContent = document.getElementById('mainContent');
-    if (mainContent) mainContent.style.display = 'block';
-    
-    // Actualizar información del usuario
-    updateUserInfo();
-    
-    // Cargar pacientes si la función existe
-    if (typeof cargarPacientes === 'function') {
-        cargarPacientes();
-    }
-}
-
-function updateUserInfo() {
-    const user = window.auth.currentUser;
-    if (user) {
-        const userNameEl = document.getElementById('userName');
-        const userEmailEl = document.getElementById('userEmail');
-        
-        if (userNameEl) userNameEl.textContent = user.displayName || 'Usuario';
-        if (userEmailEl) userEmailEl.textContent = user.email || '';
-    }
+    document.querySelector('.pacientes-section').style.display = 'block';
+    cargarPacientes();
 }
 
 function mostrarLogin() {
-    // Ocultar contenido de la aplicación y información del usuario
-    toggleElement('authContainer', false);
+    toggleElement('authContainer', true);
     toggleElement('userInfo', false);
-    const mainContent = document.getElementById('mainContent');
-    if (mainContent) mainContent.style.display = 'none';
+    document.querySelector('.pacientes-section').style.display = 'none';
     toggleElement('fichaPaciente', false);
-    
-    // Mostrar formulario de login
-    toggleElement('loginCard', true);
-    toggleElement('registerCard', false);
 }
 
 // CRUD de pacientes (estructura básica, se completará en el siguiente paso)
@@ -203,12 +157,26 @@ function setPacientes(pacientes) {
 }
 
 function cargarPacientes(filtro = '') {
-    // Esta función ahora delega al sistema moderno de renderPacienteSelector
-    if (typeof renderPacienteSelector === 'function') {
-        renderPacienteSelector();
-    } else {
-        console.log('Sistema de pacientes moderno no disponible');
+    const lista = document.getElementById('listaPacientes');
+    let pacientes = getPacientes();
+    if (filtro) {
+        const f = filtro.toLowerCase();
+        pacientes = pacientes.filter(p =>
+            p.nombre.toLowerCase().includes(f) ||
+            p.dni.includes(f) ||
+            (p.patologia && p.patologia.toLowerCase().includes(f))
+        );
     }
+    lista.innerHTML = pacientes.length === 0 ? '<div class="no-info">No hay pacientes registrados.</div>' :
+        pacientes.map(p => `
+            <div class="bitacora-card" onclick="verFichaPaciente('${p.id}')">
+                <b>${p.nombre}</b><br>DNI: ${p.dni}<br><span style='font-size:0.95em;'>${p.patologia || ''}</span>
+                <div class="bitacora-actions">
+                    <button class="action-btn edit-btn" onclick="editarPaciente(event, '${p.id}')">✏️</button>
+                    <button class="action-btn delete-btn" onclick="eliminarPaciente(event, '${p.id}')">🗑️</button>
+                </div>
+            </div>
+        `).join('');
 }
 
 window.filtrarPacientes = function() {
@@ -216,16 +184,16 @@ window.filtrarPacientes = function() {
     cargarPacientes(val);
 };
 
-// Función para guardar paciente (se llama desde createNewPaciente en index.html)
-function savePacienteForm(e) {
-    if (e) e.preventDefault();
-    const id = document.getElementById('pacienteId')?.value || Date.now().toString();
-    const nombre = document.getElementById('pacienteNombre')?.value?.trim();
-    const dni = document.getElementById('pacienteDNI')?.value?.trim();
-    const direccion = document.getElementById('pacienteDireccion')?.value?.trim();
-    const telefono = document.getElementById('pacienteTelefono')?.value?.trim();
-    const obraSocial = document.getElementById('pacienteObraSocial')?.value?.trim();
-    const patologia = document.getElementById('pacientePatologia')?.value?.trim();
+// Guardar paciente (nuevo o edición)
+document.getElementById('formPaciente').onsubmit = function(e) {
+    e.preventDefault();
+    const id = document.getElementById('pacienteId').value || Date.now().toString();
+    const nombre = document.getElementById('pacienteNombre').value.trim();
+    const dni = document.getElementById('pacienteDNI').value.trim();
+    const direccion = document.getElementById('pacienteDireccion').value.trim();
+    const telefono = document.getElementById('pacienteTelefono').value.trim();
+    const obraSocial = document.getElementById('pacienteObraSocial').value.trim();
+    const patologia = document.getElementById('pacientePatologia').value.trim();
     let pacientes = getPacientes();
     // Validar DNI único
     if (pacientes.some(p => p.dni === dni && p.id !== id)) {
@@ -517,14 +485,12 @@ function showLogin() {
     if (elLogin) { elLogin.style.display = 'block'; }
 }
 
-const registerForm = document.getElementById('registerForm');
-if (registerForm) {
-    registerForm.onsubmit = async function(e) {
-        e.preventDefault();
-        const name = document.getElementById('registerName').value.trim();
-        const email = document.getElementById('registerEmail').value.trim();
-        const password = document.getElementById('registerPassword').value;
-        const errorDiv = document.getElementById('registerError');
+document.getElementById('registerForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const name = document.getElementById('registerName').value.trim();
+    const email = document.getElementById('registerEmail').value.trim();
+    const password = document.getElementById('registerPassword').value;
+    const errorDiv = document.getElementById('registerError');
     errorDiv.style.display = 'none';
     try {
         await window.auth.createUserWithEmailAndPassword(email, password);
@@ -534,10 +500,22 @@ if (registerForm) {
         errorDiv.textContent = err.message;
         errorDiv.style.display = 'block';
     }
-    };
-}
+};
 
-// Manejador de login movido al inicio del archivo para evitar conflictos
+document.getElementById('loginForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorDiv = document.getElementById('loginError');
+    errorDiv.style.display = 'none';
+    try {
+        await window.auth.signInWithEmailAndPassword(email, password);
+        location.reload();
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+    }
+};
 
 window.auth.onAuthStateChanged(user => {
     if (user) {
@@ -618,14 +596,11 @@ async function mostrarVisitasFirestore(pacienteId) {
     });
 }
 
-// Formulario de visita manejado en index.html
-const formVisita = document.getElementById('formVisita');
-if (formVisita) {
-    formVisita.onsubmit = async function(e) {
-        e.preventDefault();
-        const user = window.auth.currentUser;
-        if (!user) return;
-        const pacienteId = document.getElementById('nombreFichaPaciente')?.dataset?.id;
+document.getElementById('formVisita').onsubmit = async function(e) {
+    e.preventDefault();
+    const user = window.auth.currentUser;
+    if (!user) return;
+    const pacienteId = document.getElementById('nombreFichaPaciente').dataset.id;
     if (!pacienteId) {
         alert('No se pudo identificar el paciente. Vuelve a abrir la ficha e inténtalo de nuevo.');
         return;
@@ -646,8 +621,7 @@ if (formVisita) {
     }
     cerrarModalVisita();
     await mostrarVisitasFirestore(pacienteId);
-    };
-}
+};
 
 window.editarVisitaFirestore = async function(pacienteId, visitaId) {
     const user = window.auth.currentUser;

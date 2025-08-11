@@ -841,11 +841,11 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="main.js"></script>
   
   <!-- Librerías para funcionalidades adicionales -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
     <script>
       // Compatibilidad global para Chart.js UMD
       window.Chart = window.Chart || this.Chart;
@@ -881,7 +881,7 @@
       <p style="color: var(--text-light); font-size: 0.85rem; margin-top: 8px;">¿Qué puede hacer este software?</p>
     </div>
     
-    <div id="loginCard" class="form-card" style="display: block;">
+    <div id="loginCard" class="form-card">
       <h2>Iniciar Sesión</h2>
       <form id="loginForm">
         <div id="loginError" class="error-message" style="display:none;"></div>
@@ -1012,7 +1012,7 @@
     </div>
     
     <!-- Botones de Etapa -->
-    <div id="visitStages" style="display: none;">
+    <div>
       <button id="btn-consulta" class="stage-btn" onclick="setVisitType('consulta')">🩺 Consulta</button>
       <button id="btn-seguimiento" class="stage-btn" onclick="setVisitType('seguimiento')">📋 Seguimiento</button>
       <button id="btn-urgencia" class="stage-btn" onclick="setVisitType('urgencia')">🚨 Urgencia</button>
@@ -1028,7 +1028,7 @@
       <div id="bitacoraInfoContent"></div>
     </div>
     
-    <div id="visitForm" style="display: none;">
+    <div id="visitForm">
       <div class="form-section">
         <h4>📅 Datos de la Visita</h4>
         <input type="date" id="date">
@@ -3478,7 +3478,18 @@
       });
     }
 
-    // Login handler movido a main.js para evitar duplicación
+    var loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+      loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var userInput = document.getElementById('loginUser');
+        var passInput = document.getElementById('loginPassword');
+        if (!userInput || !passInput) return;
+        var username = userInput.value.trim();
+        var password = passInput.value;
+        // ... resto del código ...
+      });
+    }
 
     window.mostrarFormularioPaciente = function() {
       var modal = document.getElementById('modalPaciente');
@@ -3632,17 +3643,11 @@
 
         console.log('👤 Nuevo paciente creado:', nuevoPaciente);
 
-        // Guardar en Firebase si hay usuario autenticado (merge para evitar override host warning)
+        // Guardar en Firebase si hay usuario autenticado
         if (currentUser) {
           console.log('☁️ Guardando en Firebase...');
-          try {
-            await db.collection('users').doc(currentUser.uid)
-                    .collection('pacientes').doc(nuevoPaciente.id)
-                    .set(nuevoPaciente, { merge: true });
-            console.log('✅ Guardado en Firebase exitoso');
-          } catch (e) {
-            console.warn('No se pudo guardar en Firebase, continuando con guardado local:', e);
-          }
+          await savePacienteToFirestore(nuevoPaciente);
+          console.log('✅ Guardado en Firebase exitoso');
         } else {
           console.log('⚠️ No hay usuario autenticado, guardando solo localmente');
         }
@@ -3654,12 +3659,8 @@
         
         console.log('📊 Total pacientes después de agregar:', allPacientes.length);
 
-        // Actualizar interfaz y limpiar formulario
+        // Actualizar interfaz
         hideNewPacienteForm();
-        try {
-          ['pacienteNombre','pacienteDNI','pacienteDireccion','pacienteTelefono','pacienteObraSocial','pacientePatologia']
-            .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-        } catch {}
         renderPacienteSelector();
         showFichaClinica();
         
@@ -3756,12 +3757,10 @@
       if (!selectedPaciente) return;
 
       const ficha = document.getElementById('fichaClinica');
-      const stages = document.getElementById('visitStages');
       const visitForm = document.getElementById('visitForm');
       const calendario = document.getElementById('calendarioSection');
       
       if (ficha) ficha.style.display = 'block';
-      if (stages) stages.style.display = 'block';
       if (visitForm) visitForm.style.display = 'none';
        if (calendario) calendario.style.display = 'none';
 
@@ -3877,10 +3876,6 @@
 
     // Cambiar tipo de visita
     async function setVisitType(visitType) {
-      if (!selectedPaciente) {
-        alert('Primero selecciona un paciente.');
-        return;
-      }
       selectedVisitType = visitType;
       try { localStorage.setItem('selectedVisitType', visitType); } catch {}
       
@@ -4168,7 +4163,7 @@
       try {
         await db.collection('users').doc(currentUser.uid)
                  .collection('pacientes').doc(paciente.id)
-                 .set(paciente, { merge: true });
+                 .set(paciente);
       } catch (error) {
         console.error('Error al guardar paciente en Firestore:', error);
         throw error;
@@ -4430,7 +4425,7 @@
         if (currentUser) {
           await db.collection('users').doc(currentUser.uid)
                    .collection('recordatorios').doc(recordatorio.id)
-                   .set(recordatorio, { merge: true });
+                   .set(recordatorio);
         }
 
         allRecordatorios.push(recordatorio);
@@ -4582,8 +4577,6 @@
       renderCitasList();
       document.getElementById('calendarioSection').style.display = 'block';
       document.getElementById('pacienteSelector').style.display = 'none';
-      const stages = document.getElementById('visitStages');
-      if (stages) stages.style.display = 'none';
       document.getElementById('fichaClinica').style.display = 'none';
       document.getElementById('visitForm').style.display = 'none';
       try { localStorage.setItem('uiView', 'calendario'); } catch {}
@@ -4714,7 +4707,7 @@
         if (currentUser) {
           await db.collection('users').doc(currentUser.uid)
                    .collection('citas').doc(cita.id)
-                   .set(cita, { merge: true });
+                   .set(cita);
         }
 
         allCitas.push(cita);
