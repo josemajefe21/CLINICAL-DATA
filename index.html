@@ -3875,7 +3875,7 @@
     }
 
     // Cambiar tipo de visita
-    function setVisitType(visitType) {
+    async function setVisitType(visitType) {
       selectedVisitType = visitType;
       try { localStorage.setItem('selectedVisitType', visitType); } catch {}
       
