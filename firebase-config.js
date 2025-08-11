@@ -25,6 +25,11 @@ if (!firebase.apps.length) {
 window.auth = firebase.auth();
 window.db = firebase.firestore();
 
+// Función de login personalizada
+window.auth.login = async function(email, password) {
+  return await window.auth.signInWithEmailAndPassword(email, password);
+};
+
 console.log('Firebase Auth disponible:', !!window.auth);
 console.log('Firebase Firestore disponible:', !!window.db);
 

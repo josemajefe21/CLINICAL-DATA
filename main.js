@@ -1,6 +1,5 @@
-import './firebase-config.js';
-import { storage } from './js/storage.js';
-import { showNotification } from './notifications.js';
+// Archivos cargados directamente en index.html - no necesitamos imports aquí
+// Los objetos window.auth, window.db están disponibles globalmente
 
 // Mostrar/ocultar elementos
 function toggleElement(elementId, show) {
@@ -24,7 +23,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.onsubmit = async (e) => {
             e.preventDefault();
-            const userInput = document.getElementById('loginUser');
+            const userInput = document.getElementById('loginEmail');
             const passInput = document.getElementById('loginPassword');
             if (!userInput || !passInput) {
                 // Salir silenciosamente si no encontramos los elementos
@@ -502,20 +501,7 @@ document.getElementById('registerForm').onsubmit = async function(e) {
     }
 };
 
-document.getElementById('loginForm').onsubmit = async function(e) {
-    e.preventDefault();
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const errorDiv = document.getElementById('loginError');
-    errorDiv.style.display = 'none';
-    try {
-        await window.auth.signInWithEmailAndPassword(email, password);
-        location.reload();
-    } catch (err) {
-        errorDiv.textContent = err.message;
-        errorDiv.style.display = 'block';
-    }
-};
+// Manejador de login movido al inicio del archivo para evitar conflictos
 
 window.auth.onAuthStateChanged(user => {
     if (user) {
