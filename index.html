@@ -871,6 +871,29 @@
     window.setDoc = setDoc;
     window.deleteDoc = deleteDoc;
 
+    // Inicializar onAuthStateChanged inmediatamente
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('✅ Usuario autenticado:', user.email);
+        window.currentUser = user;
+        window.isAuthenticated = true;
+        // Mostrar interfaz de usuario autenticado
+        const authContainer = document.querySelector('.container');
+        const mainContent = document.getElementById('mainContent');
+        if (authContainer) authContainer.style.display = 'none';
+        if (mainContent) mainContent.style.display = 'block';
+      } else {
+        console.log('❌ Usuario no autenticado');
+        window.currentUser = null;
+        window.isAuthenticated = false;
+        // Mostrar interfaz de login
+        const authContainer = document.querySelector('.container');
+        const mainContent = document.getElementById('mainContent');
+        if (authContainer) authContainer.style.display = 'block';
+        if (mainContent) mainContent.style.display = 'none';
+      }
+    });
+
     console.log('✅ Firebase v9 inicializado correctamente');
     console.log('✅ Auth disponible:', !!window.auth);
     console.log('✅ Firestore disponible:', !!window.db);
@@ -1415,25 +1438,7 @@
       };
 
       // Observar cambios en el estado de autenticación
-      window.onAuthStateChanged(window.auth, (user) => {
-        if (user) {
-          // Usuario autenticado
-          console.log('Usuario autenticado:', user.email);
-          currentUser = user;
-          isAuthenticated = true;
-          showUserInfo(user);
-          hideAuthContainer();
-          loadUserData();
-        } else {
-          // Usuario no autenticado
-          console.log('Usuario no autenticado');
-          currentUser = null;
-          isAuthenticated = false;
-          hideUserInfo();
-          showAuthContainer();
-          clearUserData();
-        }
-      });
+      // onAuthStateChanged ya está configurado en Firebase v9 module
 
     // Inicializar cuando la página esté cargada
     // Firebase v9 ya está inicializado automáticamente
