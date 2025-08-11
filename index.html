@@ -3655,6 +3655,7 @@
         // Agregar a la lista local
         allPacientes.push(nuevoPaciente);
         selectedPaciente = nuevoPaciente;
+        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
         
         console.log('📊 Total pacientes después de agregar:', allPacientes.length);
 
@@ -3955,6 +3956,7 @@
         if (currentUser) {
           await savePacienteToFirestore(selectedPaciente);
         }
+        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
 
         // Limpiar formulario
         ['sintomas', 'observaciones', 'tratamiento', 'estudios'].forEach(id => {
@@ -4193,6 +4195,8 @@
       
       if (confirm(`¿Estás seguro de eliminar al paciente ${selectedPaciente.nombre}? Esta acción no se puede deshacer.`)) {
         allPacientes = allPacientes.filter(p => p.id !== selectedPaciente.id);
+        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
+        if (currentUser) { try { db.collection('users').doc(currentUser.uid).collection('pacientes').doc(selectedPaciente.id).delete(); } catch {} }
         selectedPaciente = null;
         
         document.getElementById('fichaClinica').style.display = 'none';
@@ -4462,6 +4466,7 @@
         }
 
         allRecordatorios.push(recordatorio);
+        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
         
         // Limpiar formulario
         document.getElementById('recordatorioPaciente').value = '';
@@ -4576,6 +4581,7 @@
         }
 
         allRecordatorios = allRecordatorios.filter(r => r.id !== recordatorioId);
+        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
         renderRecordatoriosList();
         renderProximosRecordatorios();
       } catch (error) {
