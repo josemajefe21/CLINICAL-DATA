@@ -872,20 +872,81 @@
     window.deleteDoc = deleteDoc;
 
     // Inicializar onAuthStateChanged inmediatamente
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log('✅ Usuario autenticado:', user.email);
         window.currentUser = user;
         window.isAuthenticated = true;
+        
         // Mostrar interfaz de usuario autenticado
         const authContainer = document.querySelector('.container');
         const mainContent = document.getElementById('mainContent');
         if (authContainer) authContainer.style.display = 'none';
         if (mainContent) mainContent.style.display = 'block';
+        
+        // CARGAR DATOS DEL USUARIO AUTOMÁTICAMENTE
+        try {
+          console.log('🔄 Cargando datos del usuario...');
+          
+          // Cargar pacientes desde Firebase
+          const pacientesSnapshot = await getDocs(collection(db, 'users', user.uid, 'pacientes'));
+          window.allPacientes = [];
+          pacientesSnapshot.forEach(doc => {
+            window.allPacientes.push({ id: doc.id, ...doc.data() });
+          });
+          
+          // Cargar recordatorios
+          const recordatoriosSnapshot = await getDocs(collection(db, 'users', user.uid, 'recordatorios'));
+          window.allRecordatorios = [];
+          recordatoriosSnapshot.forEach(doc => {
+            window.allRecordatorios.push({ id: doc.id, ...doc.data() });
+          });
+          
+          // Cargar citas
+          const citasSnapshot = await getDocs(collection(db, 'users', user.uid, 'citas'));
+          window.allCitas = [];
+          citasSnapshot.forEach(doc => {
+            window.allCitas.push({ id: doc.id, ...doc.data() });
+          });
+          
+          console.log('✅ Datos cargados:', {
+            pacientes: window.allPacientes.length,
+            recordatorios: window.allRecordatorios.length,
+            citas: window.allCitas.length
+          });
+          
+          // Actualizar interfaz
+          if (window.renderPacienteSelector) {
+            window.renderPacienteSelector();
+          }
+          
+          // Backup local
+          if (window.backupAfterAction) {
+            window.backupAfterAction({
+              pacientes: window.allPacientes,
+              recordatorios: window.allRecordatorios,
+              citas: window.allCitas
+            });
+          }
+          
+        } catch (error) {
+          console.error('❌ Error al cargar datos del usuario:', error);
+          // Cargar desde backup local como fallback
+          if (window.restoreFromBackupIfNeeded) {
+            window.restoreFromBackupIfNeeded();
+          }
+        }
+        
       } else {
         console.log('❌ Usuario no autenticado');
         window.currentUser = null;
         window.isAuthenticated = false;
+        
+        // Limpiar datos
+        window.allPacientes = [];
+        window.allRecordatorios = [];
+        window.allCitas = [];
+        
         // Mostrar interfaz de login
         const authContainer = document.querySelector('.container');
         const mainContent = document.getElementById('mainContent');
@@ -3533,9 +3594,9 @@
 
         try {
           // Guardar en Firebase si hay usuario autenticado
-          if (currentUser) {
+          if (window.currentUser) {
             console.log('☁️ Guardando en Firebase...');
-            await savePacienteToFirestore(nuevoPaciente);
+            await window.setDoc(window.doc(window.db, 'users', window.currentUser.uid, 'pacientes', nuevoPaciente.id), nuevoPaciente);
             console.log('✅ Guardado en Firebase exitoso');
           }
 
