@@ -915,10 +915,29 @@
             citas: window.allCitas.length
           });
           
-          // Actualizar interfaz
-          if (window.renderPacienteSelector) {
-            window.renderPacienteSelector();
-          }
+          // Actualizar interfaz FORZADO
+          setTimeout(() => {
+            if (window.renderPacienteSelector) {
+              window.renderPacienteSelector();
+            }
+            // También actualizar otros elementos de la interfaz
+            const pacienteSelector = document.getElementById('pacienteSelector');
+            if (pacienteSelector && window.allPacientes && window.allPacientes.length > 0) {
+              console.log('🔄 Actualizando selector de pacientes...');
+              let html = '';
+              window.allPacientes.forEach(paciente => {
+                html += `
+                  <div class="paciente-card" onclick="selectPaciente('${paciente.id}')">
+                    <h4>${paciente.nombre}</h4>
+                    <p>DNI: ${paciente.dni}</p>
+                    <p>${paciente.patologia || 'Sin patología especificada'}</p>
+                  </div>
+                `;
+              });
+              pacienteSelector.innerHTML = html;
+              console.log('✅ Selector de pacientes actualizado');
+            }
+          }, 500);
           
           // Backup local
           if (window.backupAfterAction) {
@@ -954,6 +973,19 @@
         if (mainContent) mainContent.style.display = 'none';
       }
     });
+
+    // Función para seleccionar paciente
+    window.selectPaciente = function(pacienteId) {
+      const paciente = window.allPacientes.find(p => p.id === pacienteId);
+      if (paciente) {
+        window.selectedPaciente = paciente;
+        console.log('✅ Paciente seleccionado:', paciente.nombre);
+        // Mostrar ficha clínica si existe la función
+        if (window.showFichaClinica) {
+          window.showFichaClinica();
+        }
+      }
+    };
 
     console.log('✅ Firebase v9 inicializado correctamente');
     console.log('✅ Auth disponible:', !!window.auth);
