@@ -846,7 +846,6 @@
   <!-- Librerías para funcionalidades adicionales -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
     <script>
       // Compatibilidad global para Chart.js UMD
       window.Chart = window.Chart || this.Chart;
@@ -4180,7 +4179,7 @@
       try {
         await db.collection('users').doc(currentUser.uid)
                  .collection('pacientes').doc(paciente.id)
-                 .set(paciente);
+                 .set(paciente, { merge: true });
       } catch (error) {
         console.error('Error al guardar paciente en Firestore:', error);
         throw error;
@@ -4442,7 +4441,7 @@
         if (currentUser) {
           await db.collection('users').doc(currentUser.uid)
                    .collection('recordatorios').doc(recordatorio.id)
-                   .set(recordatorio);
+                   .set(recordatorio, { merge: true });
         }
 
         allRecordatorios.push(recordatorio);
@@ -4726,7 +4725,7 @@
         if (currentUser) {
           await db.collection('users').doc(currentUser.uid)
                    .collection('citas').doc(cita.id)
-                   .set(cita);
+                   .set(cita, { merge: true });
         }
 
         allCitas.push(cita);

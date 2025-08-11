@@ -11,12 +11,15 @@ function toggleElement(elementId, show) {
 
 // Inicialización de la app
 window.addEventListener('DOMContentLoaded', () => {
-    const user = window.auth.getCurrentUser();
-    if (user) {
-        mostrarApp();
-    } else {
-        mostrarLogin();
-    }
+    // Usar onAuthStateChanged en lugar de getCurrentUser
+    window.auth.onAuthStateChanged(user => {
+        if (user) {
+            mostrarApp();
+        } else {
+            mostrarLogin();
+        }
+    });
+}
 
     // Login handler
     const loginForm = document.getElementById('loginForm');
@@ -183,16 +186,16 @@ window.filtrarPacientes = function() {
     cargarPacientes(val);
 };
 
-// Guardar paciente (nuevo o edición)
-document.getElementById('formPaciente').onsubmit = function(e) {
-    e.preventDefault();
-    const id = document.getElementById('pacienteId').value || Date.now().toString();
-    const nombre = document.getElementById('pacienteNombre').value.trim();
-    const dni = document.getElementById('pacienteDNI').value.trim();
-    const direccion = document.getElementById('pacienteDireccion').value.trim();
-    const telefono = document.getElementById('pacienteTelefono').value.trim();
-    const obraSocial = document.getElementById('pacienteObraSocial').value.trim();
-    const patologia = document.getElementById('pacientePatologia').value.trim();
+// Función para guardar paciente (se llama desde createNewPaciente en index.html)
+function savePacienteForm(e) {
+    if (e) e.preventDefault();
+    const id = document.getElementById('pacienteId')?.value || Date.now().toString();
+    const nombre = document.getElementById('pacienteNombre')?.value?.trim();
+    const dni = document.getElementById('pacienteDNI')?.value?.trim();
+    const direccion = document.getElementById('pacienteDireccion')?.value?.trim();
+    const telefono = document.getElementById('pacienteTelefono')?.value?.trim();
+    const obraSocial = document.getElementById('pacienteObraSocial')?.value?.trim();
+    const patologia = document.getElementById('pacientePatologia')?.value?.trim();
     let pacientes = getPacientes();
     // Validar DNI único
     if (pacientes.some(p => p.dni === dni && p.id !== id)) {
