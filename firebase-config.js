@@ -28,23 +28,37 @@ window.db = firebase.firestore();
 console.log('Firebase Auth disponible:', !!window.auth);
 console.log('Firebase Firestore disponible:', !!window.db);
 
-// Ajustes de Firestore para redes/restricciones (mitiga errores 400 y proxies)
+// Ajustes mejorados de Firestore para mejor conectividad
 try {
   window.db.settings({
-    experimentalAutoDetectLongPolling: true
+    experimentalAutoDetectLongPolling: true,
+    merge: true,
+    ignoreUndefinedProperties: true
   });
+  console.log('✅ Configuración de Firestore aplicada correctamente');
 } catch (e) {
-  console.warn('No se pudieron aplicar ajustes de Firestore:', e);
+  console.warn('⚠️ No se pudieron aplicar ajustes de Firestore:', e);
 }
 
 // Habilitar persistencia offline (sincronizada entre pestañas)
 window.db.enablePersistence({ synchronizeTabs: true })
+  .then(() => {
+    console.log('✅ Persistencia offline habilitada');
+  })
   .catch((err) => {
     if (err.code == 'failed-precondition') {
-      console.log('Persistencia falló - múltiples pestañas abiertas sin sincronización');
+      console.log('⚠️ Persistencia falló - múltiples pestañas abiertas');
+      // Intentar sin sincronización de pestañas
+      return window.db.enablePersistence({ synchronizeTabs: false });
     } else if (err.code == 'unimplemented') {
-      console.log('Persistencia no soportada por el navegador');
+      console.log('⚠️ Persistencia no soportada por el navegador');
     } else {
-      console.warn('Error al habilitar persistencia:', err);
+      console.warn('⚠️ Error al habilitar persistencia:', err);
     }
+  })
+  .then(() => {
+    console.log('✅ Persistencia habilitada (modo fallback)');
+  })
+  .catch((err) => {
+    console.warn('❌ No se pudo habilitar persistencia:', err);
   }); 

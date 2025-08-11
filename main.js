@@ -184,33 +184,7 @@ window.filtrarPacientes = function() {
     cargarPacientes(val);
 };
 
-// Guardar paciente (nuevo o edición)
-document.getElementById('formPaciente').onsubmit = function(e) {
-    e.preventDefault();
-    const id = document.getElementById('pacienteId').value || Date.now().toString();
-    const nombre = document.getElementById('pacienteNombre').value.trim();
-    const dni = document.getElementById('pacienteDNI').value.trim();
-    const direccion = document.getElementById('pacienteDireccion').value.trim();
-    const telefono = document.getElementById('pacienteTelefono').value.trim();
-    const obraSocial = document.getElementById('pacienteObraSocial').value.trim();
-    const patologia = document.getElementById('pacientePatologia').value.trim();
-    let pacientes = getPacientes();
-    // Validar DNI único
-    if (pacientes.some(p => p.dni === dni && p.id !== id)) {
-        alert('Ya existe un paciente con ese DNI.');
-        return;
-    }
-    const paciente = { id, nombre, dni, direccion, telefono, obraSocial, patologia, visitas: [], estudios: [] };
-    const idx = pacientes.findIndex(p => p.id === id);
-    if (idx >= 0) {
-        pacientes[idx] = { ...pacientes[idx], ...paciente };
-    } else {
-        pacientes.push(paciente);
-    }
-    setPacientes(pacientes);
-    cerrarModalPaciente();
-    cargarPacientes();
-};
+// Handler de formulario removido - se maneja en index.html
 
 window.editarPaciente = function(e, id) {
     e.stopPropagation();

@@ -3466,14 +3466,88 @@
 
     var formPaciente = document.getElementById('formPaciente');
     if (formPaciente) {
-      formPaciente.addEventListener('submit', function(e) {
+      formPaciente.addEventListener('submit', async function(e) {
         e.preventDefault();
+        console.log('📝 Guardando paciente...');
+        
         var nombreInput = document.getElementById('pacienteNombre');
         var dniInput = document.getElementById('pacienteDNI');
+        var direccionInput = document.getElementById('pacienteDireccion');
+        var telefonoInput = document.getElementById('pacienteTelefono');
+        var obraSocialInput = document.getElementById('pacienteObraSocial');
+        var patologiaInput = document.getElementById('pacientePatologia');
+        var idInput = document.getElementById('pacienteId');
+        
         if (!nombreInput || !dniInput) return;
+        
         var nombre = nombreInput.value.trim();
         var dni = dniInput.value.trim();
-        // ... resto del código ...
+        var direccion = direccionInput ? direccionInput.value.trim() : '';
+        var telefono = telefonoInput ? telefonoInput.value.trim() : '';
+        var obraSocial = obraSocialInput ? obraSocialInput.value.trim() : '';
+        var patologia = patologiaInput ? patologiaInput.value.trim() : '';
+        var id = idInput ? idInput.value : '';
+        
+        if (!nombre || !dni) {
+          alert('❌ Nombre y DNI son obligatorios');
+          return;
+        }
+
+        // Verificar DNI único
+        const pacienteExistente = allPacientes.find(p => p.dni === dni && p.id !== id);
+        if (pacienteExistente) {
+          alert('❌ Ya existe un paciente con este DNI');
+          return;
+        }
+
+        const nuevoPaciente = {
+          id: id || Date.now().toString(),
+          nombre,
+          dni,
+          direccion,
+          telefono,
+          obraSocial,
+          patologia,
+          visitas: { primera: [], control: [], urgencia: [] },
+          estudios: [],
+          recordatorios: [],
+          timestamp: new Date().toISOString()
+        };
+
+        try {
+          // Guardar en Firebase si hay usuario autenticado
+          if (currentUser) {
+            console.log('☁️ Guardando en Firebase...');
+            await savePacienteToFirestore(nuevoPaciente);
+            console.log('✅ Guardado en Firebase exitoso');
+          }
+
+          // Agregar/actualizar en la lista local
+          if (id) {
+            // Editar existente
+            const index = allPacientes.findIndex(p => p.id === id);
+            if (index !== -1) {
+              allPacientes[index] = { ...allPacientes[index], ...nuevoPaciente };
+            }
+          } else {
+            // Nuevo paciente
+            allPacientes.push(nuevoPaciente);
+          }
+          
+          selectedPaciente = nuevoPaciente;
+          
+          console.log('📊 Total pacientes después de agregar:', allPacientes.length);
+
+          // Actualizar interfaz
+          cerrarModalPaciente();
+          renderPacienteSelector();
+          
+          alert('✅ Paciente guardado exitosamente: ' + nombre);
+          
+        } catch (error) {
+          console.error('❌ Error al guardar paciente:', error);
+          alert('❌ Error al guardar paciente. Inténtalo de nuevo.');
+        }
       });
     }
 
@@ -3493,6 +3567,16 @@
     window.mostrarFormularioPaciente = function() {
       var modal = document.getElementById('modalPaciente');
       if (modal) modal.style.display = 'block';
+      // Limpiar formulario
+      const form = document.getElementById('formPaciente');
+      if (form) form.reset();
+      document.getElementById('pacienteId').value = '';
+      document.getElementById('tituloModalPaciente').textContent = 'Nuevo Paciente';
+    };
+
+    window.cerrarModalPaciente = function() {
+      var modal = document.getElementById('modalPaciente');
+      if (modal) modal.style.display = 'none';
     };
     window.filtrarPacientes = function() {
       // Aquí deberías poner la lógica de filtrado de pacientes
@@ -4189,9 +4273,28 @@
         await db.collection('users').doc(currentUser.uid)
                  .collection('pacientes').doc(paciente.id)
                  .set(paciente);
+        console.log('✅ Paciente guardado en Firebase exitosamente');
       } catch (error) {
-        console.error('Error al guardar paciente en Firestore:', error);
-        throw error;
+        console.error('❌ Error al guardar paciente en Firestore:', error);
+        console.log('💾 Guardando en localStorage como fallback...');
+        
+        // FALLBACK: Guardar en localStorage si Firebase falla
+        try {
+          const pacientesLocal = JSON.parse(localStorage.getItem('pacientes_backup') || '[]');
+          const existingIndex = pacientesLocal.findIndex(p => p.id === paciente.id);
+          
+          if (existingIndex >= 0) {
+            pacientesLocal[existingIndex] = paciente;
+          } else {
+            pacientesLocal.push(paciente);
+          }
+          
+          localStorage.setItem('pacientes_backup', JSON.stringify(pacientesLocal));
+          console.log('✅ Paciente guardado en localStorage como fallback');
+        } catch (localError) {
+          console.error('❌ Error también en localStorage:', localError);
+          throw error; // Solo lanza error si ambos fallan
+        }
       }
     }
 
@@ -4207,9 +4310,51 @@
           allPacientes.push(doc.data());
         });
         
+        console.log('✅ Pacientes cargados desde Firebase:', allPacientes.length);
         renderPacienteSelector();
       } catch (error) {
-        console.error('Error al cargar pacientes:', error);
+        console.error('❌ Error al cargar pacientes desde Firebase:', error);
+        console.log('💾 Intentando cargar desde localStorage...');
+        
+        // FALLBACK: Cargar desde localStorage si Firebase falla
+        try {
+          const pacientesLocal = JSON.parse(localStorage.getItem('pacientes_backup') || '[]');
+          allPacientes = pacientesLocal;
+          console.log('✅ Pacientes cargados desde localStorage:', allPacientes.length);
+          renderPacienteSelector();
+        } catch (localError) {
+          console.error('❌ Error también al cargar desde localStorage:', localError);
+          allPacientes = [];
+          renderPacienteSelector();
+        }
+      }
+    }
+
+    // Función para sincronizar datos locales con Firebase
+    async function syncLocalDataToFirebase() {
+      if (!currentUser) return;
+      
+      try {
+        const pacientesLocal = JSON.parse(localStorage.getItem('pacientes_backup') || '[]');
+        
+        if (pacientesLocal.length > 0) {
+          console.log('🔄 Sincronizando datos locales con Firebase...');
+          
+          for (const paciente of pacientesLocal) {
+            try {
+              await db.collection('users').doc(currentUser.uid)
+                       .collection('pacientes').doc(paciente.id)
+                       .set(paciente, { merge: true });
+              console.log('✅ Paciente sincronizado:', paciente.nombre);
+            } catch (error) {
+              console.error('❌ Error sincronizando paciente:', paciente.nombre, error);
+            }
+          }
+          
+          console.log('🎉 Sincronización completada');
+        }
+      } catch (error) {
+        console.error('❌ Error en sincronización:', error);
       }
     }
 
@@ -4218,6 +4363,9 @@
     loadUserData = async function() {
       if (originalLoadUserData) await originalLoadUserData();
       await loadPacientesFromFirestore();
+      
+      // Intentar sincronizar datos locales
+      setTimeout(syncLocalDataToFirebase, 2000);
     };
 
     // Inicializar la aplicación médica
@@ -4907,5 +5055,24 @@
       try { window.restoreFromBackupIfNeeded(); } catch {}
     })();
   </script>
+
+  <!-- Modal para crear/editar paciente -->
+  <div id="modalPaciente" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close-modal" onclick="cerrarModalPaciente()">&times;</span>
+      <h3 id="tituloModalPaciente">Nuevo Paciente</h3>
+      <form id="formPaciente">
+        <input type="hidden" id="pacienteId">
+        <input type="text" id="pacienteNombre" placeholder="Nombre completo" required>
+        <input type="text" id="pacienteDNI" placeholder="DNI" required>
+        <input type="text" id="pacienteDireccion" placeholder="Dirección">
+        <input type="tel" id="pacienteTelefono" placeholder="Teléfono">
+        <input type="text" id="pacienteObraSocial" placeholder="Obra Social">
+        <input type="text" id="pacientePatologia" placeholder="Patología principal">
+        <button type="submit" class="btn-primary">Guardar Paciente</button>
+        <button type="button" onclick="cerrarModalPaciente()" class="btn-secondary">Cancelar</button>
+      </form>
+    </div>
+  </div>
 </body>
 </html>
