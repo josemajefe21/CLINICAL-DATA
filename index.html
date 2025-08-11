@@ -3897,6 +3897,10 @@
       if (visitForm) visitForm.style.display = (selectedVisitType === 'consulta') ? 'block' : 'none';
 
       try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
+      // Re-guardar paciente actual en Firestore para garantizar persistencia inmediata
+      if (currentUser && selectedPaciente) {
+        try { await db.collection('users').doc(currentUser.uid).collection('pacientes').doc(selectedPaciente.id).set(selectedPaciente, { merge: true }); } catch (e) { console.warn('No se pudo persistir paciente tras setVisitType:', e); }
+      }
       
       // Persistir estado completo de UI
       persistUIState();
@@ -4187,11 +4191,25 @@
             const backup = JSON.parse(localStorage.getItem('backup_pacientes') || 'null');
             if (Array.isArray(backup) && backup.length > 0) {
               allPacientes = backup;
+              // Restaurar en Firestore desde backup local
+              if (currentUser) {
+                for (const p of backup) {
+                  try {
+                    await db.collection('users').doc(currentUser.uid)
+                             .collection('pacientes').doc(p.id)
+                             .set(p, { merge: true });
+                  } catch (e) {
+                    console.warn('No se pudo restaurar paciente en Firestore:', p.id, e);
+                  }
+                }
+              }
             }
           } catch {}
         }
         
         renderPacienteSelector();
+        // Intentar restaurar paciente previamente seleccionado
+        try { if (typeof restoreSelectedPaciente === 'function') restoreSelectedPaciente(); } catch {}
       } catch (error) {
         console.error('Error al cargar pacientes:', error);
       }
