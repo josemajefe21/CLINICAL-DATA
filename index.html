@@ -3766,6 +3766,7 @@
       renderPacienteInfo();
       renderEstadisticasPaciente();
       initializeVisitForm();
+      restoreVisitType();
     }
 
     // Renderizar información del paciente
@@ -3875,6 +3876,13 @@
     // Cambiar tipo de visita
     function setVisitType(visitType) {
       selectedVisitType = visitType;
+      try { localStorage.setItem('selectedVisitType', visitType); } catch {}
+      
+      if (currentUser) {
+        try {
+          db.collection('users').doc(currentUser.uid).set({ uiState: { selectedVisitType: visitType } }, { merge: true });
+        } catch (e) { console.warn('No se pudo guardar uiState en Firestore:', e); }
+      }
       
       // Actualizar botones activos
       document.querySelectorAll('.stage-btn').forEach(btn => {
@@ -3888,6 +3896,14 @@
       if (visitForm) visitForm.style.display = (selectedVisitType === 'consulta') ? 'block' : 'none';
 
       renderHistory();
+    }
+
+    // Restaurar tipo de visita al mostrar ficha
+    function restoreVisitType() {
+      let vt = null;
+      try { vt = localStorage.getItem('selectedVisitType'); } catch {}
+      if (!vt) vt = 'consulta';
+      setVisitType(vt);
     }
 
     // Buscar pacientes
@@ -4579,6 +4595,10 @@
       document.getElementById('pacienteSelector').style.display = 'none';
       document.getElementById('fichaClinica').style.display = 'none';
       document.getElementById('visitForm').style.display = 'none';
+      try { localStorage.setItem('uiView', 'calendario'); } catch {}
+      if (currentUser) {
+        try { db.collection('users').doc(currentUser.uid).set({ uiState: { view: 'calendario' } }, { merge: true }); } catch {}
+      }
     }
 
     function backToPacientes() {
@@ -4587,6 +4607,10 @@
       
       if (selectedPaciente) {
         showFichaClinica();
+      }
+      try { localStorage.setItem('uiView', 'ficha'); } catch {}
+      if (currentUser) {
+        try { db.collection('users').doc(currentUser.uid).set({ uiState: { view: 'ficha' } }, { merge: true }); } catch {}
       }
     }
 
@@ -4839,6 +4863,15 @@
         });
       } catch {}
     };
+
+    // Restaurar vista de calendario/ficha al inicio
+    (function restoreUIView(){
+      let view = null;
+      try { view = localStorage.getItem('uiView'); } catch {}
+      if (view === 'calendario') {
+        setTimeout(() => showCalendario(), 0);
+      }
+    })();
   </script>
 
   <script>
