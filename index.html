@@ -3897,84 +3897,29 @@
       if (visitForm) visitForm.style.display = (selectedVisitType === 'consulta') ? 'block' : 'none';
 
       try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
+      
+      // Persistir estado completo de UI
+      persistUIState();
 
       renderHistory();
     }
 
-    // Restaurar tipo de visita al mostrar ficha
-    function restoreVisitType() {
-      let vt = null;
-      try { vt = localStorage.getItem('selectedVisitType'); } catch {}
-      if (!vt) vt = 'consulta';
-      setVisitType(vt);
-    }
-
-    // Buscar pacientes
-    function searchPacientes() {
-      renderPacienteSelector();
-    }
-
-    // Guardar visita médica
-    async function saveVisit() {
-      if (!selectedPaciente) return;
-
-      const date = document.getElementById('date')?.value;
-      const time = document.getElementById('visitTime')?.value;
-      const estado = document.getElementById('estadoSelect')?.value;
-      const sintomas = document.getElementById('sintomas')?.value?.trim();
-      const observaciones = document.getElementById('observaciones')?.value?.trim();
-      const tratamiento = document.getElementById('tratamiento')?.value?.trim();
-      const estudios = document.getElementById('estudios')?.value?.trim();
-      const archivos = document.getElementById('archivoEstudio')?.files;
-
-      if (!date) {
-        alert('La fecha es obligatoria');
-        return;
-      }
-
-      const visit = {
-        id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        date,
-        time: time || '09:00',
-        visitType: selectedVisitType,
-        estado,
-        sintomas,
-        observaciones,
-        tratamiento,
-        estudios,
-        archivos: archivos ? Array.from(archivos).map(f => f.name) : [],
-        timestamp: new Date().toISOString()
-      };
-
+    // Guardar estado completo de UI local + nube
+    function persistUIState() {
       try {
-        if (!selectedPaciente.visitas[selectedVisitType]) {
-          selectedPaciente.visitas[selectedVisitType] = [];
-        }
-        
-        selectedPaciente.visitas[selectedVisitType].push(visit);
-
+        const uiView = (document.getElementById('calendarioSection')?.style.display === 'block') ? 'calendario' : 'ficha';
+        const selectedCalendarDate = localStorage.getItem('selectedCalendarDate') || null;
+        const state = {
+          selectedVisitType: selectedVisitType || 'consulta',
+          view: uiView,
+          selectedCalendarDate,
+          selectedPacienteId: selectedPaciente?.id || null
+        };
+        localStorage.setItem('uiState', JSON.stringify(state));
         if (currentUser) {
-          await savePacienteToFirestore(selectedPaciente);
+          db.collection('users').doc(currentUser.uid).set({ uiState: state }, { merge: true }).catch(()=>{});
         }
-        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
-
-        // Limpiar formulario
-        ['sintomas', 'observaciones', 'tratamiento', 'estudios'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.value = '';
-        });
-        
-        const fileInput = document.getElementById('archivoEstudio');
-        if (fileInput) fileInput.value = '';
-
-        renderEstadisticasPaciente();
-        renderHistory();
-        
-        alert(`✅ Visita de ${visitTypes.find(v => v.value === selectedVisitType)?.label} guardada exitosamente`);
-      } catch (error) {
-        console.error('Error al guardar visita:', error);
-        alert('Error al guardar la visita. Intenta de nuevo.');
-      }
+      } catch (e) { console.warn('No se pudo persistir UI state:', e); }
     }
 
     // Renderizar historial de visitas
@@ -4900,6 +4845,70 @@
         setTimeout(() => showCalendario(), 0);
       }
     })();
+
+    // Guardar visita médica (reinsertado)
+    async function saveVisit() {
+      if (!selectedPaciente) return;
+
+      const date = document.getElementById('date')?.value;
+      const time = document.getElementById('visitTime')?.value;
+      const estado = document.getElementById('estadoSelect')?.value;
+      const sintomas = document.getElementById('sintomas')?.value?.trim();
+      const observaciones = document.getElementById('observaciones')?.value?.trim();
+      const tratamiento = document.getElementById('tratamiento')?.value?.trim();
+      const estudios = document.getElementById('estudios')?.value?.trim();
+      const archivos = document.getElementById('archivoEstudio')?.files;
+
+      if (!date) {
+        alert('La fecha es obligatoria');
+        return;
+      }
+
+      const visit = {
+        id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        date,
+        time: time || '09:00',
+        visitType: selectedVisitType,
+        estado,
+        sintomas,
+        observaciones,
+        tratamiento,
+        estudios,
+        archivos: archivos ? Array.from(archivos).map(f => f.name) : [],
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        if (!selectedPaciente.visitas[selectedVisitType]) {
+          selectedPaciente.visitas[selectedVisitType] = [];
+        }
+        
+        selectedPaciente.visitas[selectedVisitType].push(visit);
+
+        if (currentUser) {
+          await savePacienteToFirestore(selectedPaciente);
+        }
+        try { window.backupAfterAction && window.backupAfterAction({ pacientes: allPacientes, recordatorios: allRecordatorios, citas: allCitas }); } catch {}
+
+        // Limpiar formulario
+        ['sintomas', 'observaciones', 'tratamiento', 'estudios'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        
+        const fileInput = document.getElementById('archivoEstudio');
+        if (fileInput) fileInput.value = '';
+
+        renderEstadisticasPaciente();
+        renderHistory();
+        persistUIState();
+        
+        alert(`✅ Visita de ${visitTypes.find(v => v.value === selectedVisitType)?.label} guardada exitosamente`);
+      } catch (error) {
+        console.error('Error al guardar visita:', error);
+        alert('Error al guardar la visita. Intenta de nuevo.');
+      }
+    }
   </script>
 
   <script>
