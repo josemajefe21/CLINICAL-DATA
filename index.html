@@ -3954,12 +3954,13 @@
         
         console.log('📊 Total pacientes después de agregar:', allPacientes.length);
 
-        // CRÍTICO: Guardar INMEDIATAMENTE en localStorage
-        try {
-          localStorage.setItem('pacientes_backup', JSON.stringify(allPacientes));
-          console.log('💾 Pacientes guardados en localStorage como respaldo');
-        } catch (localError) {
-          console.error('❌ Error guardando en localStorage:', localError);
+        // CRÍTICO: Guardar INMEDIATAMENTE en localStorage con nuevo sistema
+        const saveSuccess = saveToLocalStorage(STORAGE_KEYS.PACIENTES, allPacientes);
+        if (saveSuccess) {
+          console.log('✅ Pacientes guardados exitosamente en localStorage');
+        } else {
+          console.error('❌ FALLO CRÍTICO: No se pudieron guardar los pacientes');
+          alert('⚠️ Error guardando datos. Intenta de nuevo.');
         }
 
         // Actualizar interfaz
@@ -4490,11 +4491,10 @@
         selectedPaciente = null;
         
         // CRÍTICO: Guardar cambios inmediatamente en localStorage
-        try {
-          localStorage.setItem('pacientes_backup', JSON.stringify(allPacientes));
-          console.log('💾 Pacientes actualizados en localStorage tras eliminación');
-        } catch (error) {
-          console.error('❌ Error guardando tras eliminación:', error);
+        const saveSuccess = saveToLocalStorage(STORAGE_KEYS.PACIENTES, allPacientes);
+        if (!saveSuccess) {
+          console.error('❌ FALLO CRÍTICO: No se pudieron guardar cambios tras eliminación');
+          alert('⚠️ Error guardando cambios. Los datos pueden no persistir.');
         }
         
         document.getElementById('fichaClinica').style.display = 'none';
@@ -4519,22 +4519,13 @@
         console.log('💾 Guardando en localStorage como fallback...');
         
         // FALLBACK: Guardar en localStorage si Firebase falla
-        try {
-          const pacientesLocal = JSON.parse(localStorage.getItem('pacientes_backup') || '[]');
-          const existingIndex = pacientesLocal.findIndex(p => p.id === paciente.id);
-          
-          if (existingIndex >= 0) {
-            pacientesLocal[existingIndex] = paciente;
-          } else {
-            pacientesLocal.push(paciente);
-          }
-          
-          localStorage.setItem('pacientes_backup', JSON.stringify(pacientesLocal));
-          console.log('✅ Paciente guardado en localStorage como fallback');
-        } catch (localError) {
-          console.error('❌ Error también en localStorage:', localError);
-          throw error; // Solo lanza error si ambos fallan
+        console.log('💾 Guardando en localStorage como fallback...');
+        const saveSuccess = saveToLocalStorage(STORAGE_KEYS.PACIENTES, allPacientes);
+        if (!saveSuccess) {
+          console.error('❌ FALLO TOTAL: Firebase Y localStorage fallaron');
+          throw new Error('No se puede guardar el paciente en ningún sistema');
         }
+        console.log('✅ Paciente guardado en localStorage como fallback');
       }
     }
 
@@ -4557,16 +4548,16 @@
         console.log('💾 Intentando cargar desde localStorage...');
         
         // FALLBACK: Cargar desde localStorage si Firebase falla
-        try {
-          const pacientesLocal = JSON.parse(localStorage.getItem('pacientes_backup') || '[]');
+        console.log('💾 Intentando cargar desde localStorage...');
+        const pacientesLocal = loadFromLocalStorage(STORAGE_KEYS.PACIENTES);
+        if (pacientesLocal && Array.isArray(pacientesLocal)) {
           allPacientes = pacientesLocal;
           console.log('✅ Pacientes cargados desde localStorage:', allPacientes.length);
-          renderPacienteSelector();
-        } catch (localError) {
-          console.error('❌ Error también al cargar desde localStorage:', localError);
+        } else {
+          console.log('ℹ️ No hay pacientes en localStorage');
           allPacientes = [];
-          renderPacienteSelector();
         }
+        renderPacienteSelector();
       }
     }
 
@@ -4616,36 +4607,102 @@
       setTimeout(syncLocalDataToFirebase, 2000);
     };
 
+    // Sistema robusto de localStorage
+    const STORAGE_KEYS = {
+      PACIENTES: 'clinical_data_pacientes_v2',
+      RECORDATORIOS: 'clinical_data_recordatorios_v2',
+      CITAS: 'clinical_data_citas_v2',
+      LAST_SAVE: 'clinical_data_last_save'
+    };
+
+    // Función para guardar datos en localStorage de forma segura
+    function saveToLocalStorage(key, data) {
+      try {
+        const dataToSave = {
+          data: data,
+          timestamp: new Date().toISOString(),
+          version: '2.0'
+        };
+        localStorage.setItem(key, JSON.stringify(dataToSave));
+        localStorage.setItem(STORAGE_KEYS.LAST_SAVE, new Date().toISOString());
+        console.log(`💾 Guardado en localStorage [${key}]:`, Array.isArray(data) ? data.length : 'objeto', 'elementos');
+        return true;
+      } catch (error) {
+        console.error(`❌ Error guardando en localStorage [${key}]:`, error);
+        return false;
+      }
+    }
+
+    // Función para cargar datos desde localStorage de forma segura
+    function loadFromLocalStorage(key) {
+      try {
+        const stored = localStorage.getItem(key);
+        if (!stored) {
+          console.log(`ℹ️ No hay datos en localStorage para [${key}]`);
+          return null;
+        }
+
+        const parsed = JSON.parse(stored);
+        
+        // Verificar formato nuevo
+        if (parsed.data && parsed.timestamp) {
+          console.log(`✅ Datos cargados desde localStorage [${key}]:`, Array.isArray(parsed.data) ? parsed.data.length : 'objeto', 'elementos');
+          return parsed.data;
+        }
+        
+        // Formato antiguo (compatibilidad)
+        if (Array.isArray(parsed)) {
+          console.log(`✅ Datos legacy cargados desde localStorage [${key}]:`, parsed.length, 'elementos');
+          return parsed;
+        }
+
+        return null;
+      } catch (error) {
+        console.error(`❌ Error cargando desde localStorage [${key}]:`, error);
+        return null;
+      }
+    }
+
     // Cargar datos desde localStorage al inicializar
     function loadLocalData() {
-      try {
-        // Cargar pacientes desde localStorage
-        const pacientesLocal = localStorage.getItem('pacientes_backup');
-        if (pacientesLocal) {
-          allPacientes = JSON.parse(pacientesLocal);
-          console.log('✅ Pacientes cargados desde localStorage:', allPacientes.length);
-        }
-        
-        // Cargar recordatorios desde localStorage
-        const recordatoriosLocal = localStorage.getItem('recordatorios_backup');
-        if (recordatoriosLocal) {
-          allRecordatorios = JSON.parse(recordatoriosLocal);
-          console.log('✅ Recordatorios cargados desde localStorage:', allRecordatorios.length);
-        }
-        
-        // Cargar citas desde localStorage
-        const citasLocal = localStorage.getItem('citas_backup');
-        if (citasLocal) {
-          allCitas = JSON.parse(citasLocal);
-          console.log('✅ Citas cargadas desde localStorage:', allCitas.length);
-        }
-        
-      } catch (error) {
-        console.error('❌ Error cargando datos locales:', error);
+      console.log('📦 Cargando datos desde localStorage...');
+      
+      // Cargar pacientes
+      const pacientesLocal = loadFromLocalStorage(STORAGE_KEYS.PACIENTES);
+      if (pacientesLocal && Array.isArray(pacientesLocal)) {
+        allPacientes = pacientesLocal;
+        console.log('✅ Pacientes cargados:', allPacientes.length);
+      } else {
         allPacientes = [];
-        allRecordatorios = [];
-        allCitas = [];
+        console.log('ℹ️ No hay pacientes en localStorage');
       }
+      
+      // Cargar recordatorios
+      const recordatoriosLocal = loadFromLocalStorage(STORAGE_KEYS.RECORDATORIOS);
+      if (recordatoriosLocal && Array.isArray(recordatoriosLocal)) {
+        allRecordatorios = recordatoriosLocal;
+        console.log('✅ Recordatorios cargados:', allRecordatorios.length);
+      } else {
+        allRecordatorios = [];
+        console.log('ℹ️ No hay recordatorios en localStorage');
+      }
+      
+      // Cargar citas
+      const citasLocal = loadFromLocalStorage(STORAGE_KEYS.CITAS);
+      if (citasLocal && Array.isArray(citasLocal)) {
+        allCitas = citasLocal;
+        console.log('✅ Citas cargadas:', allCitas.length);
+      } else {
+        allCitas = [];
+        console.log('ℹ️ No hay citas en localStorage');
+      }
+
+      // Mostrar resumen
+      console.log('📊 Resumen de datos locales cargados:', {
+        pacientes: allPacientes.length,
+        recordatorios: allRecordatorios.length,
+        citas: allCitas.length
+      });
     }
 
     // Inicializar la aplicación médica
