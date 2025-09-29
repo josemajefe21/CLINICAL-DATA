@@ -989,7 +989,7 @@
               if (window.allPacientes && window.allPacientes.length > 0) {
                 window.allPacientes.forEach(paciente => {
                   html += `
-                    <div class="paciente-card" onclick="selectPaciente('${paciente.id}')">
+                    <div class="paciente-card" onclick="window.selectPaciente('${paciente.id}')">
                       <h4>${paciente.nombre}</h4>
                       <p>DNI: ${paciente.dni}</p>
                       <p>${paciente.patologia || 'Sin patología especificada'}</p>
@@ -1042,23 +1042,52 @@
       }
     });
 
-    // Función para seleccionar paciente
-    window.selectPaciente = function(pacienteId) {
-      const paciente = window.allPacientes.find(p => p.id === pacienteId);
+    // Función UNIFICADA para seleccionar paciente
+    window.selectPaciente = function(pacienteParam) {
+      console.log('🔄 Intentando seleccionar paciente:', pacienteParam);
+      
+      let paciente = null;
+      
+      // Si es un string (ID), buscar el paciente
+      if (typeof pacienteParam === 'string') {
+        const allPacientesArray = window.allPacientes || allPacientes || [];
+        paciente = allPacientesArray.find(p => p.id === pacienteParam);
+        console.log('🔍 Buscando paciente por ID:', pacienteParam, 'Encontrado:', !!paciente);
+      } 
+      // Si es un objeto (paciente completo), usarlo directamente
+      else if (typeof pacienteParam === 'object' && pacienteParam.id) {
+        paciente = pacienteParam;
+        console.log('📋 Usando objeto paciente directo:', paciente.nombre);
+      }
+      
       if (paciente) {
+        // Sincronizar variables globales
         window.selectedPaciente = paciente;
-        console.log('✅ Paciente seleccionado:', paciente.nombre);
-        // Mostrar ficha clínica si existe la función
-        if (window.showFichaClinica) {
-          window.showFichaClinica();
-        }
+        selectedPaciente = paciente;
+        
+        console.log('✅ Paciente seleccionado exitosamente:', paciente.nombre);
+        
+        // Ocultar selectores
+        const pacienteSelector = document.getElementById('pacienteSelector');
+        const newPacienteForm = document.getElementById('newPacienteForm');
+        
+        if (pacienteSelector) pacienteSelector.style.display = 'none';
+        if (newPacienteForm) newPacienteForm.style.display = 'none';
+        
+        // Mostrar ficha clínica
+        showFichaClinica();
+        setStage('primera'); // Inicializar en primera consulta
+        
+      } else {
+        console.error('❌ No se pudo encontrar el paciente:', pacienteParam);
+        alert('❌ Error: No se pudo seleccionar el paciente');
       }
     };
 
     console.log('✅ Firebase v9 inicializado correctamente');
     console.log('✅ Auth disponible:', !!window.auth);
     console.log('✅ Firestore disponible:', !!window.db);
-  </script>
+    </script>
   
   <!-- Librerías UMD sin conflictos -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1268,10 +1297,44 @@
       </div>
       
       <div class="form-section">
-        <h4>📊 Estudios</h4>
-        <textarea id="estudios" placeholder="Resultados de estudios y análisis"></textarea>
-        <input type="file" id="archivoEstudio" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" multiple>
-        <label for="archivoEstudio">📎 Subir archivos (PDF, DOC, imágenes)</label>
+        <h4>📊 Estudios y Archivos</h4>
+        <textarea id="estudios" placeholder="Resultados de estudios y análisis (texto)"></textarea>
+        
+        <!-- Sección de carga de archivos mejorada -->
+        <div style="border: 2px dashed var(--primary); border-radius: 8px; padding: 16px; margin-top: 12px; background: var(--bg-secondary);">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <input type="file" id="archivoEstudio" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt" multiple style="display: none;">
+            <button type="button" onclick="document.getElementById('archivoEstudio').click()" style="
+              background: var(--primary);
+              color: white;
+              border: none;
+              padding: 8px 16px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 14px;
+            ">📎 Seleccionar Archivos</button>
+            <span id="fileCount" style="color: var(--text-light); font-size: 14px;">Ningún archivo seleccionado</span>
+          </div>
+          
+          <!-- Lista de archivos seleccionados -->
+          <div id="selectedFiles" style="display: none;">
+            <h5 style="margin: 8px 0; color: var(--text);">📄 Archivos seleccionados:</h5>
+            <div id="fileList" style="max-height: 120px; overflow-y: auto;"></div>
+          </div>
+          
+          <div style="font-size: 12px; color: var(--text-light); margin-top: 8px;">
+            ✅ Formatos soportados: PDF, DOC, DOCX, JPG, JPEG, PNG, TXT<br>
+            📏 Tamaño máximo por archivo: 10MB
+          </div>
+        </div>
+        
+        <!-- Archivos guardados anteriormente -->
+        <div id="savedFiles" style="margin-top: 16px;">
+          <h5 style="margin: 8px 0; color: var(--text);">💾 Archivos guardados:</h5>
+          <div id="savedFilesList" style="max-height: 120px; overflow-y: auto;">
+            <p style="color: var(--text-light); font-style: italic;">No hay archivos guardados</p>
+          </div>
+        </div>
       </div>
       
       <button onclick="saveVisit()" class="btn-primary">💾 Guardar Visita</button>
@@ -4044,7 +4107,7 @@
           </div>
         `;
 
-        div.addEventListener('click', () => selectPaciente(paciente));
+        div.addEventListener('click', () => window.selectPaciente(paciente));
         div.addEventListener('mouseenter', () => {
           div.style.transform = 'translateY(-2px)';
           div.style.boxShadow = `0 4px 12px ${paciente.color}40`;
@@ -4058,14 +4121,8 @@
       });
     }
 
-    // Seleccionar paciente
-    function selectPaciente(paciente) {
-      selectedPaciente = paciente;
-      document.getElementById('pacienteSelector').style.display = 'none';
-      document.getElementById('newPacienteForm').style.display = 'none';
-      showFichaClinica();
-      setStage('primera'); // Inicializar en primera consulta
-    }
+    // Función selectPaciente ya está definida globalmente arriba - esta es solo una referencia
+    const selectPaciente = window.selectPaciente;
 
     // Mostrar ficha clínica del paciente
     function showFichaClinica() {
@@ -4082,6 +4139,12 @@
       renderPacienteInfo();
       renderEstadisticasPaciente();
       initializeVisitForm();
+      
+      // Inicializar sistema de archivos
+      initializeFileSystem();
+      
+      // Mostrar archivos guardados
+      renderSavedFiles();
     }
 
     // Renderizar información del paciente
@@ -4247,6 +4310,253 @@
       renderPacienteSelector();
     }
 
+    // ===== SISTEMA DE ARCHIVOS DE ESTUDIOS =====
+
+    // Inicializar el sistema de archivos
+    function initializeFileSystem() {
+      const fileInput = document.getElementById('archivoEstudio');
+      if (fileInput) {
+        fileInput.addEventListener('change', handleFileSelection);
+        console.log('✅ Sistema de archivos inicializado');
+      }
+    }
+
+    // Manejar selección de archivos
+    function handleFileSelection(event) {
+      const files = event.target.files;
+      const fileCount = document.getElementById('fileCount');
+      const selectedFilesDiv = document.getElementById('selectedFiles');
+      const fileList = document.getElementById('fileList');
+
+      console.log('📁 Archivos seleccionados:', files.length);
+
+      if (files.length === 0) {
+        fileCount.textContent = 'Ningún archivo seleccionado';
+        selectedFilesDiv.style.display = 'none';
+        return;
+      }
+
+      // Actualizar contador
+      fileCount.textContent = `${files.length} archivo${files.length > 1 ? 's' : ''} seleccionado${files.length > 1 ? 's' : ''}`;
+      
+      // Mostrar lista de archivos
+      selectedFilesDiv.style.display = 'block';
+      fileList.innerHTML = '';
+
+      Array.from(files).forEach((file, index) => {
+        const fileDiv = document.createElement('div');
+        fileDiv.style.cssText = `
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px;
+          margin: 4px 0;
+          background: var(--bg);
+          border-radius: 4px;
+          border: 1px solid var(--border);
+        `;
+
+        const fileInfo = document.createElement('div');
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        const fileIcon = getFileIcon(file.type);
+        
+        fileInfo.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">${fileIcon}</span>
+            <div>
+              <div style="font-weight: 500; color: var(--text);">${file.name}</div>
+              <div style="font-size: 12px; color: var(--text-light);">${fileSize} MB • ${file.type || 'Tipo desconocido'}</div>
+            </div>
+          </div>
+        `;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.innerHTML = '❌';
+        removeBtn.style.cssText = `
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          color: var(--danger);
+        `;
+        removeBtn.onclick = () => removeFile(index);
+
+        fileDiv.appendChild(fileInfo);
+        fileDiv.appendChild(removeBtn);
+        fileList.appendChild(fileDiv);
+      });
+    }
+
+    // Obtener icono según tipo de archivo
+    function getFileIcon(fileType) {
+      if (fileType.includes('pdf')) return '📄';
+      if (fileType.includes('image')) return '🖼️';
+      if (fileType.includes('document') || fileType.includes('word')) return '📝';
+      if (fileType.includes('text')) return '📃';
+      return '📎';
+    }
+
+    // Remover archivo de la selección
+    function removeFile(index) {
+      const fileInput = document.getElementById('archivoEstudio');
+      const dt = new DataTransfer();
+      
+      Array.from(fileInput.files).forEach((file, i) => {
+        if (i !== index) dt.items.add(file);
+      });
+      
+      fileInput.files = dt.files;
+      handleFileSelection({ target: fileInput });
+    }
+
+    // Procesar archivos para guardar
+    async function processFilesForSave(files) {
+      console.log('🔄 Procesando archivos para guardar...');
+      const processedFiles = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validar tamaño (10MB máximo)
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`❌ El archivo "${file.name}" es demasiado grande. Máximo 10MB.`);
+          continue;
+        }
+
+        try {
+          const fileData = await readFileAsBase64(file);
+          processedFiles.push({
+            id: Date.now() + '_' + i,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: fileData,
+            uploadDate: new Date().toISOString()
+          });
+          console.log(`✅ Archivo procesado: ${file.name}`);
+        } catch (error) {
+          console.error(`❌ Error procesando ${file.name}:`, error);
+          alert(`❌ Error procesando el archivo "${file.name}"`);
+        }
+      }
+
+      return processedFiles;
+    }
+
+    // Leer archivo como Base64
+    function readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Mostrar archivos guardados del paciente
+    function renderSavedFiles() {
+      const savedFilesList = document.getElementById('savedFilesList');
+      if (!savedFilesList || !selectedPaciente) return;
+
+      // Recopilar todos los archivos de todas las visitas
+      const allFiles = [];
+      if (selectedPaciente.visitas) {
+        Object.values(selectedPaciente.visitas).forEach(visits => {
+          visits.forEach(visit => {
+            if (visit.files && Array.isArray(visit.files)) {
+              visit.files.forEach(file => {
+                allFiles.push({
+                  ...file,
+                  visitDate: visit.date,
+                  visitType: visit.visitType
+                });
+              });
+            }
+          });
+        });
+      }
+
+      if (allFiles.length === 0) {
+        savedFilesList.innerHTML = '<p style="color: var(--text-light); font-style: italic;">No hay archivos guardados</p>';
+        return;
+      }
+
+      savedFilesList.innerHTML = '';
+      allFiles.forEach(file => {
+        const fileDiv = document.createElement('div');
+        fileDiv.style.cssText = `
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px;
+          margin: 4px 0;
+          background: var(--bg);
+          border-radius: 4px;
+          border: 1px solid var(--border);
+        `;
+
+        const fileInfo = document.createElement('div');
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        const fileIcon = getFileIcon(file.type);
+        const visitDate = new Date(file.visitDate).toLocaleDateString('es-ES');
+        
+        fileInfo.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">${fileIcon}</span>
+            <div>
+              <div style="font-weight: 500; color: var(--text);">${file.name}</div>
+              <div style="font-size: 12px; color: var(--text-light);">${fileSize} MB • ${visitDate} • ${file.visitType}</div>
+            </div>
+          </div>
+        `;
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.style.display = 'flex';
+        actionsDiv.style.gap = '4px';
+
+        // Botón ver/descargar
+        const viewBtn = document.createElement('button');
+        viewBtn.innerHTML = '👁️';
+        viewBtn.title = 'Ver archivo';
+        viewBtn.style.cssText = `
+          background: var(--primary);
+          color: white;
+          border: none;
+          padding: 4px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+        `;
+        viewBtn.onclick = () => viewFile(file);
+
+        actionsDiv.appendChild(viewBtn);
+        fileDiv.appendChild(fileInfo);
+        fileDiv.appendChild(actionsDiv);
+        savedFilesList.appendChild(fileDiv);
+      });
+    }
+
+    // Ver archivo
+    function viewFile(file) {
+      const newWindow = window.open();
+      newWindow.document.write(`
+        <html>
+          <head><title>${file.name}</title></head>
+          <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif;">
+            <h2>📄 ${file.name}</h2>
+            <p><strong>Tamaño:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+            <p><strong>Tipo:</strong> ${file.type}</p>
+            <p><strong>Fecha de subida:</strong> ${new Date(file.uploadDate).toLocaleString('es-ES')}</p>
+            <hr>
+            ${file.type.includes('image') ? 
+              `<img src="${file.data}" style="max-width: 100%; height: auto;">` :
+              `<iframe src="${file.data}" style="width: 100%; height: 80vh; border: none;"></iframe>`
+            }
+          </body>
+        </html>
+      `);
+    }
+
     // Guardar visita médica MEJORADA
     async function saveVisit() {
       console.log('🩺 Iniciando guardado de visita...');
@@ -4292,6 +4602,19 @@
         }
       }
 
+      // Procesar archivos si los hay
+      let processedFiles = [];
+      if (archivos && archivos.length > 0) {
+        console.log('📁 Procesando archivos adjuntos...');
+        try {
+          processedFiles = await processFilesForSave(archivos);
+          console.log(`✅ ${processedFiles.length} archivos procesados correctamente`);
+        } catch (error) {
+          console.error('❌ Error procesando archivos:', error);
+          alert('⚠️ Algunos archivos no se pudieron procesar, pero la visita se guardará.');
+        }
+      }
+
       // Crear objeto de visita
       const visit = {
         id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
@@ -4303,7 +4626,7 @@
         observaciones: observaciones || '',
         tratamiento: tratamiento || '',
         estudios: estudios || '',
-        archivos: archivos ? Array.from(archivos).map(f => f.name) : [],
+        files: processedFiles, // Archivos procesados con datos Base64
         timestamp: new Date().toISOString(),
         pacienteId: selectedPaciente.id,
         pacienteNombre: selectedPaciente.nombre
@@ -4364,6 +4687,15 @@
           fileInput.value = '';
           console.log('✅ Campo archivo limpiado');
         }
+        
+        // Limpiar interfaz de archivos
+        const fileCount = document.getElementById('fileCount');
+        const selectedFilesDiv = document.getElementById('selectedFiles');
+        if (fileCount) fileCount.textContent = 'Ningún archivo seleccionado';
+        if (selectedFilesDiv) selectedFilesDiv.style.display = 'none';
+        
+        // Actualizar archivos guardados
+        renderSavedFiles();
 
         // Restablecer estado por defecto
         const estadoSelect = document.getElementById('estadoSelect');
