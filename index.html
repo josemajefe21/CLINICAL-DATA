@@ -3954,6 +3954,14 @@
         
         console.log('📊 Total pacientes después de agregar:', allPacientes.length);
 
+        // CRÍTICO: Guardar INMEDIATAMENTE en localStorage
+        try {
+          localStorage.setItem('pacientes_backup', JSON.stringify(allPacientes));
+          console.log('💾 Pacientes guardados en localStorage como respaldo');
+        } catch (localError) {
+          console.error('❌ Error guardando en localStorage:', localError);
+        }
+
         // Actualizar interfaz
         hideNewPacienteForm();
         renderPacienteSelector();
@@ -4481,6 +4489,14 @@
         allPacientes = allPacientes.filter(p => p.id !== selectedPaciente.id);
         selectedPaciente = null;
         
+        // CRÍTICO: Guardar cambios inmediatamente en localStorage
+        try {
+          localStorage.setItem('pacientes_backup', JSON.stringify(allPacientes));
+          console.log('💾 Pacientes actualizados en localStorage tras eliminación');
+        } catch (error) {
+          console.error('❌ Error guardando tras eliminación:', error);
+        }
+        
         document.getElementById('fichaClinica').style.display = 'none';
         document.getElementById('visitForm').style.display = 'none';
         renderPacienteSelector();
@@ -4586,11 +4602,51 @@
     const originalLoadUserData = loadUserData;
     loadUserData = async function() {
       if (originalLoadUserData) await originalLoadUserData();
+      
+      // Intentar cargar desde Firebase primero
       await loadPacientesFromFirestore();
+      
+      // Si no hay datos de Firebase, cargar desde localStorage
+      if (allPacientes.length === 0) {
+        console.log('📦 No hay datos en Firebase, cargando desde localStorage...');
+        loadLocalData();
+      }
       
       // Intentar sincronizar datos locales
       setTimeout(syncLocalDataToFirebase, 2000);
     };
+
+    // Cargar datos desde localStorage al inicializar
+    function loadLocalData() {
+      try {
+        // Cargar pacientes desde localStorage
+        const pacientesLocal = localStorage.getItem('pacientes_backup');
+        if (pacientesLocal) {
+          allPacientes = JSON.parse(pacientesLocal);
+          console.log('✅ Pacientes cargados desde localStorage:', allPacientes.length);
+        }
+        
+        // Cargar recordatorios desde localStorage
+        const recordatoriosLocal = localStorage.getItem('recordatorios_backup');
+        if (recordatoriosLocal) {
+          allRecordatorios = JSON.parse(recordatoriosLocal);
+          console.log('✅ Recordatorios cargados desde localStorage:', allRecordatorios.length);
+        }
+        
+        // Cargar citas desde localStorage
+        const citasLocal = localStorage.getItem('citas_backup');
+        if (citasLocal) {
+          allCitas = JSON.parse(citasLocal);
+          console.log('✅ Citas cargadas desde localStorage:', allCitas.length);
+        }
+        
+      } catch (error) {
+        console.error('❌ Error cargando datos locales:', error);
+        allPacientes = [];
+        allRecordatorios = [];
+        allCitas = [];
+      }
+    }
 
     // Inicializar la aplicación médica
     function initMedicalApp() {
@@ -4616,6 +4672,9 @@
         console.error('❌ availableColors no definido - error crítico');
         return;
       }
+      
+      // CRÍTICO: Cargar datos locales SIEMPRE al inicializar
+      loadLocalData();
       
       console.log('📊 Estado inicial:', {
         pacientes: allPacientes.length,
@@ -5192,8 +5251,31 @@
       Notification.requestPermission();
     }
 
+    // Función para inicializar datos sin autenticación
+    function initOfflineMode() {
+      console.log('🔄 Iniciando modo offline...');
+      loadLocalData();
+      renderPacienteSelector();
+      console.log('✅ Modo offline inicializado');
+    }
+
     // Ejecutar cuando se carga la app
     setTimeout(initMedicalApp, 1000);
+    
+    // También cargar datos locales inmediatamente al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('📄 DOM cargado, iniciando datos locales...');
+      initOfflineMode();
+    });
+    
+    // Fallback si DOMContentLoaded ya pasó
+    if (document.readyState === 'loading') {
+      // DOM aún se está cargando
+    } else {
+      // DOM ya está listo
+      console.log('📄 DOM ya estaba listo, iniciando datos locales...');
+      setTimeout(initOfflineMode, 100);
+    }
 
     // Enganches de respaldo local tras cargas de Firestore
     const _loadUserData = window.loadUserData;
