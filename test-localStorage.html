@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test localStorage - Clinical Data</title>
+</head>
+<body>
+    <h1>🧪 Test del Sistema de localStorage</h1>
+    <button onclick="testSavePatient()">💾 Guardar Paciente de Prueba</button>
+    <button onclick="testLoadPatients()">📦 Cargar Pacientes</button>
+    <button onclick="clearStorage()">🗑️ Limpiar Storage</button>
+    <div id="results"></div>
+
+    <script>
+        // Mismo sistema que en la app principal
+        const STORAGE_KEYS = {
+            PACIENTES: 'clinical_data_pacientes_v2',
+            LAST_SAVE: 'clinical_data_last_save'
+        };
+
+        function saveToLocalStorage(key, data) {
+            try {
+                const dataToSave = {
+                    data: data,
+                    timestamp: new Date().toISOString(),
+                    version: '2.0'
+                };
+                localStorage.setItem(key, JSON.stringify(dataToSave));
+                localStorage.setItem(STORAGE_KEYS.LAST_SAVE, new Date().toISOString());
+                console.log(`💾 Guardado en localStorage [${key}]:`, data.length, 'elementos');
+                return true;
+            } catch (error) {
+                console.error(`❌ Error guardando en localStorage [${key}]:`, error);
+                return false;
+            }
+        }
+
+        function loadFromLocalStorage(key) {
+            try {
+                const stored = localStorage.getItem(key);
+                if (!stored) return null;
+
+                const parsed = JSON.parse(stored);
+                
+                if (parsed.data && parsed.timestamp) {
+                    return parsed.data;
+                }
+                
+                if (Array.isArray(parsed)) {
+                    return parsed;
+                }
+
+                return null;
+            } catch (error) {
+                console.error(`❌ Error cargando desde localStorage [${key}]:`, error);
+                return null;
+            }
+        }
+
+        function testSavePatient() {
+            const testPatient = {
+                id: Date.now() + '_test',
+                nombre: 'Paciente de Prueba',
+                dni: '12345678',
+                direccion: 'Dirección de prueba',
+                telefono: '123456789',
+                obraSocial: 'Obra Social Test',
+                patologia: 'Patología de prueba',
+                color: '#4ade80',
+                fechaCreacion: new Date().toISOString(),
+                visitas: {
+                    primera: [],
+                    seguimiento: [],
+                    urgencia: [],
+                    control: []
+                }
+            };
+
+            // Cargar pacientes existentes
+            let allPacientes = loadFromLocalStorage(STORAGE_KEYS.PACIENTES) || [];
+            
+            // Agregar nuevo paciente
+            allPacientes.push(testPatient);
+            
+            // Guardar
+            const success = saveToLocalStorage(STORAGE_KEYS.PACIENTES, allPacientes);
+            
+            document.getElementById('results').innerHTML = 
+                `<p>✅ Paciente guardado: ${success ? 'ÉXITO' : 'FALLO'}</p>
+                 <p>Total pacientes: ${allPacientes.length}</p>`;
+        }
+
+        function testLoadPatients() {
+            const patients = loadFromLocalStorage(STORAGE_KEYS.PACIENTES) || [];
+            
+            let html = `<h3>📦 Pacientes Cargados: ${patients.length}</h3>`;
+            patients.forEach(p => {
+                html += `<p>👤 ${p.nombre} - DNI: ${p.dni}</p>`;
+            });
+            
+            document.getElementById('results').innerHTML = html;
+        }
+
+        function clearStorage() {
+            localStorage.removeItem(STORAGE_KEYS.PACIENTES);
+            localStorage.removeItem(STORAGE_KEYS.LAST_SAVE);
+            document.getElementById('results').innerHTML = '<p>🗑️ Storage limpiado</p>';
+        }
+
+        // Test automático al cargar
+        window.onload = function() {
+            testLoadPatients();
+        };
+    </script>
+</body>
+</html>
