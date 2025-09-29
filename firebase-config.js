@@ -36,22 +36,20 @@ try {
     console.log('✅ Firebase Auth disponible:', !!window.auth);
     console.log('✅ Firebase Firestore disponible:', !!window.db);
     
-    // Configuración básica de Firestore
+    // Configuración robusta de Firestore para evitar errores 400
     try {
       window.db.settings({
-        experimentalAutoDetectLongPolling: true
+        experimentalAutoDetectLongPolling: true,
+        experimentalForceLongPolling: false,
+        merge: true
       });
       console.log('✅ Configuración de Firestore aplicada');
     } catch (e) {
       console.warn('⚠️ No se pudieron aplicar ajustes de Firestore:', e);
     }
 
-    // Persistencia simple
-    window.db.enablePersistence({ synchronizeTabs: true })
-      .then(() => console.log('✅ Persistencia offline habilitada'))
-      .catch((err) => {
-        console.warn('⚠️ Persistencia offline no disponible:', err.code);
-      });
+    // Deshabilitar persistencia temporalmente para evitar errores
+    console.log('⚠️ Persistencia offline deshabilitada temporalmente para debug');
       
   } else {
     console.error('❌ Firebase Auth o Firestore no disponibles');
