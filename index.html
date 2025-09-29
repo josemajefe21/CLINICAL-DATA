@@ -4180,12 +4180,51 @@
       return `${Math.round(promedio)} días`;
     }
 
-    // Inicializar formulario de visita
+    // Inicializar formulario de visita MEJORADO
     function initializeVisitForm() {
+      console.log('📋 Inicializando formulario de visita...');
+      
+      // Establecer fecha de hoy por defecto
+      const today = new Date().toISOString().split('T')[0];
       const dateInput = document.getElementById('date');
       if (dateInput) {
-        dateInput.value = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+        console.log('📅 Fecha establecida:', today);
       }
+      
+      // Establecer hora actual por defecto
+      const now = new Date();
+      const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
+                         now.getMinutes().toString().padStart(2, '0');
+      const timeInput = document.getElementById('visitTime');
+      if (timeInput) {
+        timeInput.value = currentTime;
+        console.log('⏰ Hora establecida:', currentTime);
+      }
+      
+      // Establecer estado por defecto
+      const estadoSelect = document.getElementById('estadoSelect');
+      if (estadoSelect) {
+        estadoSelect.value = 'estable';
+        console.log('🏥 Estado establecido: estable');
+      }
+      
+      // Limpiar todos los campos de texto
+      const fieldsToClean = ['sintomas', 'observaciones', 'tratamiento', 'estudios'];
+      fieldsToClean.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.value = '';
+        }
+      });
+      
+      // Limpiar archivo
+      const fileInput = document.getElementById('archivoEstudio');
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      
+      console.log('✅ Formulario de visita inicializado correctamente');
     }
 
     // Cambiar tipo de visita
@@ -4208,10 +4247,23 @@
       renderPacienteSelector();
     }
 
-    // Guardar visita médica
+    // Guardar visita médica MEJORADA
     async function saveVisit() {
-      if (!selectedPaciente) return;
+      console.log('🩺 Iniciando guardado de visita...');
+      
+      if (!selectedPaciente) {
+        alert('❌ No hay paciente seleccionado');
+        console.error('No hay paciente seleccionado');
+        return;
+      }
 
+      if (!selectedVisitType) {
+        alert('❌ Selecciona el tipo de consulta primero');
+        console.error('No hay tipo de visita seleccionado');
+        return;
+      }
+
+      // Obtener todos los campos del formulario
       const date = document.getElementById('date')?.value;
       const time = document.getElementById('visitTime')?.value;
       const estado = document.getElementById('estadoSelect')?.value;
@@ -4221,52 +4273,125 @@
       const estudios = document.getElementById('estudios')?.value?.trim();
       const archivos = document.getElementById('archivoEstudio')?.files;
 
+      console.log('📝 Datos del formulario:', {
+        date, time, estado, sintomas: sintomas?.length, 
+        observaciones: observaciones?.length, tratamiento: tratamiento?.length,
+        estudios: estudios?.length, selectedVisitType
+      });
+
+      // Validaciones
       if (!date) {
-        alert('La fecha es obligatoria');
+        alert('❌ La fecha es obligatoria');
+        document.getElementById('date')?.focus();
         return;
       }
 
+      if (!sintomas && !observaciones && !tratamiento) {
+        if (!confirm('⚠️ No has completado ningún campo clínico. ¿Deseas guardar la visita vacía?')) {
+          return;
+        }
+      }
+
+      // Crear objeto de visita
       const visit = {
         id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
         date,
         time: time || '09:00',
         visitType: selectedVisitType,
-        estado,
-        sintomas,
-        observaciones,
-        tratamiento,
-        estudios,
+        estado: estado || 'estable',
+        sintomas: sintomas || '',
+        observaciones: observaciones || '',
+        tratamiento: tratamiento || '',
+        estudios: estudios || '',
         archivos: archivos ? Array.from(archivos).map(f => f.name) : [],
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        pacienteId: selectedPaciente.id,
+        pacienteNombre: selectedPaciente.nombre
       };
 
+      console.log('👤 Visita creada:', visit);
+
       try {
+        // Asegurar que existe la estructura de visitas
+        if (!selectedPaciente.visitas) {
+          selectedPaciente.visitas = {
+            primera: [],
+            seguimiento: [],
+            urgencia: [],
+            control: []
+          };
+        }
+
         if (!selectedPaciente.visitas[selectedVisitType]) {
           selectedPaciente.visitas[selectedVisitType] = [];
         }
         
+        // Agregar la visita
         selectedPaciente.visitas[selectedVisitType].push(visit);
+        console.log('✅ Visita agregada al paciente');
 
+        // Guardar en Firebase
         if (currentUser) {
+          console.log('☁️ Guardando en Firebase...');
           await savePacienteToFirestore(selectedPaciente);
+          console.log('✅ Guardado en Firebase exitoso');
+        } else {
+          console.log('⚠️ No hay usuario autenticado, guardando solo localmente');
         }
 
-        // Limpiar formulario
-        ['sintomas', 'observaciones', 'tratamiento', 'estudios'].forEach(id => {
+        // CRÍTICO: Guardar también en localStorage como respaldo
+        const saveSuccess = saveToLocalStorage(STORAGE_KEYS.PACIENTES, allPacientes);
+        if (saveSuccess) {
+          console.log('💾 Visita guardada en localStorage como respaldo');
+        }
+
+        // LIMPIAR TODOS LOS CAMPOS DEL FORMULARIO
+        console.log('🧹 Limpiando formulario...');
+        
+        // Campos de texto
+        const fieldsToClean = ['sintomas', 'observaciones', 'tratamiento', 'estudios'];
+        fieldsToClean.forEach(id => {
           const el = document.getElementById(id);
-          if (el) el.value = '';
+          if (el) {
+            el.value = '';
+            console.log(`✅ Campo ${id} limpiado`);
+          }
         });
         
+        // Archivo
         const fileInput = document.getElementById('archivoEstudio');
-        if (fileInput) fileInput.value = '';
+        if (fileInput) {
+          fileInput.value = '';
+          console.log('✅ Campo archivo limpiado');
+        }
 
+        // Restablecer estado por defecto
+        const estadoSelect = document.getElementById('estadoSelect');
+        if (estadoSelect) {
+          estadoSelect.value = 'estable';
+          console.log('✅ Estado restablecido a "estable"');
+        }
+
+        // Actualizar interfaz
         renderEstadisticasPaciente();
         renderHistory();
         
-        alert(`✅ Visita de ${visitTypes.find(v => v.value === selectedVisitType)?.label} guardada exitosamente`);
+        // MENSAJE DE CONFIRMACIÓN MEJORADO
+        const visitTypeLabel = visitTypes.find(v => v.value === selectedVisitType)?.label || selectedVisitType;
+        const mensaje = `✅ VISITA GUARDADA CORRECTAMENTE\n\n` +
+                       `👤 Paciente: ${selectedPaciente.nombre}\n` +
+                       `🩺 Tipo: ${visitTypeLabel}\n` +
+                       `📅 Fecha: ${date}\n` +
+                       `⏰ Hora: ${time}\n\n` +
+                       `Los campos han sido limpiados para la próxima visita.`;
+        
+        alert(mensaje);
+        console.log('🎉 Visita guardada exitosamente');
+        
       } catch (error) {
-        console.error('Error al guardar visita:', error);
-        alert('Error al guardar la visita. Intenta de nuevo.');
+        console.error('❌ Error al guardar visita:', error);
+        console.error('Stack trace:', error.stack);
+        alert(`❌ Error al guardar la visita: ${error.message}\n\nRevisa la consola para más detalles.`);
       }
     }
 
