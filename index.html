@@ -1092,6 +1092,7 @@
   <!-- Librerías UMD sin conflictos -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  
     
   </head>
 <body>
@@ -1122,6 +1123,7 @@
       title="¿Qué puede hacer este software?">🩺❓</button>
       <p style="color: var(--text-light); font-size: 0.85rem; margin-top: 8px;">¿Qué puede hacer este software?</p>
     </div>
+    
     
     <div id="loginCard" class="form-card">
       <h2>Iniciar Sesión</h2>
@@ -1626,10 +1628,82 @@
       }
     }
 
-    // ===== SISTEMA DE AUTENTICACIÓN =====
+    // ===== SISTEMA DE AUTENTICACIÓN SIMPLIFICADO =====
 
-    // Firebase v9 ya está inicializado - no necesita verificación adicional
-    console.log('✅ Sistema de autenticación listo');
+    console.log('🔐 Inicializando sistema de autenticación simplificado...');
+
+    // Función de inicialización de autenticación
+    function initializeAuth() {
+      try {
+        if (!window.auth) {
+          console.error('❌ Firebase Auth no disponible');
+          return;
+        }
+
+        console.log('🔄 Configurando listener de autenticación...');
+
+        // Listener de estado de autenticación
+        window.auth.onAuthStateChanged((user) => {
+          console.log('🔐 Estado de autenticación:', !!user);
+          
+          if (user) {
+            console.log('✅ Usuario autenticado:', user.email);
+            currentUser = user;
+            isAuthenticated = true;
+            
+            // Actualizar interfaz
+            showMainInterface();
+            
+            // Cargar datos
+            setTimeout(loadUserData, 500);
+            
+          } else {
+            console.log('❌ Usuario no autenticado');
+            currentUser = null;
+            isAuthenticated = false;
+            showLoginInterface();
+          }
+        });
+
+        console.log('✅ Sistema de autenticación configurado');
+        
+      } catch (error) {
+        console.error('❌ Error configurando autenticación:', error);
+      }
+    }
+
+    // Mostrar interfaz principal
+    function showMainInterface() {
+      const authContainer = document.querySelector('.container');
+      const mainContent = document.getElementById('mainContent');
+      const userInfo = document.getElementById('userInfo');
+      
+      if (authContainer) authContainer.style.display = 'none';
+      if (mainContent) mainContent.style.display = 'block';
+      if (userInfo) userInfo.style.display = 'flex';
+      
+      // Actualizar info del usuario
+      if (currentUser) {
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+        if (userName) userName.textContent = currentUser.displayName || 'Usuario';
+        if (userEmail) userEmail.textContent = currentUser.email;
+      }
+    }
+
+    // Mostrar interfaz de login
+    function showLoginInterface() {
+      const authContainer = document.querySelector('.container');
+      const mainContent = document.getElementById('mainContent');
+      const userInfo = document.getElementById('userInfo');
+      
+      if (authContainer) authContainer.style.display = 'block';
+      if (mainContent) mainContent.style.display = 'none';
+      if (userInfo) userInfo.style.display = 'none';
+    }
+
+    // Inicializar cuando Firebase esté listo
+    setTimeout(initializeAuth, 2000);
       
       // Función de prueba para verificar conectividad
       window.testFirebaseConnection = async function() {
@@ -1773,9 +1847,12 @@
       }
 
       try {
-        console.log('Intentando iniciar sesión con:', email);
-        await window.signInWithEmailAndPassword(window.auth, email, password);
-        console.log('Login exitoso');
+        console.log('🔐 Intentando iniciar sesión con:', email);
+        
+        // Usar la sintaxis correcta de Firebase Auth
+        const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
+        console.log('✅ LOGIN EXITOSO:', userCredential.user.email);
+        
         // El onAuthStateChanged se encargará del resto
       } catch (error) {
         console.error('Error de login:', error);
@@ -1838,9 +1915,9 @@
       try {
         console.log('Intentando crear usuario con:', { email, password: '***', name });
         
-        // Crear usuario
-        const userCredential = await window.createUserWithEmailAndPassword(window.auth, email, password);
-        console.log('Usuario creado exitosamente:', userCredential.user.uid);
+        // Crear usuario con sintaxis correcta
+        const userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
+        console.log('✅ Usuario creado exitosamente:', userCredential.user.uid);
         
         // Actualizar perfil
         await userCredential.user.updateProfile({
@@ -4015,7 +4092,7 @@
         if (currentUser) {
           console.log('☁️ FORZANDO guardado en Firebase para sincronización...');
           try {
-            await savePacienteToFirestore(nuevoPaciente);
+          await savePacienteToFirestore(nuevoPaciente);
             console.log('✅ PACIENTE SINCRONIZADO - Disponible en todos los dispositivos');
             
             setTimeout(() => {
@@ -4705,7 +4782,7 @@
         if (currentUser) {
           console.log('☁️ FORZANDO guardado en Firebase para sincronización...');
           try {
-            await savePacienteToFirestore(selectedPaciente);
+          await savePacienteToFirestore(selectedPaciente);
             console.log('✅ SINCRONIZACIÓN EXITOSA - Datos disponibles en todos los dispositivos');
             
             // Confirmar sincronización
@@ -4718,18 +4795,17 @@
             console.error('❌ Error en sincronización con Firebase:', firebaseError);
             console.log('⚠️ Datos guardados solo localmente. Intentando reintento automático...');
             
-            // Reintento automático después de 3 segundos
-            setTimeout(async () => {
-              try {
-                console.log('🔄 Reintentando sincronización con Firebase...');
-                await savePacienteToFirestore(selectedPaciente);
-                console.log('✅ REINTENTO EXITOSO - Datos sincronizados');
-                alert('✅ Sincronización completada en segundo intento. Datos disponibles en todos los dispositivos.');
-              } catch (retryError) {
-                console.error('❌ Reintento también falló:', retryError);
-                alert('⚠️ No se pudo sincronizar con la nube. Los datos están guardados localmente y se sincronizarán cuando mejore la conexión.');
-              }
-            }, 3000);
+            // Intentar servicio alternativo inmediatamente
+            console.log('🔄 Intentando servicio alternativo...');
+            const alternativeSuccess = await syncWithAlternativeService();
+            
+            if (alternativeSuccess) {
+              console.log('✅ SINCRONIZACIÓN ALTERNATIVA EXITOSA');
+              alert('✅ Datos sincronizados con servicio alternativo!\n📱 Disponibles en todos tus dispositivos.\n\n💡 Firebase tiene problemas pero tus datos están seguros.');
+            } else {
+              console.log('❌ Todos los servicios fallaron');
+              alert('⚠️ No se pudo sincronizar con ningún servicio.\n💾 Los datos están guardados localmente.\n🔄 Usa el botón "🌐 Sincronizar Datos" más tarde.');
+            }
           }
         } else {
           console.log('⚠️ No hay usuario autenticado, guardando solo localmente');
@@ -5282,23 +5358,151 @@
       }
     }
 
-    // Función para forzar sincronización manual
+    // Función para sincronizar con servicio alternativo
+    async function syncWithAlternativeService() {
+      if (!currentUser) {
+        console.log('❌ No hay usuario para sincronizar');
+        return false;
+      }
+
+      try {
+        console.log('🌐 Sincronizando con servicio alternativo...');
+        
+        const dataToSync = {
+          pacientes: allPacientes || [],
+          recordatorios: allRecordatorios || [],
+          citas: allCitas || []
+        };
+
+        const success = await window.syncService.saveUserData(currentUser.email, dataToSync);
+        
+        if (success) {
+          console.log('✅ SINCRONIZACIÓN ALTERNATIVA EXITOSA');
+          return true;
+        } else {
+          console.error('❌ Falló sincronización alternativa');
+          return false;
+        }
+
+      } catch (error) {
+        console.error('❌ Error en sincronización alternativa:', error);
+        return false;
+      }
+    }
+
+    // Función para cargar desde servicio alternativo
+    async function loadFromAlternativeService() {
+      if (!currentUser) {
+        console.log('❌ No hay usuario para cargar');
+        return false;
+      }
+
+      try {
+        console.log('📥 Cargando desde servicio alternativo...');
+        
+        const data = await window.syncService.loadUserData(currentUser.email);
+        
+        if (data && data.pacientes) {
+          allPacientes = data.pacientes || [];
+          allRecordatorios = data.recordatorios || [];
+          allCitas = data.citas || [];
+          
+          // Sincronizar variables globales
+          window.allPacientes = allPacientes;
+          window.allRecordatorios = allRecordatorios;
+          window.allCitas = allCitas;
+          
+          console.log('✅ DATOS CARGADOS DESDE SERVICIO ALTERNATIVO');
+          console.log('📊 Pacientes:', allPacientes.length);
+          
+          renderPacienteSelector();
+          return true;
+        } else {
+          console.log('ℹ️ No hay datos en servicio alternativo');
+          return false;
+        }
+
+      } catch (error) {
+        console.error('❌ Error cargando desde servicio alternativo:', error);
+        return false;
+      }
+    }
+
+    // Función para forzar sincronización manual MEJORADA
     window.forceSyncData = async function() {
       if (!currentUser) {
         alert('❌ Debes estar autenticado para sincronizar');
         return;
       }
       
-      console.log('🔄 FORZANDO SINCRONIZACIÓN MANUAL...');
-      alert('🔄 Iniciando sincronización manual...');
+      console.log('🔄 FORZANDO SINCRONIZACIÓN COMPLETA...');
+      alert('🔄 Iniciando sincronización completa...\n\n⏳ Esto puede tardar unos segundos...');
       
-      await syncLocalDataToFirebase();
+      let firebaseSuccess = false;
+      let alternativeSuccess = false;
       
-      // Recargar datos desde Firebase para verificar
-      setTimeout(async () => {
+      // Intentar Firebase primero
+      try {
+        await syncLocalDataToFirebase();
+        firebaseSuccess = true;
+        console.log('✅ Sincronización Firebase exitosa');
+      } catch (error) {
+        console.log('❌ Firebase falló, intentando servicio alternativo...');
+        
+        // Intentar servicio alternativo
+        alternativeSuccess = await syncWithAlternativeService();
+      }
+      
+      // Mensaje final
+      if (firebaseSuccess) {
+        alert('✅ Sincronización completada con Firebase!\n📱 Los datos están disponibles en todos tus dispositivos.');
+      } else if (alternativeSuccess) {
+        alert('✅ Sincronización completada con servicio alternativo!\n📱 Los datos están disponibles en todos tus dispositivos.\n\n💡 Firebase tiene problemas, pero tus datos están seguros.');
+      } else {
+        alert('❌ No se pudo sincronizar con ningún servicio.\n💾 Los datos están guardados localmente.\n🔄 Intenta más tarde cuando mejore la conexión.');
+      }
+    };
+
+    // Función para cargar datos desde todos los servicios
+    window.loadAllData = async function() {
+      if (!currentUser) {
+        console.log('⚠️ No hay usuario, cargando solo datos locales');
+        loadLocalData();
+        return;
+      }
+
+      console.log('📥 Cargando datos desde todos los servicios...');
+      
+      let firebaseLoaded = false;
+      let alternativeLoaded = false;
+      
+      // Intentar cargar desde Firebase
+      try {
         await loadPacientesFromFirestore();
-        alert('✅ Sincronización manual completada. Verifica que los datos aparezcan en otros dispositivos.');
-      }, 2000);
+        if (allPacientes.length > 0) {
+          firebaseLoaded = true;
+          console.log('✅ Datos cargados desde Firebase');
+        }
+      } catch (error) {
+        console.log('❌ Firebase falló para carga');
+      }
+      
+      // Si Firebase no tiene datos, intentar servicio alternativo
+      if (!firebaseLoaded) {
+        console.log('🔄 Intentando cargar desde servicio alternativo...');
+        alternativeLoaded = await loadFromAlternativeService();
+      }
+      
+      // Si ningún servicio tiene datos, cargar desde localStorage
+      if (!firebaseLoaded && !alternativeLoaded) {
+        console.log('📦 Cargando desde localStorage como último recurso...');
+        loadLocalData();
+      }
+      
+      console.log('📊 Datos finales cargados:', {
+        pacientes: allPacientes.length,
+        fuente: firebaseLoaded ? 'Firebase' : alternativeLoaded ? 'Servicio alternativo' : 'localStorage'
+      });
     };
 
     // Cargar datos cuando el usuario se autentica
@@ -5306,17 +5510,16 @@
     loadUserData = async function() {
       if (originalLoadUserData) await originalLoadUserData();
       
-      // Intentar cargar desde Firebase primero
-      await loadPacientesFromFirestore();
+      // Usar la nueva función de carga completa
+      await window.loadAllData();
       
-      // Si no hay datos de Firebase, cargar desde localStorage
-      if (allPacientes.length === 0) {
-        console.log('📦 No hay datos en Firebase, cargando desde localStorage...');
-        loadLocalData();
-      }
-      
-      // Intentar sincronizar datos locales
-      setTimeout(syncLocalDataToFirebase, 2000);
+      // Intentar sincronización automática después de cargar
+      setTimeout(async () => {
+        if (allPacientes.length > 0) {
+          console.log('🔄 Sincronización automática iniciada...');
+          await window.forceSyncData();
+        }
+      }, 3000);
     };
 
     // Sistema robusto de localStorage
