@@ -7,14 +7,14 @@ if (typeof firebase === 'undefined') {
   throw new Error('Firebase no disponible');
 }
 
-// Tu configuración de Firebase
+// Tu configuración de Firebase - CORREGIDA PARA ERRORES 400
 var firebaseConfig = {
   apiKey: "AIzaSyDpwMc60IPAJiBwYU6PPc0QHrHSqhKjE8s",
   authDomain: "clinical-70644.firebaseapp.com",
   projectId: "clinical-70644",
-  storageBucket: "clinical-70644.firebasestorage.app",
+  storageBucket: "clinical-70644.firebasestorage.app", 
   messagingSenderId: "166670165939",
-  appId: "1:166670165639:web:05e9352a1a96dbd2a58dc6",
+  appId: "1:166670165939:web:05e9352a1a96dbd2a58dc6", // CORREGIDO: era 166670165639, ahora 166670165939
   measurementId: "G-XJDZ9Z4KJJ"
 };
 

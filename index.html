@@ -1199,6 +1199,10 @@
         <button onclick="showRecordatorios()" class="btn-secondary" style="flex: 1;">⏰ Recordatorios</button>
         <button onclick="showCalendario()" class="btn-secondary" style="flex: 1;">📅 Calendario</button>
       </div>
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button onclick="window.forceSyncData()" class="btn-secondary" style="flex: 1; background: linear-gradient(135deg, #4f46e5, #7c3aed);">🌐 Sincronizar Datos</button>
+        <button onclick="window.location.reload()" class="btn-secondary" style="flex: 1;">🔄 Recargar App</button>
+      </div>
     </div>
     
     <!-- Selector de Pacientes -->
@@ -4002,18 +4006,43 @@
 
         console.log('👤 Nuevo paciente creado:', nuevoPaciente);
 
-        // Guardar en Firebase si hay usuario autenticado
-        if (currentUser) {
-          console.log('☁️ Guardando en Firebase...');
-          await savePacienteToFirestore(nuevoPaciente);
-          console.log('✅ Guardado en Firebase exitoso');
-        } else {
-          console.log('⚠️ No hay usuario autenticado, guardando solo localmente');
-        }
-
-        // Agregar a la lista local
+        // Agregar a la lista local PRIMERO
         allPacientes.push(nuevoPaciente);
         selectedPaciente = nuevoPaciente;
+        console.log('✅ Paciente agregado a lista local');
+
+        // FORZAR guardado en Firebase para sincronización
+        if (currentUser) {
+          console.log('☁️ FORZANDO guardado en Firebase para sincronización...');
+          try {
+            await savePacienteToFirestore(nuevoPaciente);
+            console.log('✅ PACIENTE SINCRONIZADO - Disponible en todos los dispositivos');
+            
+            setTimeout(() => {
+              alert('🌐 Paciente sincronizado correctamente. Ahora está disponible en todos tus dispositivos.');
+            }, 1000);
+            
+          } catch (firebaseError) {
+            console.error('❌ Error sincronizando paciente con Firebase:', firebaseError);
+            console.log('⚠️ Paciente guardado solo localmente. Intentando reintento...');
+            
+            // Reintento automático
+            setTimeout(async () => {
+              try {
+                console.log('🔄 Reintentando sincronización de paciente...');
+                await savePacienteToFirestore(nuevoPaciente);
+                console.log('✅ REINTENTO EXITOSO - Paciente sincronizado');
+                alert('✅ Paciente sincronizado en segundo intento. Disponible en todos los dispositivos.');
+              } catch (retryError) {
+                console.error('❌ Reintento de paciente también falló:', retryError);
+                alert('⚠️ Paciente guardado localmente pero no sincronizado. Se sincronizará cuando mejore la conexión.');
+              }
+            }, 3000);
+          }
+        } else {
+          console.log('⚠️ No hay usuario autenticado');
+          alert('⚠️ No estás autenticado. El paciente se guarda solo en este dispositivo.');
+        }
         
         console.log('📊 Total pacientes después de agregar:', allPacientes.length);
 
@@ -4653,19 +4682,58 @@
         selectedPaciente.visitas[selectedVisitType].push(visit);
         console.log('✅ Visita agregada al paciente');
 
-        // Guardar en Firebase
-        if (currentUser) {
-          console.log('☁️ Guardando en Firebase...');
-          await savePacienteToFirestore(selectedPaciente);
-          console.log('✅ Guardado en Firebase exitoso');
+        // CRÍTICO: Actualizar la lista global de pacientes
+        const pacienteIndex = allPacientes.findIndex(p => p.id === selectedPaciente.id);
+        if (pacienteIndex >= 0) {
+          allPacientes[pacienteIndex] = selectedPaciente;
+          console.log('✅ Paciente actualizado en lista global');
         } else {
-          console.log('⚠️ No hay usuario autenticado, guardando solo localmente');
+          console.error('❌ Paciente no encontrado en lista global');
         }
 
-        // CRÍTICO: Guardar también en localStorage como respaldo
+        // Guardar SIEMPRE en localStorage primero
         const saveSuccess = saveToLocalStorage(STORAGE_KEYS.PACIENTES, allPacientes);
         if (saveSuccess) {
-          console.log('💾 Visita guardada en localStorage como respaldo');
+          console.log('💾 Visita guardada en localStorage');
+        } else {
+          console.error('❌ FALLO CRÍTICO: No se pudo guardar en localStorage');
+          alert('❌ Error guardando datos localmente. Intenta de nuevo.');
+          return;
+        }
+
+        // FORZAR guardado en Firebase para sincronización
+        if (currentUser) {
+          console.log('☁️ FORZANDO guardado en Firebase para sincronización...');
+          try {
+            await savePacienteToFirestore(selectedPaciente);
+            console.log('✅ SINCRONIZACIÓN EXITOSA - Datos disponibles en todos los dispositivos');
+            
+            // Confirmar sincronización
+            setTimeout(() => {
+              console.log('🌐 Verificando sincronización...');
+              alert('✅ Datos sincronizados correctamente con la nube. Ahora están disponibles en todos tus dispositivos.');
+            }, 500);
+            
+          } catch (firebaseError) {
+            console.error('❌ Error en sincronización con Firebase:', firebaseError);
+            console.log('⚠️ Datos guardados solo localmente. Intentando reintento automático...');
+            
+            // Reintento automático después de 3 segundos
+            setTimeout(async () => {
+              try {
+                console.log('🔄 Reintentando sincronización con Firebase...');
+                await savePacienteToFirestore(selectedPaciente);
+                console.log('✅ REINTENTO EXITOSO - Datos sincronizados');
+                alert('✅ Sincronización completada en segundo intento. Datos disponibles en todos los dispositivos.');
+              } catch (retryError) {
+                console.error('❌ Reintento también falló:', retryError);
+                alert('⚠️ No se pudo sincronizar con la nube. Los datos están guardados localmente y se sincronizarán cuando mejore la conexión.');
+              }
+            }, 3000);
+          }
+        } else {
+          console.log('⚠️ No hay usuario autenticado, guardando solo localmente');
+          alert('⚠️ No estás autenticado. Los datos se guardan solo en este dispositivo.');
         }
 
         // LIMPIAR TODOS LOS CAMPOS DEL FORMULARIO
@@ -4962,89 +5030,276 @@
       }
     }
 
-    // Funciones de Firebase para pacientes
+    // Funciones de Firebase para pacientes - SINCRONIZACIÓN POR USUARIO
     async function savePacienteToFirestore(paciente) {
-      if (!currentUser || !paciente) return;
+      if (!currentUser || !paciente) {
+        console.error('❌ No hay usuario autenticado o paciente inválido');
+        return;
+      }
+      
+      console.log('🔐 Guardando para usuario:', currentUser.email);
+      console.log('👤 Guardando paciente:', paciente.nombre);
       
       try {
-        await db.collection('users').doc(currentUser.uid)
-                 .collection('pacientes').doc(paciente.id)
-                 .set(paciente);
-        console.log('✅ Paciente guardado en Firebase exitosamente');
-      } catch (error) {
-        console.error('❌ Error al guardar paciente en Firestore:', error);
-        console.log('💾 Guardando en localStorage como fallback...');
+        // Estructura: users/{userId}/pacientes/{pacienteId}
+        const docRef = db.collection('users').doc(currentUser.uid).collection('pacientes').doc(paciente.id);
         
-        // FALLBACK: Guardar en localStorage si Firebase falla
-        console.log('💾 Guardando en localStorage como fallback...');
-        const saveSuccess = saveToLocalStorage(STORAGE_KEYS.PACIENTES, allPacientes);
-        if (!saveSuccess) {
-          console.error('❌ FALLO TOTAL: Firebase Y localStorage fallaron');
-          throw new Error('No se puede guardar el paciente en ningún sistema');
-        }
-        console.log('✅ Paciente guardado en localStorage como fallback');
+        // Agregar metadatos de usuario para verificación
+        const pacienteConMetadata = {
+          ...paciente,
+          ownerUserId: currentUser.uid,
+          ownerEmail: currentUser.email,
+          lastModified: new Date().toISOString(),
+          syncVersion: Date.now()
+        };
+        
+        await docRef.set(pacienteConMetadata, { merge: true });
+        
+        console.log('✅ PACIENTE SINCRONIZADO EXITOSAMENTE');
+        console.log('🌐 Disponible para usuario:', currentUser.email);
+        console.log('📱 Accesible desde cualquier dispositivo');
+        
+        return true;
+        
+      } catch (error) {
+        console.error('❌ ERROR CRÍTICO en Firebase:', error);
+        console.error('🔍 Detalles del error:', {
+          code: error.code,
+          message: error.message,
+          userId: currentUser.uid,
+          userEmail: currentUser.email
+        });
+        
+        // No usar fallback aquí - dejar que se maneje arriba
+        throw error;
       }
     }
 
     async function loadPacientesFromFirestore() {
-      if (!currentUser) return;
+      if (!currentUser) {
+        console.log('⚠️ No hay usuario autenticado, cargando datos locales...');
+        loadLocalData();
+        return;
+      }
+      
+      console.log('🔐 Cargando datos para usuario:', currentUser.email);
       
       try {
         const snapshot = await db.collection('users').doc(currentUser.uid)
                                  .collection('pacientes').get();
         
         allPacientes = [];
+        let pacientesFromFirebase = 0;
+        
         snapshot.forEach(doc => {
-          allPacientes.push(doc.data());
+          const pacienteData = doc.data();
+          // Verificar que el paciente pertenece al usuario actual
+          if (pacienteData.ownerUserId === currentUser.uid) {
+            allPacientes.push(pacienteData);
+            pacientesFromFirebase++;
+          } else {
+            console.warn('⚠️ Paciente no pertenece al usuario actual:', pacienteData.nombre);
+          }
         });
         
-        console.log('✅ Pacientes cargados desde Firebase:', allPacientes.length);
+        // Sincronizar con variables globales
+        window.allPacientes = allPacientes;
+        
+        console.log('✅ DATOS CARGADOS DESDE FIREBASE (SINCRONIZADOS)');
+        console.log('🔐 Usuario:', currentUser.email);
+        console.log('📊 Pacientes sincronizados:', pacientesFromFirebase);
+        
+        // Si no hay datos en Firebase, intentar cargar desde localStorage y sincronizar
+        if (pacientesFromFirebase === 0) {
+          console.log('📦 No hay datos en Firebase, verificando localStorage...');
+          const pacientesLocal = loadFromLocalStorage(STORAGE_KEYS.PACIENTES);
+          
+          if (pacientesLocal && Array.isArray(pacientesLocal) && pacientesLocal.length > 0) {
+            console.log('🔄 Encontrados datos locales, sincronizando con Firebase...');
+            allPacientes = pacientesLocal;
+            window.allPacientes = allPacientes;
+            
+            // Sincronizar datos locales con Firebase
+            for (const paciente of pacientesLocal) {
+              try {
+                await savePacienteToFirestore(paciente);
+                console.log('✅ Paciente local sincronizado:', paciente.nombre);
+              } catch (syncError) {
+                console.error('❌ Error sincronizando paciente local:', paciente.nombre, syncError);
+              }
+            }
+            
+            console.log('🎉 Sincronización de datos locales completada');
+          }
+        }
+        
         renderPacienteSelector();
+        
       } catch (error) {
         console.error('❌ Error al cargar pacientes desde Firebase:', error);
-        console.log('💾 Intentando cargar desde localStorage...');
+        console.log('💾 Cargando desde localStorage como fallback...');
         
         // FALLBACK: Cargar desde localStorage si Firebase falla
-        console.log('💾 Intentando cargar desde localStorage...');
         const pacientesLocal = loadFromLocalStorage(STORAGE_KEYS.PACIENTES);
         if (pacientesLocal && Array.isArray(pacientesLocal)) {
           allPacientes = pacientesLocal;
+          window.allPacientes = allPacientes;
           console.log('✅ Pacientes cargados desde localStorage:', allPacientes.length);
+          console.log('⚠️ MODO OFFLINE - Los datos se sincronizarán cuando Firebase funcione');
         } else {
           console.log('ℹ️ No hay pacientes en localStorage');
           allPacientes = [];
+          window.allPacientes = [];
         }
         renderPacienteSelector();
       }
     }
 
-    // Función para sincronizar datos locales con Firebase
-    async function syncLocalDataToFirebase() {
-      if (!currentUser) return;
+    // Función ROBUSTA para sincronizar con Firebase usando REST API como alternativa
+    async function syncWithFirebaseREST(paciente) {
+      if (!currentUser) return false;
       
       try {
-        const pacientesLocal = JSON.parse(localStorage.getItem('pacientes_backup') || '[]');
+        console.log('🔄 Intentando sincronización con REST API...');
+        
+        // Obtener token de autenticación
+        const idToken = await currentUser.getIdToken();
+        
+        // URL de la REST API de Firestore
+        const url = `https://firestore.googleapis.com/v1/projects/clinical-70644/databases/(default)/documents/users/${currentUser.uid}/pacientes/${paciente.id}`;
+        
+        const response = await fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            fields: convertToFirestoreFormat(paciente)
+          })
+        });
+        
+        if (response.ok) {
+          console.log('✅ Sincronización REST exitosa para:', paciente.nombre);
+          return true;
+        } else {
+          console.error('❌ Error REST:', response.status, response.statusText);
+          return false;
+        }
+        
+      } catch (error) {
+        console.error('❌ Error en sincronización REST:', error);
+        return false;
+      }
+    }
+
+    // Convertir objeto a formato Firestore
+    function convertToFirestoreFormat(obj) {
+      const result = {};
+      
+      for (const [key, value] of Object.entries(obj)) {
+        if (value === null || value === undefined) {
+          result[key] = { nullValue: null };
+        } else if (typeof value === 'string') {
+          result[key] = { stringValue: value };
+        } else if (typeof value === 'number') {
+          result[key] = { doubleValue: value };
+        } else if (typeof value === 'boolean') {
+          result[key] = { booleanValue: value };
+        } else if (Array.isArray(value)) {
+          result[key] = { 
+            arrayValue: { 
+              values: value.map(item => ({ stringValue: JSON.stringify(item) }))
+            }
+          };
+        } else if (typeof value === 'object') {
+          result[key] = { stringValue: JSON.stringify(value) };
+        } else {
+          result[key] = { stringValue: String(value) };
+        }
+      }
+      
+      return result;
+    }
+
+    // Función MEJORADA para sincronizar datos locales con Firebase
+    async function syncLocalDataToFirebase() {
+      if (!currentUser) {
+        console.log('⚠️ No hay usuario para sincronizar');
+        return;
+      }
+      
+      console.log('🔄 INICIANDO SINCRONIZACIÓN COMPLETA...');
+      console.log('🔐 Usuario:', currentUser.email);
+      
+      try {
+        const pacientesLocal = loadFromLocalStorage(STORAGE_KEYS.PACIENTES) || [];
         
         if (pacientesLocal.length > 0) {
-          console.log('🔄 Sincronizando datos locales con Firebase...');
+          console.log(`📊 Sincronizando ${pacientesLocal.length} pacientes locales...`);
+          
+          let sincronizados = 0;
+          let errores = 0;
           
           for (const paciente of pacientesLocal) {
             try {
-              await db.collection('users').doc(currentUser.uid)
-                       .collection('pacientes').doc(paciente.id)
-                       .set(paciente, { merge: true });
-              console.log('✅ Paciente sincronizado:', paciente.nombre);
-            } catch (error) {
-              console.error('❌ Error sincronizando paciente:', paciente.nombre, error);
+              // Intentar método normal de Firebase primero
+              await savePacienteToFirestore(paciente);
+              sincronizados++;
+              console.log(`✅ [${sincronizados}/${pacientesLocal.length}] Sincronizado (Firebase):`, paciente.nombre);
+            } catch (firebaseError) {
+              console.log('⚠️ Firebase falló, intentando REST API...');
+              
+              // Intentar con REST API como alternativa
+              const restSuccess = await syncWithFirebaseREST(paciente);
+              if (restSuccess) {
+                sincronizados++;
+                console.log(`✅ [${sincronizados}/${pacientesLocal.length}] Sincronizado (REST):`, paciente.nombre);
+              } else {
+                errores++;
+                console.error(`❌ [${errores}] Ambos métodos fallaron para:`, paciente.nombre);
+              }
             }
           }
           
-          console.log('🎉 Sincronización completada');
+          console.log('🎉 SINCRONIZACIÓN COMPLETADA');
+          console.log(`✅ Exitosos: ${sincronizados}`);
+          console.log(`❌ Errores: ${errores}`);
+          
+          if (sincronizados > 0) {
+            alert(`🌐 Sincronización completada:\n✅ ${sincronizados} pacientes sincronizados\n📱 Ahora disponibles en todos tus dispositivos\n\n🔑 Para ver en celular:\n1. Abre https://clinical-data.vercel.app/\n2. Inicia sesión con la MISMA cuenta\n3. Los datos aparecerán automáticamente`);
+          } else {
+            alert('❌ No se pudo sincronizar ningún paciente. Verifica tu conexión a internet y las reglas de Firebase.');
+          }
+          
+        } else {
+          console.log('ℹ️ No hay datos locales para sincronizar');
+          alert('ℹ️ No hay datos locales para sincronizar');
         }
       } catch (error) {
-        console.error('❌ Error en sincronización:', error);
+        console.error('❌ Error crítico en sincronización:', error);
+        alert('❌ Error crítico en sincronización. Revisa la consola para detalles.');
       }
     }
+
+    // Función para forzar sincronización manual
+    window.forceSyncData = async function() {
+      if (!currentUser) {
+        alert('❌ Debes estar autenticado para sincronizar');
+        return;
+      }
+      
+      console.log('🔄 FORZANDO SINCRONIZACIÓN MANUAL...');
+      alert('🔄 Iniciando sincronización manual...');
+      
+      await syncLocalDataToFirebase();
+      
+      // Recargar datos desde Firebase para verificar
+      setTimeout(async () => {
+        await loadPacientesFromFirestore();
+        alert('✅ Sincronización manual completada. Verifica que los datos aparezcan en otros dispositivos.');
+      }, 2000);
+    };
 
     // Cargar datos cuando el usuario se autentica
     const originalLoadUserData = loadUserData;
@@ -5896,3 +6151,4 @@
   </div>
 </body>
 </html>
+
