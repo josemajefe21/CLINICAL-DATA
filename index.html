@@ -1400,6 +1400,30 @@
   </div>
 
   <div id="mainContent" style="display: none;">
+    <!-- Botón de cerrar sesión flotante -->
+    <button onclick="logout()" style="
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+      transition: all 0.3s ease;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    " 
+    onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 20px rgba(220, 38, 38, 0.6)'"
+    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(220, 38, 38, 0.4)'"
+    title="Cerrar sesión y cambiar cuenta">🚪</button>
+
     <!-- Barra de búsqueda de pacientes -->
     <div id="searchContainer" class="form-section">
       <h4>🔍 Buscar Pacientes</h4>
@@ -2453,6 +2477,53 @@
 
     window.showSystemLogs = function() {
       alert('📋 Logs del sistema\n\n🚧 En desarrollo...\n\nMostrará todos los accesos y acciones del sistema.');
+    };
+
+    // ===== FUNCIÓN DE LOGOUT UNIVERSAL =====
+    
+    window.logout = function() {
+      console.log('🚪 Cerrando sesión...');
+      
+      // Limpiar variables de sesión
+      currentUser = null;
+      isAuthenticated = false;
+      userRole = null;
+      selectedAccountType = null;
+      selectedPaciente = null;
+      
+      // Limpiar datos
+      allPacientes = [];
+      allRecordatorios = [];
+      allCitas = [];
+      
+      // Cerrar sesión de Firebase si está disponible
+      if (window.auth && window.auth.signOut) {
+        try {
+          window.auth.signOut();
+          console.log('✅ Sesión de Firebase cerrada');
+        } catch (error) {
+          console.warn('⚠️ Error cerrando sesión de Firebase:', error);
+        }
+      }
+      
+      // Mostrar interfaz de login
+      const authContainer = document.querySelector('.container');
+      const mainContent = document.getElementById('mainContent');
+      const userInfo = document.getElementById('userInfo');
+      
+      if (authContainer) authContainer.style.display = 'block';
+      if (mainContent) mainContent.style.display = 'none';
+      if (userInfo) userInfo.style.display = 'none';
+      
+      // Volver al selector de tipo de cuenta
+      document.getElementById('accountTypeSelector').style.display = 'block';
+      document.getElementById('loginMedico').style.display = 'none';
+      document.getElementById('loginAdmin').style.display = 'none';
+      document.getElementById('loginSuper').style.display = 'none';
+      document.getElementById('registerCard').style.display = 'none';
+      
+      console.log('✅ Sesión cerrada correctamente');
+      alert('👋 Sesión cerrada\n\nAhora puedes seleccionar otro tipo de cuenta');
     };
 
     // Inicializar cuando Firebase esté listo
