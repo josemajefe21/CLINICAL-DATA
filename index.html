@@ -2541,80 +2541,136 @@
       }
     }
 
-    // Cargar todos los usuarios del sistema
+    // Cargar todos los usuarios del sistema (médicos y administradores) con emails y estado
     async function loadAllUsers() {
       try {
         console.log('👥 Cargando todos los usuarios...');
-        
+
         const allUsersList = document.getElementById('allUsersList');
         allUsersList.innerHTML = '<p>🔄 Cargando usuarios...</p>';
-        
+
         let usersHTML = '';
-        
+
+        // Helper para pintar tarjeta de usuario
+        const renderUserCard = (opts) => {
+          const { id, role, email, displayName, lastLogin, subscriptionStatus, linkedMedicosCount } = opts;
+          const color = role === 'admin' ? '#dc2626' : 'var(--primary)';
+          const roleIcon = role === 'admin' ? '👨‍💼' : '🩺';
+          const sub = subscriptionStatus || 'activa';
+          const subColor = sub === 'activa' ? '#16a34a' : (sub === 'vencida' ? '#dc2626' : '#ca8a04');
+
+          return `
+            <div class="user-card" style="border-left: 4px solid ${color};">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong>${displayName || email}</strong><br>
+                  <small>${roleIcon} ${email}</small><br>
+                  <small>⏰ Último acceso: ${lastLogin || 'Nunca'}</small><br>
+                  ${role === 'admin' ? `<small>🔗 Médicos vinculados: ${linkedMedicosCount || 0}</small><br>` : ''}
+                  <small>💳 Suscripción: <span style="color:${subColor}">${sub}</span></small>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                  <button class="btn-sm" onclick="toggleSubscription('${id}','${role}')">💳 Suscripción</button>
+                  ${role === 'admin' ? `<button class="btn-sm" onclick="manageLinks('${id}')">🔗 Vincular</button>` : ''}
+                  <button class="btn-sm" onclick="viewUserDetails('${id}','${role}')">👁️ Ver</button>
+                </div>
+              </div>
+            </div>
+          `;
+        };
+
         // Cargar médicos
         const medicosSnapshot = await db.collection('medicos').get();
         if (!medicosSnapshot.empty) {
           usersHTML += '<h5 style="color: var(--primary); margin: 16px 0 8px 0;">🩺 MÉDICOS</h5>';
           medicosSnapshot.forEach(doc => {
-            const medico = doc.data();
-            const lastLogin = medico.lastLogin ? new Date(medico.lastLogin).toLocaleString('es-ES') : 'Nunca';
-            usersHTML += `
-              <div class="user-card" style="border-left: 4px solid var(--primary);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <strong>${medico.displayName || medico.email}</strong><br>
-                    <small>📧 ${medico.email}</small><br>
-                    <small>⏰ Último acceso: ${lastLogin}</small>
-                  </div>
-                  <div style="display: flex; gap: 4px;">
-                    <button onclick="toggleUserStatus('${doc.id}', 'medico')" class="btn-sm">🔒 Gestionar</button>
-                    <button onclick="viewUserDetails('${doc.id}', 'medico')" class="btn-sm">👁️ Ver</button>
-                  </div>
-                </div>
-              </div>
-            `;
+            const m = doc.data();
+            const lastLogin = m.lastLogin ? new Date(m.lastLogin).toLocaleString('es-ES') : 'Nunca';
+            usersHTML += renderUserCard({
+              id: doc.id,
+              role: 'medico',
+              email: m.email,
+              displayName: m.displayName,
+              lastLogin,
+              subscriptionStatus: m.subscriptionStatus
+            });
           });
         }
-        
+
         // Cargar administradores
         const adminsSnapshot = await db.collection('administrators').get();
         if (!adminsSnapshot.empty) {
           usersHTML += '<h5 style="color: #dc2626; margin: 16px 0 8px 0;">👨‍💼 ADMINISTRADORES</h5>';
           adminsSnapshot.forEach(doc => {
-            const admin = doc.data();
-            const lastLogin = admin.lastLogin ? new Date(admin.lastLogin).toLocaleString('es-ES') : 'Nunca';
-            const linkedMedicos = admin.linkedMedicos?.length || 0;
-            usersHTML += `
-              <div class="user-card" style="border-left: 4px solid #dc2626;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <strong>${admin.displayName || admin.email}</strong><br>
-                    <small>📧 ${admin.email}</small><br>
-                    <small>⏰ Último acceso: ${lastLogin}</small><br>
-                    <small>🔗 Médicos vinculados: ${linkedMedicos}</small>
-                  </div>
-                  <div style="display: flex; gap: 4px;">
-                    <button onclick="toggleUserStatus('${doc.id}', 'admin')" class="btn-sm">🔒 Gestionar</button>
-                    <button onclick="viewUserDetails('${doc.id}', 'admin')" class="btn-sm">👁️ Ver</button>
-                  </div>
-                </div>
-              </div>
-            `;
+            const a = doc.data();
+            const lastLogin = a.lastLogin ? new Date(a.lastLogin).toLocaleString('es-ES') : 'Nunca';
+            const linkedMedicosCount = a.linkedMedicos?.length || 0;
+            usersHTML += renderUserCard({
+              id: doc.id,
+              role: 'admin',
+              email: a.email,
+              displayName: a.displayName,
+              lastLogin,
+              subscriptionStatus: a.subscriptionStatus,
+              linkedMedicosCount
+            });
           });
         }
-        
+
         if (usersHTML === '') {
           usersHTML = '<p style="color: var(--text-light); text-align: center;">No hay usuarios registrados</p>';
         }
-        
+
         allUsersList.innerHTML = usersHTML;
         console.log('✅ Lista de usuarios cargada');
-        
+
       } catch (error) {
         console.error('❌ Error cargando usuarios:', error);
         document.getElementById('allUsersList').innerHTML = '<p style="color: var(--danger);">Error cargando usuarios</p>';
       }
     }
+
+    // Alternar estado de suscripción (activa <-> vencida <-> en_revision)
+    window.toggleSubscription = async function(userId, role) {
+      try {
+        const col = role === 'admin' ? 'administrators' : 'medicos';
+        const ref = db.collection(col).doc(userId);
+        const snap = await ref.get();
+        if (!snap.exists) return alert('Usuario no encontrado');
+        const current = snap.data().subscriptionStatus || 'activa';
+        const next = current === 'activa' ? 'vencida' : (current === 'vencida' ? 'en_revision' : 'activa');
+        await ref.update({ subscriptionStatus: next, subscriptionUpdatedAt: new Date().toISOString() });
+        alert(`Estado de suscripción actualizado a: ${next}`);
+        loadAllUsers();
+      } catch (e) {
+        console.error('Error actualizando suscripción', e);
+        alert('No se pudo actualizar la suscripción');
+      }
+    };
+
+    // Gestionar vinculación de médicos a un admin
+    window.manageLinks = async function(adminId) {
+      try {
+        // Obtener lista de médicos
+        const medicosSnapshot = await db.collection('medicos').get();
+        const opciones = [];
+        medicosSnapshot.forEach(doc => {
+          const m = doc.data();
+          opciones.push(`${doc.id}::${m.email}`);
+        });
+        const seleccion = prompt(`Ingrese ID de médico a vincular (formato id::email)\n\n${opciones.join('\n')}`);
+        if (!seleccion) return;
+        const medicoId = seleccion.split('::')[0];
+
+        const adminRef = db.collection('administrators').doc(adminId);
+        await adminRef.update({ linkedMedicos: firebase.firestore.FieldValue.arrayUnion(medicoId) });
+        alert('Médico vinculado con éxito');
+        loadAllUsers();
+      } catch (e) {
+        console.error('Error vinculando médico', e);
+        alert('No se pudo vincular el médico');
+      }
+    };
 
     // Monitor de usuarios en línea (simulado)
     function startOnlineUsersMonitor() {
