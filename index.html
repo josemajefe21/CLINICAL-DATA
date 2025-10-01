@@ -1817,74 +1817,98 @@
     // ===== FUNCIÓN DE LOGOUT DEFINIDA INMEDIATAMENTE =====
     
     window.logout = function() {
-      console.log('🚪 Cerrando sesión...');
+      console.log('🚪 FORZANDO LOGOUT COMPLETO...');
       
       try {
-        // NO limpiar datos de pacientes - solo variables de sesión
+        // DETENER todos los procesos automáticos
+        window.logoutInProgress = true;
+        
+        // Limpiar variables de sesión pero CONSERVAR datos
         window.currentUser = null;
         window.isAuthenticated = false;
         window.userRole = null;
         window.selectedAccountType = null;
         window.selectedPaciente = null;
         
-        // Limpiar variables globales de sesión (NO los datos)
-        if (typeof currentUser !== 'undefined') currentUser = null;
-        if (typeof isAuthenticated !== 'undefined') isAuthenticated = false;
+        currentUser = null;
+        isAuthenticated = false;
         if (typeof userRole !== 'undefined') userRole = null;
         if (typeof selectedAccountType !== 'undefined') selectedAccountType = null;
         if (typeof selectedPaciente !== 'undefined') selectedPaciente = null;
         
-        console.log('✅ Variables de sesión limpiadas (datos de pacientes conservados)');
+        console.log('✅ Variables de sesión limpiadas (DATOS CONSERVADOS)');
         
-        // Cerrar sesión de Firebase si está disponible
+        // FORZAR cierre de sesión Firebase sin callbacks
         if (window.auth && typeof window.auth.signOut === 'function') {
           try {
+            // Desconectar listeners temporalmente
+            if (window.authUnsubscribe) {
+              window.authUnsubscribe();
+              window.authUnsubscribe = null;
+            }
+            
             window.auth.signOut();
-            console.log('✅ Sesión de Firebase cerrada');
+            console.log('✅ Firebase desconectado');
           } catch (error) {
-            console.warn('⚠️ Error cerrando sesión de Firebase:', error);
+            console.warn('⚠️ Error cerrando Firebase:', error);
           }
         }
         
-        // Mostrar interfaz de login INMEDIATAMENTE
+        // FORZAR mostrar interfaz de login
         const authContainer = document.querySelector('.container');
         const mainContent = document.getElementById('mainContent');
         const userInfo = document.getElementById('userInfo');
         
-        if (authContainer) {
-          authContainer.style.display = 'block';
-          console.log('✅ Container de auth mostrado');
-        }
+        // Ocultar TODO el contenido principal
         if (mainContent) {
-          mainContent.style.display = 'none';
-          console.log('✅ Contenido principal ocultado');
+          mainContent.style.display = 'none !important';
+          mainContent.style.visibility = 'hidden';
+          console.log('✅ Panel principal FORZADO a ocultar');
         }
+        
         if (userInfo) {
-          userInfo.style.display = 'none';
-          console.log('✅ Info de usuario ocultada');
+          userInfo.style.display = 'none !important';
+          userInfo.style.visibility = 'hidden';
         }
         
-        // Mostrar selector de tipo de cuenta INMEDIATAMENTE
-        const accountSelector = document.getElementById('accountTypeSelector');
-        const loginMedico = document.getElementById('loginMedico');
-        const loginAdmin = document.getElementById('loginAdmin');
-        const loginSuper = document.getElementById('loginSuper');
-        const registerCard = document.getElementById('registerCard');
-        
-        if (accountSelector) {
-          accountSelector.style.display = 'block';
-          console.log('✅ Selector de cuenta mostrado');
+        // MOSTRAR interfaz de login
+        if (authContainer) {
+          authContainer.style.display = 'block !important';
+          authContainer.style.visibility = 'visible';
+          console.log('✅ Menú de login FORZADO a mostrar');
         }
-        if (loginMedico) loginMedico.style.display = 'none';
-        if (loginAdmin) loginAdmin.style.display = 'none';
-        if (loginSuper) loginSuper.style.display = 'none';
-        if (registerCard) registerCard.style.display = 'none';
         
-        console.log('✅ Logout completado - datos conservados, sesión cerrada');
+        // FORZAR selector de tipo de cuenta
+        setTimeout(() => {
+          const accountSelector = document.getElementById('accountTypeSelector');
+          const loginMedico = document.getElementById('loginMedico');
+          const loginAdmin = document.getElementById('loginAdmin');
+          const loginSuper = document.getElementById('loginSuper');
+          const registerCard = document.getElementById('registerCard');
+          
+          // Ocultar todos los formularios
+          if (loginMedico) loginMedico.style.display = 'none';
+          if (loginAdmin) loginAdmin.style.display = 'none';
+          if (loginSuper) loginSuper.style.display = 'none';
+          if (registerCard) registerCard.style.display = 'none';
+          
+          // MOSTRAR selector
+          if (accountSelector) {
+            accountSelector.style.display = 'block !important';
+            accountSelector.style.visibility = 'visible';
+            console.log('✅ Selector de cuenta FORZADO a mostrar');
+          }
+          
+          // Marcar logout como completado
+          window.logoutInProgress = false;
+          
+        }, 50);
+        
+        console.log('🎉 LOGOUT FORZADO COMPLETADO');
         
       } catch (error) {
-        console.error('❌ Error cerrando sesión:', error);
-        // En caso de error, simplemente recargar la página
+        console.error('❌ Error en logout forzado:', error);
+        // Recargar página como último recurso
         window.location.reload();
       }
     };
@@ -1952,26 +1976,39 @@
 
         console.log('🔄 Configurando listener de autenticación...');
 
-        // Listener de estado de autenticación
-        window.auth.onAuthStateChanged((user) => {
+        // Listener de estado de autenticación MEJORADO
+        window.authUnsubscribe = window.auth.onAuthStateChanged((user) => {
           console.log('🔐 Estado de autenticación:', !!user);
+          
+          // Si está en proceso de logout, NO hacer nada automático
+          if (window.logoutInProgress) {
+            console.log('⏸️ Logout en progreso, ignorando cambio de auth');
+            return;
+          }
           
           if (user) {
             console.log('✅ Usuario autenticado:', user.email);
             currentUser = user;
             isAuthenticated = true;
             
-            // Actualizar interfaz
-            showMainInterface();
-            
-            // Cargar datos
-            setTimeout(loadUserData, 500);
+            // Solo mostrar interfaz si NO estamos en logout
+            if (!window.logoutInProgress) {
+              // Actualizar interfaz
+              showMainInterface();
+              
+              // Cargar datos
+              setTimeout(loadUserData, 500);
+            }
             
           } else {
             console.log('❌ Usuario no autenticado');
             currentUser = null;
             isAuthenticated = false;
-            showLoginInterface();
+            
+            // Solo mostrar login si NO estamos en logout (para evitar loops)
+            if (!window.logoutInProgress) {
+              showLoginInterface();
+            }
           }
         });
 
