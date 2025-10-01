@@ -521,6 +521,51 @@
       transform: translateY(-1px);
       box-shadow: var(--shadow);
     }
+
+    /* Estilos para SUPERCUENTA */
+    .stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+
+    .user-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 8px 0;
+    }
+
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+      transition: all 0.2s ease;
+    }
+
+    .btn-sm:hover {
+      background: var(--primary-dark);
+      transform: scale(1.05);
+    }
     
     input[type="file"] {
       display: none;
@@ -1170,6 +1215,29 @@
         </div>
       </div>
       
+      <!-- SUPERCUENTA - Acceso especial -->
+      <div style="text-align: center; margin: 16px 0;">
+        <button onclick="selectAccountType('super')" style="
+          background: linear-gradient(135deg, #7c2d12, #991b1b, #7c2d12);
+          color: #fbbf24;
+          border: 2px solid #fbbf24;
+          border-radius: 8px;
+          padding: 8px 16px;
+          font-size: 0.9rem;
+          cursor: pointer;
+          font-weight: bold;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+          box-shadow: 0 4px 12px rgba(124, 45, 18, 0.4);
+          transition: all 0.3s ease;
+        " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(124, 45, 18, 0.6)'"
+           onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(124, 45, 18, 0.4)'">
+          👑 SUPERCUENTA - Control Total del Sistema
+        </button>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px;">
+      </div>
+      
       <div style="text-align: center;">
         <p style="color: var(--text-light); font-size: 0.85rem; margin: 0;">
           💡 Los administradores pueden gestionar múltiples médicos<br>
@@ -1232,6 +1300,59 @@
         <button type="submit" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">👨‍💼 Entrar como Administrador</button>
       </form>
       <p><a href="#" onclick="showRegisterAdmin()">¿No tienes cuenta? Regístrate como Administrador</a></p>
+    </div>
+
+    <!-- Login SUPERCUENTA -->
+    <div id="loginSuper" class="form-card" style="display: none;">
+      <div style="display: flex; align-items: center; margin-bottom: 16px;">
+        <button onclick="backToAccountType()" style="background: none; border: none; color: var(--primary); cursor: pointer; margin-right: 12px;">⬅️</button>
+        <h2 style="margin: 0; color: #7c2d12;">👑 SUPERCUENTA - Control Total</h2>
+      </div>
+      
+      <form id="loginFormSuper">
+        <div id="loginErrorSuper" class="error-message" style="display:none;"></div>
+        
+        <!-- Advertencia de seguridad -->
+        <div style="margin: 16px 0; padding: 16px; background: #fef2f2; border-radius: 8px; border: 2px solid #dc2626;">
+          <h4 style="margin: 0 0 8px 0; color: #dc2626;">⚠️ ACCESO RESTRINGIDO</h4>
+          <p style="margin: 0; color: #dc2626; font-size: 0.9rem; font-weight: 500;">
+            Esta cuenta tiene control total sobre el sistema.<br>
+            Solo para administradores del sistema.
+          </p>
+        </div>
+        
+        <input type="text" id="loginUserSuper" placeholder="Usuario: ADMIN" required>
+        <input type="password" id="loginPasswordSuper" placeholder="Contraseña: ADMINCITO" required>
+        
+        <!-- Información sobre SUPERCUENTA -->
+        <div style="margin: 16px 0; padding: 16px; background: #7c2d12; border-radius: 8px; border: 1px solid #fbbf24;">
+          <h4 style="margin: 0 0 8px 0; color: #fbbf24;">👑 Funcionalidades SUPERCUENTA</h4>
+          <ul style="margin: 0; padding-left: 16px; color: #fbbf24; font-size: 0.9rem;">
+            <li>📊 Ver todos los usuarios registrados</li>
+            <li>⏰ Monitorear horas de uso en tiempo real</li>
+            <li>🔒 Activar/Desactivar cuentas</li>
+            <li>🔗 Gestionar vinculaciones entre administradores y médicos</li>
+            <li>📈 Estadísticas completas del sistema</li>
+            <li>🏥 Gestionar organizaciones</li>
+            <li>🛡️ Control de seguridad y auditoría</li>
+          </ul>
+        </div>
+        
+        <button type="submit" style="
+          background: linear-gradient(135deg, #7c2d12, #991b1b, #7c2d12);
+          color: #fbbf24;
+          border: 2px solid #fbbf24;
+          font-weight: bold;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        ">👑 Acceder como SUPERCUENTA</button>
+      </form>
+      
+      <div style="text-align: center; margin-top: 16px;">
+        <p style="color: #dc2626; font-size: 0.8rem; font-weight: 500;">
+          🔐 Credenciales fijas del sistema<br>
+          Usuario: <code>ADMIN</code> | Contraseña: <code>ADMINCITO</code>
+        </p>
+      </div>
     </div>
     <div id="registerCard" class="form-card" style="display:none;">
       <h2>Crear Cuenta</h2>
@@ -1807,6 +1928,9 @@
         document.getElementById('loginMedico').style.display = 'block';
       } else if (type === 'admin') {
         document.getElementById('loginAdmin').style.display = 'block';
+      } else if (type === 'super') {
+        document.getElementById('loginSuper').style.display = 'block';
+        console.log('👑 SUPERCUENTA seleccionada');
       }
     };
 
@@ -1817,6 +1941,7 @@
       // Ocultar formularios
       document.getElementById('loginMedico').style.display = 'none';
       document.getElementById('loginAdmin').style.display = 'none';
+      document.getElementById('loginSuper').style.display = 'none';
       document.getElementById('registerCard').style.display = 'none';
       
       // Mostrar selector
@@ -1886,6 +2011,9 @@
         document.getElementById('loginMedico').style.display = 'block';
       } else if (type === 'admin') {
         document.getElementById('loginAdmin').style.display = 'block';
+      } else if (type === 'super') {
+        document.getElementById('loginSuper').style.display = 'block';
+        console.log('👑 SUPERCUENTA seleccionada');
       }
     };
 
@@ -1896,6 +2024,7 @@
       // Ocultar formularios
       document.getElementById('loginMedico').style.display = 'none';
       document.getElementById('loginAdmin').style.display = 'none';
+      document.getElementById('loginSuper').style.display = 'none';
       document.getElementById('registerCard').style.display = 'none';
       
       // Mostrar selector
@@ -1993,6 +2122,338 @@
         }
       }
     });
+
+    // Login SUPERCUENTA
+    document.getElementById('loginFormSuper')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const username = document.getElementById('loginUserSuper').value?.trim();
+      const password = document.getElementById('loginPasswordSuper').value;
+      const loginError = document.getElementById('loginErrorSuper');
+
+      if (loginError) loginError.style.display = 'none';
+
+      // Verificar credenciales fijas
+      if (username !== 'ADMIN' || password !== 'ADMINCITO') {
+        console.log('❌ Credenciales de SUPERCUENTA incorrectas');
+        if (loginError) {
+          loginError.textContent = '❌ Credenciales incorrectas. Usuario: ADMIN | Contraseña: ADMINCITO';
+          loginError.style.display = 'block';
+        }
+        return;
+      }
+
+      try {
+        console.log('👑 ACCESO SUPERCUENTA AUTORIZADO');
+        
+        // Crear usuario SUPERCUENTA mock
+        currentUser = {
+          uid: 'SUPERCUENTA_ADMIN_SYSTEM',
+          email: 'ADMIN@clinical-system.com',
+          displayName: 'SUPERCUENTA',
+          role: 'super',
+          getIdToken: () => Promise.resolve('super_admin_token')
+        };
+        
+        isAuthenticated = true;
+        userRole = 'super';
+        
+        console.log('✅ SUPERCUENTA activada');
+        
+        // Mostrar interfaz de SUPERCUENTA
+        showSuperAdminInterface();
+        
+        // Registrar acceso en el sistema
+        await logSuperAdminAccess();
+        
+        alert('👑 SUPERCUENTA ACTIVADA\n\n🔓 Control total del sistema habilitado\n📊 Acceso a todas las funcionalidades de gestión');
+        
+      } catch (error) {
+        console.error('❌ Error activando SUPERCUENTA:', error);
+        if (loginError) {
+          loginError.textContent = `Error del sistema: ${error.message}`;
+          loginError.style.display = 'block';
+        }
+      }
+    });
+
+    // ===== FUNCIONES DE SUPERCUENTA =====
+
+    // Mostrar interfaz de SUPERCUENTA
+    function showSuperAdminInterface() {
+      console.log('👑 Mostrando interfaz de SUPERCUENTA');
+      
+      // Ocultar login y mostrar interfaz especial
+      const authContainer = document.querySelector('.container');
+      const mainContent = document.getElementById('mainContent');
+      
+      if (authContainer) authContainer.style.display = 'none';
+      if (mainContent) {
+        mainContent.style.display = 'block';
+        
+        // Reemplazar contenido con panel de SUPERCUENTA
+        mainContent.innerHTML = `
+          <div style="background: linear-gradient(135deg, #7c2d12, #991b1b); padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 2px solid #fbbf24;">
+            <h1 style="color: #fbbf24; text-align: center; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+              👑 SUPERCUENTA - PANEL DE CONTROL SUPREMO
+            </h1>
+            <p style="color: #fbbf24; text-align: center; margin: 8px 0 0 0; opacity: 0.9;">
+              Control total del sistema Clinical Data
+            </p>
+          </div>
+          
+          <!-- Estadísticas del Sistema -->
+          <div class="form-section">
+            <h4>📊 Estadísticas del Sistema</h4>
+            <div id="systemStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+              <div class="stat-card">
+                <div class="stat-number" id="totalUsers">-</div>
+                <div class="stat-label">👥 Usuarios Totales</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" id="activeMedicos">-</div>
+                <div class="stat-label">🩺 Médicos Activos</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" id="activeAdmins">-</div>
+                <div class="stat-label">👨‍💼 Administradores</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" id="totalPacientes">-</div>
+                <div class="stat-label">👤 Pacientes Totales</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Usuarios en Línea -->
+          <div class="form-section">
+            <h4>🟢 Usuarios Conectados</h4>
+            <div id="onlineUsers">Cargando...</div>
+          </div>
+          
+          <!-- Gestión de Usuarios -->
+          <div class="form-section">
+            <h4>👥 Gestión de Usuarios</h4>
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+              <button onclick="loadAllUsers()" class="btn-primary">🔄 Actualizar Lista</button>
+              <button onclick="exportSystemData()" class="btn-secondary">📊 Exportar Datos</button>
+              <button onclick="showSystemLogs()" class="btn-secondary">📋 Ver Logs</button>
+            </div>
+            <div id="allUsersList">Cargando usuarios...</div>
+          </div>
+          
+          <!-- Acciones del Sistema -->
+          <div class="form-section">
+            <h4>⚙️ Acciones del Sistema</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+              <button onclick="generateAdminCode()" class="btn-secondary">🔗 Generar Código Admin</button>
+              <button onclick="viewAllVinculations()" class="btn-secondary">🔗 Ver Vinculaciones</button>
+              <button onclick="systemMaintenance()" class="btn-secondary">🔧 Mantenimiento</button>
+              <button onclick="backupSystem()" class="btn-secondary">💾 Backup Sistema</button>
+            </div>
+          </div>
+        `;
+      }
+      
+      // Cargar datos iniciales
+      loadSystemStats();
+      loadAllUsers();
+      startOnlineUsersMonitor();
+    }
+
+    // Registrar acceso de SUPERCUENTA
+    async function logSuperAdminAccess() {
+      try {
+        const accessLog = {
+          timestamp: new Date().toISOString(),
+          action: 'SUPERCUENTA_ACCESS',
+          ip: 'unknown', // Se puede obtener con APIs externas
+          userAgent: navigator.userAgent,
+          sessionId: Date.now().toString()
+        };
+
+        await db.collection('system_logs').add(accessLog);
+        console.log('📝 Acceso de SUPERCUENTA registrado');
+      } catch (error) {
+        console.warn('⚠️ No se pudo registrar acceso:', error);
+      }
+    }
+
+    // Cargar estadísticas del sistema
+    async function loadSystemStats() {
+      try {
+        console.log('📊 Cargando estadísticas del sistema...');
+        
+        // Contar médicos
+        const medicosSnapshot = await db.collection('medicos').get();
+        const activeMedicos = medicosSnapshot.size;
+        
+        // Contar administradores
+        const adminsSnapshot = await db.collection('administrators').get();
+        const activeAdmins = adminsSnapshot.size;
+        
+        // Contar usuarios totales
+        const totalUsers = activeMedicos + activeAdmins;
+        
+        // Contar pacientes totales (aproximado)
+        let totalPacientes = 0;
+        const usersSnapshot = await db.collection('users').get();
+        for (const userDoc of usersSnapshot.docs) {
+          const pacientesSnapshot = await userDoc.ref.collection('pacientes').get();
+          totalPacientes += pacientesSnapshot.size;
+        }
+        
+        // Actualizar interfaz
+        document.getElementById('totalUsers').textContent = totalUsers;
+        document.getElementById('activeMedicos').textContent = activeMedicos;
+        document.getElementById('activeAdmins').textContent = activeAdmins;
+        document.getElementById('totalPacientes').textContent = totalPacientes;
+        
+        console.log('✅ Estadísticas cargadas:', { totalUsers, activeMedicos, activeAdmins, totalPacientes });
+        
+      } catch (error) {
+        console.error('❌ Error cargando estadísticas:', error);
+        document.getElementById('totalUsers').textContent = 'Error';
+        document.getElementById('activeMedicos').textContent = 'Error';
+        document.getElementById('activeAdmins').textContent = 'Error';
+        document.getElementById('totalPacientes').textContent = 'Error';
+      }
+    }
+
+    // Cargar todos los usuarios del sistema
+    async function loadAllUsers() {
+      try {
+        console.log('👥 Cargando todos los usuarios...');
+        
+        const allUsersList = document.getElementById('allUsersList');
+        allUsersList.innerHTML = '<p>🔄 Cargando usuarios...</p>';
+        
+        let usersHTML = '';
+        
+        // Cargar médicos
+        const medicosSnapshot = await db.collection('medicos').get();
+        if (!medicosSnapshot.empty) {
+          usersHTML += '<h5 style="color: var(--primary); margin: 16px 0 8px 0;">🩺 MÉDICOS</h5>';
+          medicosSnapshot.forEach(doc => {
+            const medico = doc.data();
+            const lastLogin = medico.lastLogin ? new Date(medico.lastLogin).toLocaleString('es-ES') : 'Nunca';
+            usersHTML += `
+              <div class="user-card" style="border-left: 4px solid var(--primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong>${medico.displayName || medico.email}</strong><br>
+                    <small>📧 ${medico.email}</small><br>
+                    <small>⏰ Último acceso: ${lastLogin}</small>
+                  </div>
+                  <div style="display: flex; gap: 4px;">
+                    <button onclick="toggleUserStatus('${doc.id}', 'medico')" class="btn-sm">🔒 Gestionar</button>
+                    <button onclick="viewUserDetails('${doc.id}', 'medico')" class="btn-sm">👁️ Ver</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+        }
+        
+        // Cargar administradores
+        const adminsSnapshot = await db.collection('administrators').get();
+        if (!adminsSnapshot.empty) {
+          usersHTML += '<h5 style="color: #dc2626; margin: 16px 0 8px 0;">👨‍💼 ADMINISTRADORES</h5>';
+          adminsSnapshot.forEach(doc => {
+            const admin = doc.data();
+            const lastLogin = admin.lastLogin ? new Date(admin.lastLogin).toLocaleString('es-ES') : 'Nunca';
+            const linkedMedicos = admin.linkedMedicos?.length || 0;
+            usersHTML += `
+              <div class="user-card" style="border-left: 4px solid #dc2626;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong>${admin.displayName || admin.email}</strong><br>
+                    <small>📧 ${admin.email}</small><br>
+                    <small>⏰ Último acceso: ${lastLogin}</small><br>
+                    <small>🔗 Médicos vinculados: ${linkedMedicos}</small>
+                  </div>
+                  <div style="display: flex; gap: 4px;">
+                    <button onclick="toggleUserStatus('${doc.id}', 'admin')" class="btn-sm">🔒 Gestionar</button>
+                    <button onclick="viewUserDetails('${doc.id}', 'admin')" class="btn-sm">👁️ Ver</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+        }
+        
+        if (usersHTML === '') {
+          usersHTML = '<p style="color: var(--text-light); text-align: center;">No hay usuarios registrados</p>';
+        }
+        
+        allUsersList.innerHTML = usersHTML;
+        console.log('✅ Lista de usuarios cargada');
+        
+      } catch (error) {
+        console.error('❌ Error cargando usuarios:', error);
+        document.getElementById('allUsersList').innerHTML = '<p style="color: var(--danger);">Error cargando usuarios</p>';
+      }
+    }
+
+    // Monitor de usuarios en línea (simulado)
+    function startOnlineUsersMonitor() {
+      const onlineUsers = document.getElementById('onlineUsers');
+      
+      // Simulación de usuarios en línea
+      setInterval(() => {
+        const mockOnlineUsers = [
+          { email: 'corraljosemaria@hotmail.com', role: 'medico', since: '14:30' },
+          // Se pueden agregar más usuarios reales cuando el sistema esté en uso
+        ];
+        
+        let html = '';
+        mockOnlineUsers.forEach(user => {
+          const roleIcon = user.role === 'medico' ? '🩺' : '👨‍💼';
+          html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; margin: 4px 0; background: var(--bg-secondary); border-radius: 6px;">
+              <span>${roleIcon} ${user.email}</span>
+              <span style="color: #22c55e; font-size: 0.8rem;">🟢 Desde ${user.since}</span>
+            </div>
+          `;
+        });
+        
+        onlineUsers.innerHTML = html || '<p style="color: var(--text-light);">No hay usuarios conectados</p>';
+      }, 5000);
+    }
+
+    // Funciones de gestión (placeholder)
+    window.toggleUserStatus = function(userId, userType) {
+      alert(`🔒 Gestión de usuario:\nID: ${userId}\nTipo: ${userType}\n\n🚧 Funcionalidad en desarrollo...`);
+    };
+
+    window.viewUserDetails = function(userId, userType) {
+      alert(`👁️ Detalles del usuario:\nID: ${userId}\nTipo: ${userType}\n\n🚧 Panel de detalles en desarrollo...`);
+    };
+
+    window.generateAdminCode = function() {
+      const code = generateVinculationCode('SUPERCUENTA');
+      alert(`🔗 Código de administrador generado:\n\n${code}\n\nEste código puede ser usado por un nuevo administrador para registrarse.`);
+    };
+
+    window.viewAllVinculations = function() {
+      alert('🔗 Visualizador de vinculaciones\n\n🚧 En desarrollo...\n\nMostrará todas las conexiones entre administradores y médicos.');
+    };
+
+    window.systemMaintenance = function() {
+      alert('🔧 Herramientas de mantenimiento\n\n🚧 En desarrollo...\n\nIncluirá limpieza de datos, optimización y reparaciones.');
+    };
+
+    window.backupSystem = function() {
+      alert('💾 Sistema de backup\n\n🚧 En desarrollo...\n\nPermitirá crear backups completos del sistema.');
+    };
+
+    window.exportSystemData = function() {
+      alert('📊 Exportación de datos del sistema\n\n🚧 En desarrollo...\n\nExportará estadísticas completas en formato Excel/PDF.');
+    };
+
+    window.showSystemLogs = function() {
+      alert('📋 Logs del sistema\n\n🚧 En desarrollo...\n\nMostrará todos los accesos y acciones del sistema.');
+    };
 
     // Inicializar cuando Firebase esté listo
     setTimeout(initializeAuth, 2000);
