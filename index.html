@@ -1814,41 +1814,35 @@
     let currentUser = null;
     let isAuthenticated = false;
 
-    // Manejar la instalación de la PWA
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-    });
-
-    // Variables globales para sistema médico
-    let selectedPaciente = null;
-    let selectedVisitType = 'primera';
-    let allPacientes = [];
-    let allRecordatorios = [];
-    let allCitas = [];
-    let currentChart = null;
-
-    // ===== FUNCIÓN DE LOGOUT UNIVERSAL (DEFINIDA TEMPRANO) =====
+    // ===== FUNCIÓN DE LOGOUT DEFINIDA INMEDIATAMENTE =====
     
     window.logout = function() {
       console.log('🚪 Cerrando sesión...');
       
       try {
         // Limpiar variables de sesión
-        currentUser = null;
-        isAuthenticated = false;
-        userRole = null;
-        selectedAccountType = null;
-        selectedPaciente = null;
+        window.currentUser = null;
+        window.isAuthenticated = false;
+        window.userRole = null;
+        window.selectedAccountType = null;
+        window.selectedPaciente = null;
+        
+        // Limpiar variables globales
+        if (typeof currentUser !== 'undefined') currentUser = null;
+        if (typeof isAuthenticated !== 'undefined') isAuthenticated = false;
+        if (typeof userRole !== 'undefined') userRole = null;
+        if (typeof selectedAccountType !== 'undefined') selectedAccountType = null;
+        if (typeof selectedPaciente !== 'undefined') selectedPaciente = null;
         
         // Limpiar datos
-        allPacientes = [];
-        allRecordatorios = [];
-        allCitas = [];
+        if (typeof allPacientes !== 'undefined') allPacientes = [];
+        if (typeof allRecordatorios !== 'undefined') allRecordatorios = [];
+        if (typeof allCitas !== 'undefined') allCitas = [];
+        
+        console.log('✅ Variables limpiadas');
         
         // Cerrar sesión de Firebase si está disponible
-        if (window.auth && window.auth.signOut) {
+        if (window.auth && typeof window.auth.signOut === 'function') {
           try {
             window.auth.signOut();
             console.log('✅ Sesión de Firebase cerrada');
@@ -1866,27 +1860,51 @@
         if (mainContent) mainContent.style.display = 'none';
         if (userInfo) userInfo.style.display = 'none';
         
-        // Volver al selector de tipo de cuenta
-        const accountSelector = document.getElementById('accountTypeSelector');
-        const loginMedico = document.getElementById('loginMedico');
-        const loginAdmin = document.getElementById('loginAdmin');
-        const loginSuper = document.getElementById('loginSuper');
-        const registerCard = document.getElementById('registerCard');
+        console.log('✅ Interfaz de login mostrada');
         
-        if (accountSelector) accountSelector.style.display = 'block';
-        if (loginMedico) loginMedico.style.display = 'none';
-        if (loginAdmin) loginAdmin.style.display = 'none';
-        if (loginSuper) loginSuper.style.display = 'none';
-        if (registerCard) registerCard.style.display = 'none';
+        // Volver al selector de tipo de cuenta
+        setTimeout(() => {
+          const accountSelector = document.getElementById('accountTypeSelector');
+          const loginMedico = document.getElementById('loginMedico');
+          const loginAdmin = document.getElementById('loginAdmin');
+          const loginSuper = document.getElementById('loginSuper');
+          const registerCard = document.getElementById('registerCard');
+          
+          if (accountSelector) accountSelector.style.display = 'block';
+          if (loginMedico) loginMedico.style.display = 'none';
+          if (loginAdmin) loginAdmin.style.display = 'none';
+          if (loginSuper) loginSuper.style.display = 'none';
+          if (registerCard) registerCard.style.display = 'none';
+          
+          console.log('✅ Selector de cuenta mostrado');
+        }, 100);
         
         console.log('✅ Sesión cerrada correctamente');
-        alert('👋 Sesión cerrada\n\nAhora puedes seleccionar otro tipo de cuenta');
+        alert('👋 Sesión cerrada exitosamente\n\nAhora puedes seleccionar otro tipo de cuenta');
         
       } catch (error) {
         console.error('❌ Error cerrando sesión:', error);
-        alert('❌ Error cerrando sesión. Recarga la página.');
+        alert('❌ Error cerrando sesión. Recargando página...');
+        setTimeout(() => window.location.reload(), 1000);
       }
     };
+
+    // Manejar la instalación de la PWA
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
+
+    // Variables globales para sistema médico
+    let selectedPaciente = null;
+    let selectedVisitType = 'primera';
+    let allPacientes = [];
+    let allRecordatorios = [];
+    let allCitas = [];
+    let currentChart = null;
+
+    // Función logout ya definida al inicio del script
 
     const visitTypes = [
       { value: 'primera', label: 'Primera Consulta', icon: '🩺', color: '#4ade80' },
