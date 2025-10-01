@@ -2540,6 +2540,17 @@
             <div id="allUsersList">Cargando usuarios...</div>
           </div>
           
+          <!-- Modal para detalle (pacientes por usuario, vinculación, etc.) -->
+          <div id="superModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+            <div id="superModalContent" style="background: #0f172a; color: #e2e8f0; width: min(900px, 96vw); max-height: 90vh; overflow: auto; border-radius: 10px; border: 1px solid #334155;">
+              <div style="display:flex; justify-content: space-between; align-items:center; padding: 12px 16px; border-bottom:1px solid #334155;">
+                <h3 id="superModalTitle" style="margin:0; font-size: 1.05rem;">Detalle</h3>
+                <button onclick="closeSuperModal()" class="btn-sm">✖️</button>
+              </div>
+              <div id="superModalBody" style="padding: 16px;">Cargando...</div>
+            </div>
+          </div>
+
           <!-- Acciones del Sistema -->
           <div class="form-section">
             <h4>⚙️ Acciones del Sistema</h4>
@@ -2630,11 +2641,12 @@
 
         // Helper para pintar tarjeta de usuario
         const renderUserCard = (opts) => {
-          const { id, role, email, displayName, lastLogin, subscriptionStatus, linkedMedicosCount } = opts;
+          const { id, role, email, displayName, lastLogin, subscriptionStatus, linkedMedicosCount, disabled } = opts;
           const color = role === 'admin' ? '#dc2626' : 'var(--primary)';
           const roleIcon = role === 'admin' ? '👨‍💼' : '🩺';
           const sub = subscriptionStatus || 'activa';
           const subColor = sub === 'activa' ? '#16a34a' : (sub === 'vencida' ? '#dc2626' : '#ca8a04');
+          const disabledTag = disabled ? '<small style="color:#ef4444">⛔ Deshabilitado</small><br>' : '';
 
           return `
             <div class="user-card" style="border-left: 4px solid ${color};">
@@ -2644,12 +2656,15 @@
                   <small>${roleIcon} ${email}</small><br>
                   <small>⏰ Último acceso: ${lastLogin || 'Nunca'}</small><br>
                   ${role === 'admin' ? `<small>🔗 Médicos vinculados: ${linkedMedicosCount || 0}</small><br>` : ''}
-                  <small>💳 Suscripción: <span style="color:${subColor}">${sub}</span></small>
+                  <small>💳 Suscripción: <span style="color:${subColor}">${sub}</span></small><br>
+                  ${disabledTag}
                 </div>
                 <div style="display: flex; gap: 4px;">
                   <button class="btn-sm" onclick="toggleSubscription('${id}','${role}')">💳 Suscripción</button>
-                  ${role === 'admin' ? `<button class="btn-sm" onclick="manageLinks('${id}')">🔗 Vincular</button>` : ''}
-                  <button class="btn-sm" onclick="viewUserDetails('${id}','${role}')">👁️ Ver</button>
+                  <button class="btn-sm" onclick="toggleUserEnabled('${id}','${role}')">⛔ Habilitar/Deshabilitar</button>
+                  ${role === 'admin' ? `<button class=\"btn-sm\" onclick=\"manageLinks('${id}')\">🔗 Vincular</button>` : ''}
+                  ${role === 'medico' ? `<button class=\"btn-sm\" onclick=\"promoteToAdmin('${id}')\">⬆️ Promover</button>` : `<button class=\"btn-sm\" onclick=\"demoteToMedico('${id}')\">⬇️ Degradar</button>`}
+                  <button class="btn-sm" onclick="openPatientsModal('${id}','${role}','${email}')">👁️ Pacientes</button>
                 </div>
               </div>
             </div>
@@ -2669,7 +2684,8 @@
               email: m.email,
               displayName: m.displayName,
               lastLogin,
-              subscriptionStatus: m.subscriptionStatus
+              subscriptionStatus: m.subscriptionStatus,
+              disabled: m.disabled === true
             });
           });
         }
@@ -2689,7 +2705,8 @@
               displayName: a.displayName,
               lastLogin,
               subscriptionStatus: a.subscriptionStatus,
-              linkedMedicosCount
+              linkedMedicosCount,
+              disabled: a.disabled === true
             });
           });
         }
@@ -2722,6 +2739,110 @@
       } catch (e) {
         console.error('Error actualizando suscripción', e);
         alert('No se pudo actualizar la suscripción');
+      }
+    };
+
+    // Habilitar/Deshabilitar usuario (flag disabled)
+    window.toggleUserEnabled = async function(userId, role) {
+      try {
+        const col = role === 'admin' ? 'administrators' : 'medicos';
+        const ref = db.collection(col).doc(userId);
+        const snap = await ref.get();
+        if (!snap.exists) return alert('Usuario no encontrado');
+        const current = !!snap.data().disabled;
+        await ref.update({ disabled: !current, disabledUpdatedAt: new Date().toISOString() });
+        alert(!current ? 'Usuario deshabilitado' : 'Usuario habilitado');
+        loadAllUsers();
+      } catch (e) {
+        console.error('Error alternando habilitación', e);
+        alert('No se pudo actualizar el estado');
+      }
+    };
+
+    // Promover médico a admin
+    window.promoteToAdmin = async function(medicoId) {
+      try {
+        // Leer médico y crear/actualizar entrada en administrators
+        const mRef = db.collection('medicos').doc(medicoId);
+        const mSnap = await mRef.get();
+        if (!mSnap.exists) return alert('Médico no encontrado');
+        const m = mSnap.data();
+        const aRef = db.collection('administrators').doc(medicoId);
+        await aRef.set({
+          email: m.email,
+          displayName: m.displayName || (m.email || '').split('@')[0],
+          lastLogin: new Date().toISOString(),
+          vinculationCodes: m.vinculationCodes || [],
+          linkedMedicos: m.linkedMedicos || []
+        }, { merge: true });
+        alert('Médico promovido a administrador');
+        loadAllUsers();
+      } catch (e) {
+        console.error('Error promoviendo médico', e);
+        alert('No se pudo promover');
+      }
+    };
+
+    // Degradar admin a médico
+    window.demoteToMedico = async function(adminId) {
+      try {
+        const aRef = db.collection('administrators').doc(adminId);
+        const aSnap = await aRef.get();
+        if (!aSnap.exists) return alert('Administrador no encontrado');
+        const a = aSnap.data();
+        const mRef = db.collection('medicos').doc(adminId);
+        await mRef.set({
+          email: a.email,
+          displayName: a.displayName || (a.email || '').split('@')[0],
+          lastLogin: new Date().toISOString()
+        }, { merge: true });
+        // Nota: no borramos admin; requerir confirmación en futuro
+        alert('Administrador degradado a médico (no se eliminó el admin)');
+        loadAllUsers();
+      } catch (e) {
+        console.error('Error degradando admin', e);
+        alert('No se pudo degradar');
+      }
+    };
+
+    // Modal helper
+    function openSuperModal(title, html) {
+      const modal = document.getElementById('superModal');
+      const titleEl = document.getElementById('superModalTitle');
+      const bodyEl = document.getElementById('superModalBody');
+      if (!modal || !titleEl || !bodyEl) return;
+      titleEl.textContent = title;
+      bodyEl.innerHTML = html;
+      modal.style.display = 'flex';
+    }
+    window.closeSuperModal = function() {
+      const modal = document.getElementById('superModal');
+      if (modal) modal.style.display = 'none';
+    };
+
+    // Ver pacientes por usuario (uid)
+    window.openPatientsModal = async function(uid, role, email) {
+      try {
+        let html = '<p>🔄 Cargando pacientes...</p>';
+        openSuperModal(`Pacientes de ${email}`, html);
+        const snap = await db.collection('users').doc(uid).collection('pacientes').get();
+        if (!snap || snap.size === 0) {
+          html = '<p style="color: var(--text-light);">Sin pacientes</p>';
+        } else {
+          html = '<div style="display:grid; gap:8px">';
+          snap.forEach(d => {
+            const p = d.data();
+            html += `<div style="padding:8px; background: var(--bg-secondary); border-radius:6px;">`+
+                    `<strong>${p.nombre || '(Sin nombre)'} </strong>`+
+                    `<small style="opacity:.8">DNI: ${p.dni || '-'}</small>`+
+                    `</div>`;
+          });
+          html += '</div>';
+        }
+        openSuperModal(`Pacientes de ${email}`, html);
+      } catch (e) {
+        console.error('Error listando pacientes', e);
+        openSuperModal(`Pacientes de ${email}`, '<p style="color: var(--danger);">Error al cargar pacientes</p>');
       }
     };
 
