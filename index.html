@@ -1125,26 +1125,113 @@
     </div>
     
     
-    <div id="loginCard" class="form-card">
-      <h2>Iniciar Sesión</h2>
-      <form id="loginForm">
-        <div id="loginError" class="error-message" style="display:none;"></div>
-        <div id="loginConfigHelp" class="error-message" style="display:none; background:#fef3c7; color:#92400e; border-color:#fbbf24;">
-          <strong>🔧 Configuración Requerida:</strong><br>
-          <a href="https://console.firebase.google.com/project/clinical-70644/authentication/providers" target="_blank" style="color:#92400e; text-decoration:underline;">
-            Click aquí para configurar Firebase Authentication
-          </a><br>
-          <small>1. Ve a Authentication → Sign-in method<br>2. Habilita Email/Password<br>3. Guarda cambios</small>
+    <!-- Selector de tipo de cuenta -->
+    <div id="accountTypeSelector" class="form-card">
+      <h2>Selecciona tu tipo de cuenta</h2>
+      <p style="text-align: center; color: var(--text-light); margin-bottom: 24px;">
+        Elige el tipo de cuenta que mejor se adapte a tu rol
+      </p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+        <!-- Cuenta Médico -->
+        <div class="account-type-card" onclick="selectAccountType('medico')" style="
+          border: 2px solid var(--primary);
+          border-radius: 12px;
+          padding: 24px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          background: var(--bg-secondary);
+        " onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 8px 25px rgba(79, 70, 229, 0.3)'"
+           onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+          <div style="font-size: 3rem; margin-bottom: 12px;">🩺</div>
+          <h3 style="margin: 0 0 8px 0; color: var(--primary);">Médico</h3>
+          <p style="margin: 0; color: var(--text-light); font-size: 0.9rem;">
+            Acceso completo a tus pacientes, visitas y calendario personal
+          </p>
         </div>
-        <label for="loginEmail">Email</label>
-        <input type="email" id="loginEmail" required autocomplete="username">
-        <label for="loginPassword">Contraseña</label>
-        <input type="password" id="loginPassword" required autocomplete="current-password">
-        <button type="submit">Entrar</button>
-      </form>
-      <div class="center">
-        <span class="link" onclick="showRegister()">¿No tienes cuenta? Regístrate</span>
+        
+        <!-- Cuenta Administrador -->
+        <div class="account-type-card" onclick="selectAccountType('admin')" style="
+          border: 2px solid #dc2626;
+          border-radius: 12px;
+          padding: 24px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          background: var(--bg-secondary);
+        " onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 8px 25px rgba(220, 38, 38, 0.3)'"
+           onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+          <div style="font-size: 3rem; margin-bottom: 12px;">👨‍💼</div>
+          <h3 style="margin: 0 0 8px 0; color: #dc2626;">Administrador</h3>
+          <p style="margin: 0; color: var(--text-light); font-size: 0.9rem;">
+            Gestión de médicos, asignación de pacientes y calendario general
+          </p>
+        </div>
       </div>
+      
+      <div style="text-align: center;">
+        <p style="color: var(--text-light); font-size: 0.85rem; margin: 0;">
+          💡 Los administradores pueden gestionar múltiples médicos<br>
+          🔗 Los médicos pueden vincularse con administradores mediante códigos
+        </p>
+      </div>
+    </div>
+
+    <!-- Login Médico -->
+    <div id="loginMedico" class="form-card" style="display: none;">
+      <div style="display: flex; align-items: center; margin-bottom: 16px;">
+        <button onclick="backToAccountType()" style="background: none; border: none; color: var(--primary); cursor: pointer; margin-right: 12px;">⬅️</button>
+        <h2 style="margin: 0;">🩺 Iniciar Sesión - Médico</h2>
+      </div>
+      
+      <form id="loginFormMedico">
+        <div id="loginErrorMedico" class="error-message" style="display:none;"></div>
+        <input type="email" id="loginEmailMedico" placeholder="Email del médico" required>
+        <input type="password" id="loginPasswordMedico" placeholder="Contraseña" required>
+        
+        <!-- Código de vinculación opcional -->
+        <div style="margin: 16px 0; padding: 16px; background: var(--bg-secondary); border-radius: 8px; border: 1px dashed var(--primary);">
+          <label style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">
+            🔗 Código de vinculación (opcional)
+          </label>
+          <input type="text" id="codigoVinculacion" placeholder="Código del administrador" style="margin-bottom: 8px;">
+          <p style="margin: 0; font-size: 0.8rem; color: var(--text-light);">
+            Si tienes un código de un administrador, ingrésalo para vincularte
+          </p>
+        </div>
+        
+        <button type="submit">🩺 Entrar como Médico</button>
+      </form>
+      <p><a href="#" onclick="showRegisterMedico()">¿No tienes cuenta? Regístrate como Médico</a></p>
+    </div>
+
+    <!-- Login Administrador -->
+    <div id="loginAdmin" class="form-card" style="display: none;">
+      <div style="display: flex; align-items: center; margin-bottom: 16px;">
+        <button onclick="backToAccountType()" style="background: none; border: none; color: var(--primary); cursor: pointer; margin-right: 12px;">⬅️</button>
+        <h2 style="margin: 0;">👨‍💼 Iniciar Sesión - Administrador</h2>
+      </div>
+      
+      <form id="loginFormAdmin">
+        <div id="loginErrorAdmin" class="error-message" style="display:none;"></div>
+        <input type="email" id="loginEmailAdmin" placeholder="Email del administrador" required>
+        <input type="password" id="loginPasswordAdmin" placeholder="Contraseña" required>
+        
+        <!-- Información sobre administradores -->
+        <div style="margin: 16px 0; padding: 16px; background: #fef3c7; border-radius: 8px; border: 1px solid #fbbf24;">
+          <h4 style="margin: 0 0 8px 0; color: #92400e;">👨‍💼 Cuenta Administrador</h4>
+          <ul style="margin: 0; padding-left: 16px; color: #92400e; font-size: 0.9rem;">
+            <li>Gestiona múltiples médicos</li>
+            <li>Asigna pacientes a médicos específicos</li>
+            <li>Maneja calendario general</li>
+            <li>Genera códigos de vinculación</li>
+          </ul>
+        </div>
+        
+        <button type="submit" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">👨‍💼 Entrar como Administrador</button>
+      </form>
+      <p><a href="#" onclick="showRegisterAdmin()">¿No tienes cuenta? Regístrate como Administrador</a></p>
     </div>
     <div id="registerCard" class="form-card" style="display:none;">
       <h2>Crear Cuenta</h2>
@@ -1701,6 +1788,211 @@
       if (mainContent) mainContent.style.display = 'none';
       if (userInfo) userInfo.style.display = 'none';
     }
+
+    // ===== SISTEMA DE ROLES Y TIPOS DE CUENTA =====
+
+    let selectedAccountType = null;
+    let userRole = null; // 'medico' o 'admin'
+
+    // Seleccionar tipo de cuenta
+    window.selectAccountType = function(type) {
+      console.log('👤 Tipo de cuenta seleccionado:', type);
+      selectedAccountType = type;
+      
+      // Ocultar selector
+      document.getElementById('accountTypeSelector').style.display = 'none';
+      
+      // Mostrar formulario correspondiente
+      if (type === 'medico') {
+        document.getElementById('loginMedico').style.display = 'block';
+      } else if (type === 'admin') {
+        document.getElementById('loginAdmin').style.display = 'block';
+      }
+    };
+
+    // Volver al selector de tipo de cuenta
+    window.backToAccountType = function() {
+      console.log('⬅️ Volviendo al selector de tipo de cuenta');
+      
+      // Ocultar formularios
+      document.getElementById('loginMedico').style.display = 'none';
+      document.getElementById('loginAdmin').style.display = 'none';
+      document.getElementById('registerCard').style.display = 'none';
+      
+      // Mostrar selector
+      document.getElementById('accountTypeSelector').style.display = 'block';
+      
+      selectedAccountType = null;
+    };
+
+    // Generar código de vinculación para administradores
+    function generateVinculationCode(adminUserId) {
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      return `ADM-${random}-${timestamp.toString().slice(-6)}`;
+    }
+
+    // Verificar código de vinculación
+    async function verifyVinculationCode(code, medicoUserId) {
+      try {
+        console.log('🔍 Verificando código de vinculación:', code);
+        
+        // Buscar el código en la colección de administradores
+        const snapshot = await db.collection('administrators').where('vinculationCodes', 'array-contains', code).get();
+        
+        if (!snapshot.empty) {
+          const adminDoc = snapshot.docs[0];
+          const adminData = adminDoc.data();
+          
+          console.log('✅ Código válido, vinculando con administrador:', adminData.email);
+          
+          // Agregar médico a la lista del administrador
+          await adminDoc.ref.update({
+            linkedMedicos: firebase.firestore.FieldValue.arrayUnion(medicoUserId)
+          });
+          
+          // Marcar código como usado
+          await adminDoc.ref.update({
+            vinculationCodes: firebase.firestore.FieldValue.arrayRemove(code)
+          });
+          
+          return { success: true, adminData };
+        } else {
+          console.log('❌ Código de vinculación inválido');
+          return { success: false, error: 'Código inválido o expirado' };
+        }
+        
+      } catch (error) {
+        console.error('❌ Error verificando código:', error);
+        return { success: false, error: 'Error verificando código' };
+      }
+    }
+
+    // ===== SISTEMA DE ROLES Y TIPOS DE CUENTA =====
+
+    let selectedAccountType = null;
+    let userRole = null; // 'medico' o 'admin'
+
+    // Seleccionar tipo de cuenta
+    window.selectAccountType = function(type) {
+      console.log('👤 Tipo de cuenta seleccionado:', type);
+      selectedAccountType = type;
+      
+      // Ocultar selector
+      document.getElementById('accountTypeSelector').style.display = 'none';
+      
+      // Mostrar formulario correspondiente
+      if (type === 'medico') {
+        document.getElementById('loginMedico').style.display = 'block';
+      } else if (type === 'admin') {
+        document.getElementById('loginAdmin').style.display = 'block';
+      }
+    };
+
+    // Volver al selector de tipo de cuenta
+    window.backToAccountType = function() {
+      console.log('⬅️ Volviendo al selector de tipo de cuenta');
+      
+      // Ocultar formularios
+      document.getElementById('loginMedico').style.display = 'none';
+      document.getElementById('loginAdmin').style.display = 'none';
+      document.getElementById('registerCard').style.display = 'none';
+      
+      // Mostrar selector
+      document.getElementById('accountTypeSelector').style.display = 'block';
+      
+      selectedAccountType = null;
+    };
+
+    // Generar código de vinculación para administradores
+    function generateVinculationCode(adminUserId) {
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      return `ADM-${random}-${timestamp.toString().slice(-6)}`;
+    }
+
+    // Event Listeners para formularios de roles
+    document.getElementById('loginFormMedico')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('loginEmailMedico').value?.trim();
+      const password = document.getElementById('loginPasswordMedico').value;
+      const codigoVinculacion = document.getElementById('codigoVinculacion').value?.trim();
+      const loginError = document.getElementById('loginErrorMedico');
+
+      if (loginError) loginError.style.display = 'none';
+
+      try {
+        console.log('🩺 Iniciando sesión como médico:', email);
+        
+        const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
+        console.log('✅ Médico autenticado:', userCredential.user.email);
+        
+        // Establecer rol
+        userRole = 'medico';
+        
+        // Guardar datos del médico
+        const medicoData = {
+          email: email,
+          role: 'medico',
+          displayName: userCredential.user.displayName || email.split('@')[0],
+          lastLogin: new Date().toISOString(),
+          linkedAdmin: null
+        };
+
+        await db.collection('medicos').doc(userCredential.user.uid).set(medicoData, { merge: true });
+        console.log('✅ Datos del médico guardados');
+        
+      } catch (error) {
+        console.error('❌ Error en login de médico:', error);
+        if (loginError) {
+          loginError.textContent = `Error: ${error.message}`;
+          loginError.style.display = 'block';
+        }
+      }
+    });
+
+    document.getElementById('loginFormAdmin')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('loginEmailAdmin').value?.trim();
+      const password = document.getElementById('loginPasswordAdmin').value;
+      const loginError = document.getElementById('loginErrorAdmin');
+
+      if (loginError) loginError.style.display = 'none';
+
+      try {
+        console.log('👨‍💼 Iniciando sesión como administrador:', email);
+        
+        const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
+        console.log('✅ Administrador autenticado:', userCredential.user.email);
+        
+        // Establecer rol
+        userRole = 'admin';
+        
+        // Generar código de vinculación
+        const vinculationCode = generateVinculationCode(userCredential.user.uid);
+        
+        const adminData = {
+          email: email,
+          role: 'admin',
+          displayName: userCredential.user.displayName || email.split('@')[0],
+          lastLogin: new Date().toISOString(),
+          vinculationCodes: [vinculationCode],
+          linkedMedicos: []
+        };
+
+        await db.collection('administrators').doc(userCredential.user.uid).set(adminData, { merge: true });
+        console.log('✅ Administrador configurado con código:', vinculationCode);
+        
+      } catch (error) {
+        console.error('❌ Error en login de administrador:', error);
+        if (loginError) {
+          loginError.textContent = `Error: ${error.message}`;
+          loginError.style.display = 'block';
+        }
+      }
+    });
 
     // Inicializar cuando Firebase esté listo
     setTimeout(initializeAuth, 2000);
