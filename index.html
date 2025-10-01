@@ -925,6 +925,70 @@
     window.setDoc = setDoc;
     window.deleteDoc = deleteDoc;
 
+    // Firestore v9 compat shim: habilitar db.collection(...)
+    try {
+      if (db && typeof db.collection !== 'function') {
+        db.collection = function(path) {
+          const colRef = window.collection(db, path);
+          return {
+            get: async () => await window.getDocs(colRef),
+            add: async (data) => await window.addDoc(colRef, data),
+            where: function(field, op, value) {
+              return {
+                get: async () => {
+                  // Filtro en cliente como fallback
+                  const snap = await window.getDocs(colRef);
+                  const docs = [];
+                  snap.forEach(d => {
+                    const data = d.data();
+                    let match = false;
+                    if (op === 'array-contains') {
+                      match = Array.isArray(data[field]) && data[field].includes(value);
+                    } else if (op === '==') {
+                      match = data[field] === value;
+                    }
+                    if (match) docs.push(d);
+                  });
+                  return { empty: docs.length === 0, size: docs.length, docs };
+                }
+              };
+            },
+            doc: function(id) {
+              const docRef = window.doc(db, path, id);
+              return {
+                get: async () => {
+                  // Fallback: leer colección y encontrar por id
+                  const snap = await window.getDocs(colRef);
+                  let found = null;
+                  snap.forEach(d => { if (d.id === id) found = d; });
+                  return found ? { exists: true, id: found.id, data: () => found.data() } : { exists: false, id, data: () => null };
+                },
+                set: (data, options) => window.setDoc(docRef, data, options),
+                update: async (data) => window.setDoc(docRef, data, { merge: true }),
+                delete: () => window.deleteDoc(docRef),
+                collection: function(subPath) {
+                  const subColRef = window.collection(db, path, id, subPath);
+                  return {
+                    get: async () => await window.getDocs(subColRef),
+                    doc: function(subId) {
+                      const subDocRef = window.doc(db, path, id, subPath, subId);
+                      return {
+                        set: (data, options) => window.setDoc(subDocRef, data, options),
+                        update: async (data) => window.setDoc(subDocRef, data, { merge: true }),
+                        delete: () => window.deleteDoc(subDocRef)
+                      };
+                    }
+                  };
+                }
+              };
+            }
+          };
+        };
+      }
+    } catch (e) {
+      console.warn('Compat shim Firestore no aplicado:', e);
+    }
+
     // Inicializar onAuthStateChanged inmediatamente
     onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -2190,14 +2254,15 @@
           console.log('✅ Código válido, vinculando con administrador:', adminData.email);
           
           // Agregar médico a la lista del administrador
-          await adminDoc.ref.update({
-            linkedMedicos: firebase.firestore.FieldValue.arrayUnion(medicoUserId)
-          });
+          // Fallback sin FieldValue
+          const currentLinks = adminData.linkedMedicos || [];
+          const nextLinks = Array.from(new Set([...(currentLinks || []), medicoUserId]));
+          await adminDoc.ref.update({ linkedMedicos: nextLinks });
           
           // Marcar código como usado
-          await adminDoc.ref.update({
-            vinculationCodes: firebase.firestore.FieldValue.arrayRemove(code)
-          });
+          const currentCodes = adminData.vinculationCodes || [];
+          const nextCodes = currentCodes.filter(c => c !== code);
+          await adminDoc.ref.update({ vinculationCodes: nextCodes });
           
           return { success: true, adminData };
         } else {
@@ -2663,7 +2728,11 @@
         const medicoId = seleccion.split('::')[0];
 
         const adminRef = db.collection('administrators').doc(adminId);
-        await adminRef.update({ linkedMedicos: firebase.firestore.FieldValue.arrayUnion(medicoId) });
+          // Fallback sin FieldValue: leer y reescribir array
+          const adminSnap = await adminRef.get();
+          const current = (adminSnap && adminSnap.exists && adminSnap.data().linkedMedicos) || [];
+          const next = Array.from(new Set([...(current || []), medicoId]));
+          await adminRef.update({ linkedMedicos: next });
         alert('Médico vinculado con éxito');
         loadAllUsers();
       } catch (e) {
@@ -3076,7 +3145,7 @@
         if (userDoc.exists) {
           // Actualizar último login
           await db.collection('users').doc(currentUser.uid).update({
-            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            lastLogin: new Date().toISOString()
           });
         }
 
