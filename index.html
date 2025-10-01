@@ -1820,26 +1820,21 @@
       console.log('🚪 Cerrando sesión...');
       
       try {
-        // Limpiar variables de sesión
+        // NO limpiar datos de pacientes - solo variables de sesión
         window.currentUser = null;
         window.isAuthenticated = false;
         window.userRole = null;
         window.selectedAccountType = null;
         window.selectedPaciente = null;
         
-        // Limpiar variables globales
+        // Limpiar variables globales de sesión (NO los datos)
         if (typeof currentUser !== 'undefined') currentUser = null;
         if (typeof isAuthenticated !== 'undefined') isAuthenticated = false;
         if (typeof userRole !== 'undefined') userRole = null;
         if (typeof selectedAccountType !== 'undefined') selectedAccountType = null;
         if (typeof selectedPaciente !== 'undefined') selectedPaciente = null;
         
-        // Limpiar datos
-        if (typeof allPacientes !== 'undefined') allPacientes = [];
-        if (typeof allRecordatorios !== 'undefined') allRecordatorios = [];
-        if (typeof allCitas !== 'undefined') allCitas = [];
-        
-        console.log('✅ Variables limpiadas');
+        console.log('✅ Variables de sesión limpiadas (datos de pacientes conservados)');
         
         // Cerrar sesión de Firebase si está disponible
         if (window.auth && typeof window.auth.signOut === 'function') {
@@ -1851,41 +1846,46 @@
           }
         }
         
-        // Mostrar interfaz de login
+        // Mostrar interfaz de login INMEDIATAMENTE
         const authContainer = document.querySelector('.container');
         const mainContent = document.getElementById('mainContent');
         const userInfo = document.getElementById('userInfo');
         
-        if (authContainer) authContainer.style.display = 'block';
-        if (mainContent) mainContent.style.display = 'none';
-        if (userInfo) userInfo.style.display = 'none';
+        if (authContainer) {
+          authContainer.style.display = 'block';
+          console.log('✅ Container de auth mostrado');
+        }
+        if (mainContent) {
+          mainContent.style.display = 'none';
+          console.log('✅ Contenido principal ocultado');
+        }
+        if (userInfo) {
+          userInfo.style.display = 'none';
+          console.log('✅ Info de usuario ocultada');
+        }
         
-        console.log('✅ Interfaz de login mostrada');
+        // Mostrar selector de tipo de cuenta INMEDIATAMENTE
+        const accountSelector = document.getElementById('accountTypeSelector');
+        const loginMedico = document.getElementById('loginMedico');
+        const loginAdmin = document.getElementById('loginAdmin');
+        const loginSuper = document.getElementById('loginSuper');
+        const registerCard = document.getElementById('registerCard');
         
-        // Volver al selector de tipo de cuenta
-        setTimeout(() => {
-          const accountSelector = document.getElementById('accountTypeSelector');
-          const loginMedico = document.getElementById('loginMedico');
-          const loginAdmin = document.getElementById('loginAdmin');
-          const loginSuper = document.getElementById('loginSuper');
-          const registerCard = document.getElementById('registerCard');
-          
-          if (accountSelector) accountSelector.style.display = 'block';
-          if (loginMedico) loginMedico.style.display = 'none';
-          if (loginAdmin) loginAdmin.style.display = 'none';
-          if (loginSuper) loginSuper.style.display = 'none';
-          if (registerCard) registerCard.style.display = 'none';
-          
+        if (accountSelector) {
+          accountSelector.style.display = 'block';
           console.log('✅ Selector de cuenta mostrado');
-        }, 100);
+        }
+        if (loginMedico) loginMedico.style.display = 'none';
+        if (loginAdmin) loginAdmin.style.display = 'none';
+        if (loginSuper) loginSuper.style.display = 'none';
+        if (registerCard) registerCard.style.display = 'none';
         
-        console.log('✅ Sesión cerrada correctamente');
-        alert('👋 Sesión cerrada exitosamente\n\nAhora puedes seleccionar otro tipo de cuenta');
+        console.log('✅ Logout completado - datos conservados, sesión cerrada');
         
       } catch (error) {
         console.error('❌ Error cerrando sesión:', error);
-        alert('❌ Error cerrando sesión. Recargando página...');
-        setTimeout(() => window.location.reload(), 1000);
+        // En caso de error, simplemente recargar la página
+        window.location.reload();
       }
     };
 
