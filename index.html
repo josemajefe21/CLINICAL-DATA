@@ -768,7 +768,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
     /* Mejoras para responsive */
     @media (max-width: 768px) {
       .container {
@@ -996,7 +995,30 @@
         window.currentUser = user;
         window.isAuthenticated = true;
 
-        // Resolver rol antes de mostrar cualquier interfaz
+        // Resolver rol automáticamente si no está definido
+        try {
+          if (!window.userRole) {
+            // Buscar en colecciones de roles por UID
+            let detectedRole = null;
+            try {
+              const medSnap = await db.collection('medicos').doc(user.uid).get();
+              if (medSnap && medSnap.exists) detectedRole = 'medico';
+            } catch {}
+            if (!detectedRole) {
+              try {
+                const admSnap = await db.collection('administrators').doc(user.uid).get();
+                if (admSnap && admSnap.exists) detectedRole = 'admin';
+              } catch {}
+            }
+            if (detectedRole) {
+              window.userRole = detectedRole;
+              try { localStorage.setItem('userRole', detectedRole); } catch {}
+              console.log('🛈 Rol detectado automáticamente:', detectedRole);
+            }
+          }
+        } catch (e) { console.warn('No se pudo resolver rol automáticamente', e); }
+
+        // Notificar flujo posterior si existe
         if (typeof window.afterAuthUserReady === 'function') {
           window.afterAuthUserReady();
         }
@@ -1878,7 +1900,6 @@
       </div>
     </div>
   </div>
-
   <script>
     // Variables globales del sistema de autenticación
     let currentUser = null;
@@ -1896,7 +1917,7 @@
          // Limpiar variables de sesión pero CONSERVAR datos
         window.currentUser = null;
         window.isAuthenticated = false;
-         window.userRole = null;
+        window.userRole = null;
         window.selectedAccountType = null;
         window.selectedPaciente = null;
         
@@ -2024,7 +2045,9 @@
     // ===== FUNCIÓN DE GUARDADO AUTOMÁTICO =====
     async function autoSave() {
       if (!currentUser || !selectedPaciente) return;
-      
+      // Evitar guardados en modo SUPERCUENTA
+      if (window.userRole === 'super') return;
+
       try {
         await savePacienteToFirestore(selectedPaciente);
         console.log('Guardado automático completado');
@@ -2628,7 +2651,6 @@
         document.getElementById('totalPacientes').textContent = 'Error';
       }
     }
-
     // Cargar todos los usuarios del sistema (médicos y administradores) con emails y estado
     async function loadAllUsers() {
       try {
@@ -3271,6 +3293,11 @@
     // Cargar datos del usuario
     async function loadUserData() {
       if (!currentUser) return;
+      // Evitar sincronización pesada si SUPERCUENTA
+      if (window.userRole === 'super') {
+        console.log('🔕 SUPERCUENTA: omitiendo sincronización de datos de usuario.');
+        return;
+      }
 
       try {
         const userDoc = await db.collection('users').doc(currentUser.uid).get();
@@ -3387,9 +3414,7 @@
       const bitacoraSelector = document.getElementById('bitacoraSelector');
       if (bitacoraSelector) bitacoraSelector.innerHTML = '';
     }
-
     // ===== FUNCIONES MODIFICADAS PARA FIRESTORE =====
-
     // Modificar createNewBitacora para usar Firestore
     async function createNewBitacora() {
       if (!currentUser) {
@@ -4190,7 +4215,6 @@
       a.download = `bitacora_${selectedBitacora.name}_export.json`;
       a.click();
     }
-
     function showEditBitacoraModal(bitacora) {
       const modal = document.getElementById('editBitacoraModal');
       const nameInput = document.getElementById('editBitacoraName');
@@ -4981,7 +5005,6 @@
         list.appendChild(div);
       });
     }
-
     // Modo nocturno
     function toggleDarkMode() {
       const body = document.body;
@@ -5763,7 +5786,6 @@
       fileInput.files = dt.files;
       handleFileSelection({ target: fileInput });
     }
-
     // Procesar archivos para guardar
     async function processFilesForSave(files) {
       console.log('🔄 Procesando archivos para guardar...');
@@ -6368,10 +6390,12 @@
         console.error('❌ No hay usuario autenticado o paciente inválido');
         return;
       }
-      
-      console.log('🔐 Guardando para usuario:', currentUser.email);
-      console.log('👤 Guardando paciente:', paciente.nombre);
-      
+      // Bloquear escrituras si es SUPERCUENTA
+      if (window.userRole === 'super') {
+        console.log('🔕 SUPERCUENTA: bloqueo de escritura savePacienteToFirestore');
+        return;
+      }
+
       try {
         // Estructura: users/{userId}/pacientes/{pacienteId}
         const docRef = db.collection('users').doc(currentUser.uid).collection('pacientes').doc(paciente.id);
@@ -6553,7 +6577,6 @@
       
       return result;
     }
-
     // Función MEJORADA para sincronizar datos locales con Firebase
     async function syncLocalDataToFirebase() {
       if (!currentUser) {
@@ -7080,6 +7103,7 @@
 
       try {
         if (currentUser) {
+          if (window.userRole === 'super') { console.log('🔕 SUPERCUENTA: omitiendo set de recordatorio'); return; }
           await db.collection('users').doc(currentUser.uid)
                    .collection('recordatorios').doc(recordatorio.id)
                    .set(recordatorio);
@@ -7177,6 +7201,7 @@
 
       try {
         if (currentUser) {
+          if (window.userRole === 'super') { console.log('🔕 SUPERCUENTA: omitiendo update de recordatorio'); return; }
           await db.collection('users').doc(currentUser.uid)
                    .collection('recordatorios').doc(recordatorioId)
                    .update({ completado: true });
@@ -7194,6 +7219,7 @@
 
       try {
         if (currentUser) {
+          if (window.userRole === 'super') { console.log('🔕 SUPERCUENTA: omitiendo delete de recordatorio'); return; }
           await db.collection('users').doc(currentUser.uid)
                    .collection('recordatorios').doc(recordatorioId)
                    .delete();
@@ -7320,7 +7346,6 @@
         container.appendChild(diaElement);
       }
     }
-
     async function crearCita() {
       const pacienteId = document.getElementById('citaPaciente').value;
       const fecha = document.getElementById('citaFecha').value;
@@ -7345,6 +7370,7 @@
 
       try {
         if (currentUser) {
+          if (window.userRole === 'super') { console.log('🔕 SUPERCUENTA: omitiendo set de cita'); return; }
           await db.collection('users').doc(currentUser.uid)
                    .collection('citas').doc(cita.id)
                    .set(cita);
@@ -7408,6 +7434,7 @@
 
       try {
         if (currentUser) {
+          if (window.userRole === 'super') { console.log('🔕 SUPERCUENTA: omitiendo delete de cita'); return; }
           await db.collection('users').doc(currentUser.uid)
                    .collection('citas').doc(citaId)
                    .delete();
@@ -7635,4 +7662,3 @@
   </div>
 </body>
 </html>
-
