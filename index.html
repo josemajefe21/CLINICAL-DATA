@@ -989,17 +989,19 @@
       console.warn('Compat shim Firestore no aplicado:', e);
     }
 
-    // Inicializar onAuthStateChanged inmediatamente
+    // Inicializar onAuthStateChanged inmediatamente (solo establece sesión; UI se muestra luego de resolver rol)
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log('✅ Usuario autenticado:', user.email);
         window.currentUser = user;
         window.isAuthenticated = true;
 
-        // Mostrar interfaz SOLO mediante gating estricto
-        showMainInterface();
+        // Resolver rol antes de mostrar cualquier interfaz
+        if (typeof window.afterAuthUserReady === 'function') {
+          window.afterAuthUserReady();
+        }
 
-        // CARGAR DATOS DEL USUARIO AUTOMÁTICAMENTE
+        // CARGAR DATOS DEL USUARIO AUTOMÁTICAMENTE (mantener flujo de datos)
         try {
           console.log('🔄 Cargando datos del usuario...');
           
@@ -1891,10 +1893,10 @@
         // DETENER todos los procesos automáticos
         window.logoutInProgress = true;
         
-        // Limpiar variables de sesión pero CONSERVAR datos
+         // Limpiar variables de sesión pero CONSERVAR datos
         window.currentUser = null;
         window.isAuthenticated = false;
-        window.userRole = null;
+         window.userRole = null;
         window.selectedAccountType = null;
         window.selectedPaciente = null;
         
@@ -1904,7 +1906,8 @@
         if (typeof selectedAccountType !== 'undefined') selectedAccountType = null;
         if (typeof selectedPaciente !== 'undefined') selectedPaciente = null;
         
-        console.log('✅ Variables de sesión limpiadas (DATOS CONSERVADOS)');
+         try { localStorage.removeItem('userRole'); } catch {}
+         console.log('✅ Variables de sesión limpiadas (DATOS CONSERVADOS)');
         
         // FORZAR cierre de sesión Firebase sin callbacks
         if (window.auth && typeof window.auth.signOut === 'function') {
@@ -2061,10 +2064,10 @@
             
             // Solo mostrar interfaz si NO estamos en logout
             if (!window.logoutInProgress) {
-              // Actualizar interfaz
-              showMainInterface();
-              
-              // Cargar datos
+              // Esperar a que el rol esté disponible; la UI se mostrará por verifyUserAccess()
+              if (typeof window.afterAuthUserReady === 'function') {
+                window.afterAuthUserReady();
+              }
               setTimeout(loadUserData, 500);
             }
             
@@ -2338,8 +2341,9 @@
         const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
         console.log('✅ Médico autenticado:', userCredential.user.email);
         
-        // Establecer rol
+        // Establecer rol y persistir
         userRole = 'medico';
+        try { localStorage.setItem('userRole', 'medico'); } catch {}
         
         // Guardar datos del médico
         const medicoData = {
@@ -2377,8 +2381,9 @@
         const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
         console.log('✅ Administrador autenticado:', userCredential.user.email);
         
-        // Establecer rol
+        // Establecer rol y persistir
         userRole = 'admin';
+        try { localStorage.setItem('userRole', 'admin'); } catch {}
         
         // Generar código de vinculación
         const vinculationCode = generateVinculationCode(userCredential.user.uid);
@@ -2438,6 +2443,7 @@
         
         isAuthenticated = true;
         userRole = 'super';
+        try { localStorage.setItem('userRole', 'super'); } catch {}
         
         console.log('✅ SUPERCUENTA activada');
         
@@ -2464,6 +2470,12 @@
     function showSuperAdminInterface() {
       // GATING: solo continuar si hay acceso válido
       if (!verifyUserAccess()) {
+        forceShowLogin();
+        return;
+      }
+      // Asegurar rol super antes de renderizar
+      if (userRole !== 'super') {
+        console.log('❌ Rol inválido para SUPERCUENTA');
         forceShowLogin();
         return;
       }
@@ -7357,7 +7369,16 @@
     // VERIFICACIÓN INICIAL AL CARGAR LA PÁGINA
     document.addEventListener('DOMContentLoaded', function() {
       console.log('📄 DOM cargado - VERIFICANDO ESTADO INICIAL...');
-      
+
+      // Cargar rol almacenado si existe
+      try {
+        const storedRole = localStorage.getItem('userRole');
+        if (storedRole) {
+          userRole = storedRole;
+          console.log('🛈 Rol restaurado desde storage:', storedRole);
+        }
+      } catch {}
+
       // FORZAR mostrar login al inicio
       forceShowLogin();
       
