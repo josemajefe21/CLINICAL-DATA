@@ -931,13 +931,10 @@
         console.log('✅ Usuario autenticado:', user.email);
         window.currentUser = user;
         window.isAuthenticated = true;
-        
-        // Mostrar interfaz de usuario autenticado
-        const authContainer = document.querySelector('.container');
-        const mainContent = document.getElementById('mainContent');
-        if (authContainer) authContainer.style.display = 'none';
-        if (mainContent) mainContent.style.display = 'block';
-        
+
+        // Mostrar interfaz SOLO mediante gating estricto
+        showMainInterface();
+
         // CARGAR DATOS DEL USUARIO AUTOMÁTICAMENTE
         try {
           console.log('🔄 Cargando datos del usuario...');
@@ -1087,9 +1084,16 @@
       }
     });
 
-    // Función UNIFICADA para seleccionar paciente
+    // Función UNIFICADA para seleccionar paciente CON VERIFICACIÓN
     window.selectPaciente = function(pacienteParam) {
       console.log('🔄 Intentando seleccionar paciente:', pacienteParam);
+      
+      // VERIFICACIÓN OBLIGATORIA DE ACCESO
+      if (!verifyUserAccess()) {
+        console.log('🚫 ACCESO DENEGADO: Usuario no autorizado para seleccionar pacientes');
+        alert('❌ Debes estar autenticado para acceder a los pacientes');
+        return;
+      }
       
       let paciente = null;
       
@@ -2019,8 +2023,81 @@
       }
     }
 
-    // Mostrar interfaz principal
+    // VERIFICACIÓN ESTRICTA DE ACCESO
+    function verifyUserAccess() {
+      console.log('🔐 VERIFICANDO ACCESO DEL USUARIO...');
+      
+      // Verificar que hay usuario autenticado
+      if (!currentUser || !isAuthenticated) {
+        console.log('❌ ACCESO DENEGADO: No hay usuario autenticado');
+        forceShowLogin();
+        return false;
+      }
+      
+      // Verificar que el usuario tiene un email válido
+      if (!currentUser.email) {
+        console.log('❌ ACCESO DENEGADO: Usuario sin email válido');
+        forceShowLogin();
+        return false;
+      }
+      
+      // Verificar que el usuario tiene un rol asignado
+      if (!userRole) {
+        console.log('❌ ACCESO DENEGADO: Usuario sin rol asignado');
+        forceShowLogin();
+        return false;
+      }
+      
+      console.log('✅ ACCESO AUTORIZADO para:', currentUser.email, 'Rol:', userRole);
+      return true;
+    }
+
+    // Forzar mostrar login y bloquear acceso
+    function forceShowLogin() {
+      console.log('🚫 FORZANDO REGRESO AL LOGIN...');
+      
+      const authContainer = document.querySelector('.container');
+      const mainContent = document.getElementById('mainContent');
+      const userInfo = document.getElementById('userInfo');
+      
+      // FORZAR mostrar login
+      if (authContainer) {
+        authContainer.style.display = 'block !important';
+        authContainer.style.visibility = 'visible';
+      }
+      
+      // FORZAR ocultar panel principal
+      if (mainContent) {
+        mainContent.style.display = 'none !important';
+        mainContent.style.visibility = 'hidden';
+      }
+      
+      if (userInfo) {
+        userInfo.style.display = 'none !important';
+        userInfo.style.visibility = 'hidden';
+      }
+      
+      // Mostrar selector de cuentas
+      const accountSelector = document.getElementById('accountTypeSelector');
+      if (accountSelector) {
+        accountSelector.style.display = 'block !important';
+      }
+      
+      console.log('🚫 Usuario bloqueado - debe autenticarse correctamente');
+    }
+
+    // Mostrar interfaz principal SOLO si está autorizado
     function showMainInterface() {
+      console.log('🔄 Intentando mostrar interfaz principal...');
+      
+      // VERIFICACIÓN OBLIGATORIA
+      if (!verifyUserAccess()) {
+        console.log('❌ Verificación falló - manteniendo en login');
+        return;
+      }
+      
+      console.log('✅ Verificación exitosa - mostrando interfaz');
+      
       const authContainer = document.querySelector('.container');
       const mainContent = document.getElementById('mainContent');
       const userInfo = document.getElementById('userInfo');
@@ -2036,6 +2113,8 @@
         if (userName) userName.textContent = currentUser.displayName || 'Usuario';
         if (userEmail) userEmail.textContent = currentUser.email;
       }
+      
+      console.log('✅ Interfaz principal mostrada para usuario autorizado');
     }
 
     // Mostrar interfaz de login
@@ -2133,9 +2212,7 @@
     }
 
     // ===== SISTEMA DE ROLES Y TIPOS DE CUENTA =====
-
-    let selectedAccountType = null;
-    let userRole = null; // 'medico' o 'admin'
+    // (eliminado duplicado)
 
     // Seleccionar tipo de cuenta
     window.selectAccountType = function(type) {
@@ -2320,6 +2397,11 @@
 
     // Mostrar interfaz de SUPERCUENTA
     function showSuperAdminInterface() {
+      // GATING: solo continuar si hay acceso válido
+      if (!verifyUserAccess()) {
+        forceShowLogin();
+        return;
+      }
       console.log('👑 Mostrando interfaz de SUPERCUENTA');
       
       // Ocultar login y mostrar interfaz especial
@@ -2654,7 +2736,13 @@
       const loginContainer = document.querySelector('.container');
       const mainContent = document.getElementById('mainContent');
       const authContainer = document.getElementById('authContainer');
-      
+
+      // SIEMPRE usar gating estricto
+      if (!verifyUserAccess()) {
+        forceShowLogin();
+        return;
+      }
+
       if (loginContainer) loginContainer.style.display = 'none';
       if (mainContent) mainContent.style.display = 'block';
       if (authContainer) authContainer.style.display = 'block';
@@ -4891,9 +4979,17 @@
       });
     }
 
-    // Crear nuevo paciente
+    // Crear nuevo paciente CON VERIFICACIÓN ESTRICTA
     async function createNewPaciente() {
       console.log('🔄 Iniciando creación de paciente...');
+      
+      // VERIFICACIÓN OBLIGATORIA DE ACCESO
+      if (!verifyUserAccess()) {
+        console.log('🚫 ACCESO DENEGADO: Usuario no autorizado para crear pacientes');
+        alert('❌ Debes estar autenticado correctamente para crear pacientes');
+        forceShowLogin();
+        return;
+      }
       
       try {
         // Obtener elementos del formulario
@@ -5557,9 +5653,17 @@
       `);
     }
 
-    // Guardar visita médica MEJORADA
+    // Guardar visita médica CON VERIFICACIÓN ESTRICTA
     async function saveVisit() {
       console.log('🩺 Iniciando guardado de visita...');
+      
+      // VERIFICACIÓN OBLIGATORIA DE ACCESO
+      if (!verifyUserAccess()) {
+        console.log('🚫 ACCESO DENEGADO: Usuario no autorizado para guardar visitas');
+        alert('❌ Debes estar autenticado correctamente para guardar visitas');
+        forceShowLogin();
+        return;
+      }
       
       if (!selectedPaciente) {
         alert('❌ No hay paciente seleccionado');
@@ -7125,14 +7229,30 @@
       console.log('✅ Modo offline inicializado');
     }
 
-    // Ejecutar cuando se carga la app
-    setTimeout(initMedicalApp, 1000);
-    
-    // También cargar datos locales inmediatamente al cargar la página
+    // VERIFICACIÓN INICIAL AL CARGAR LA PÁGINA
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('📄 DOM cargado, iniciando datos locales...');
-      initOfflineMode();
+      console.log('📄 DOM cargado - VERIFICANDO ESTADO INICIAL...');
+      
+      // FORZAR mostrar login al inicio
+      forceShowLogin();
+      
+      // Solo cargar datos si hay usuario válido
+      if (verifyUserAccess()) {
+        console.log('✅ Usuario válido detectado, cargando datos...');
+        initOfflineMode();
+        setTimeout(initMedicalApp, 1000);
+      } else {
+        console.log('🚫 Sin usuario válido, manteniendo en login');
+      }
     });
+    
+    // Verificación adicional con timeout
+    setTimeout(() => {
+      if (!verifyUserAccess()) {
+        console.log('🚫 Verificación de timeout - forzando login');
+        forceShowLogin();
+      }
+    }, 2000);
     
     // Fallback si DOMContentLoaded ya pasó
     if (document.readyState === 'loading') {
