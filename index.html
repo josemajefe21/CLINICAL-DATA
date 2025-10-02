@@ -1015,8 +1015,24 @@
               try { localStorage.setItem('userRole', detectedRole); } catch {}
               console.log('🛈 Rol detectado automáticamente:', detectedRole);
             }
+            // Fallback inmediato: asumir MÉDICO si no se detectó rol y no es SUPERCUENTA
+            if (!window.userRole) {
+              const isSuperEmail = (user.email || '').toUpperCase() === 'ADMIN@CLINICAL-SYSTEM.COM';
+              if (!isSuperEmail) {
+                window.userRole = 'medico';
+                try { localStorage.setItem('userRole', 'medico'); } catch {}
+                console.log('🩺 Rol por defecto aplicado: medico');
+              }
+            }
           }
         } catch (e) { console.warn('No se pudo resolver rol automáticamente', e); }
+
+        // Si ya tenemos rol válido, intentar mostrar interfaz principal
+        try {
+          if (window.userRole) {
+            showMainInterface();
+          }
+        } catch {}
 
         // Notificar flujo posterior si existe
         if (typeof window.afterAuthUserReady === 'function') {
