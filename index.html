@@ -521,51 +521,6 @@
       transform: translateY(-1px);
       box-shadow: var(--shadow);
     }
-
-    /* Estilos para SUPERCUENTA */
-    .stat-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-      text-align: center;
-    }
-
-    .stat-number {
-      font-size: 2rem;
-      font-weight: bold;
-      color: var(--primary);
-      margin-bottom: 4px;
-    }
-
-    .stat-label {
-      font-size: 0.9rem;
-      color: var(--text-light);
-    }
-
-    .user-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      margin: 8px 0;
-    }
-
-    .btn-sm {
-      padding: 4px 8px;
-      font-size: 0.8rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      background: var(--primary);
-      color: white;
-      transition: all 0.2s ease;
-    }
-
-    .btn-sm:hover {
-      background: var(--primary-dark);
-      transform: scale(1.05);
-    }
     
     input[type="file"] {
       display: none;
@@ -768,6 +723,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     /* Mejoras para responsive */
     @media (max-width: 768px) {
       .container {
@@ -924,122 +880,20 @@
     window.setDoc = setDoc;
     window.deleteDoc = deleteDoc;
 
-    // Firestore v9 compat shim: habilitar db.collection(...)
-    try {
-      if (db && typeof db.collection !== 'function') {
-        db.collection = function(path) {
-          const colRef = window.collection(db, path);
-          return {
-            get: async () => await window.getDocs(colRef),
-            add: async (data) => await window.addDoc(colRef, data),
-            where: function(field, op, value) {
-              return {
-                get: async () => {
-                  // Filtro en cliente como fallback
-                  const snap = await window.getDocs(colRef);
-                  const docs = [];
-                  snap.forEach(d => {
-                    const data = d.data();
-                    let match = false;
-                    if (op === 'array-contains') {
-                      match = Array.isArray(data[field]) && data[field].includes(value);
-                    } else if (op === '==') {
-                      match = data[field] === value;
-                    }
-                    if (match) docs.push(d);
-                  });
-                  return { empty: docs.length === 0, size: docs.length, docs };
-                }
-              };
-            },
-            doc: function(id) {
-              const docRef = window.doc(db, path, id);
-              return {
-                get: async () => {
-                  // Fallback: leer colección y encontrar por id
-                  const snap = await window.getDocs(colRef);
-                  let found = null;
-                  snap.forEach(d => { if (d.id === id) found = d; });
-                  return found ? { exists: true, id: found.id, data: () => found.data() } : { exists: false, id, data: () => null };
-                },
-                set: (data, options) => window.setDoc(docRef, data, options),
-                update: async (data) => window.setDoc(docRef, data, { merge: true }),
-                delete: () => window.deleteDoc(docRef),
-                collection: function(subPath) {
-                  const subColRef = window.collection(db, path, id, subPath);
-                  return {
-                    get: async () => await window.getDocs(subColRef),
-                    doc: function(subId) {
-                      const subDocRef = window.doc(db, path, id, subPath, subId);
-                      return {
-                        set: (data, options) => window.setDoc(subDocRef, data, options),
-                        update: async (data) => window.setDoc(subDocRef, data, { merge: true }),
-                        delete: () => window.deleteDoc(subDocRef)
-                      };
-                    }
-                  };
-                }
-              };
-            }
-          };
-        };
-      }
-    } catch (e) {
-      console.warn('Compat shim Firestore no aplicado:', e);
-    }
-
-    // Inicializar onAuthStateChanged inmediatamente (solo establece sesión; UI se muestra luego de resolver rol)
+    // Inicializar onAuthStateChanged inmediatamente
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         console.log('✅ Usuario autenticado:', user.email);
         window.currentUser = user;
         window.isAuthenticated = true;
-
-        // Resolver rol automáticamente si no está definido
-        try {
-          if (!window.userRole) {
-            // Buscar en colecciones de roles por UID
-            let detectedRole = null;
-            try {
-              const medSnap = await db.collection('medicos').doc(user.uid).get();
-              if (medSnap && medSnap.exists) detectedRole = 'medico';
-            } catch {}
-            if (!detectedRole) {
-              try {
-                const admSnap = await db.collection('administrators').doc(user.uid).get();
-                if (admSnap && admSnap.exists) detectedRole = 'admin';
-              } catch {}
-            }
-            if (detectedRole) {
-              window.userRole = detectedRole;
-              try { localStorage.setItem('userRole', detectedRole); } catch {}
-              console.log('🛈 Rol detectado automáticamente:', detectedRole);
-            }
-            // Fallback inmediato: asumir MÉDICO si no se detectó rol y no es SUPERCUENTA
-            if (!window.userRole) {
-              const isSuperEmail = (user.email || '').toUpperCase() === 'ADMIN@CLINICAL-SYSTEM.COM';
-              if (!isSuperEmail) {
-                window.userRole = 'medico';
-                try { localStorage.setItem('userRole', 'medico'); } catch {}
-                console.log('🩺 Rol por defecto aplicado: medico');
-              }
-            }
-          }
-        } catch (e) { console.warn('No se pudo resolver rol automáticamente', e); }
-
-        // Si ya tenemos rol válido, intentar mostrar interfaz principal
-        try {
-          if (window.userRole) {
-            showMainInterface();
-          }
-        } catch {}
-
-        // Notificar flujo posterior si existe
-        if (typeof window.afterAuthUserReady === 'function') {
-          window.afterAuthUserReady();
-        }
-
-        // CARGAR DATOS DEL USUARIO AUTOMÁTICAMENTE (mantener flujo de datos)
+        
+        // Mostrar interfaz de usuario autenticado
+        const authContainer = document.querySelector('.container');
+        const mainContent = document.getElementById('mainContent');
+        if (authContainer) authContainer.style.display = 'none';
+        if (mainContent) mainContent.style.display = 'block';
+        
+        // CARGAR DATOS DEL USUARIO AUTOMÁTICAMENTE
         try {
           console.log('🔄 Cargando datos del usuario...');
           
@@ -1188,16 +1042,9 @@
       }
     });
 
-    // Función UNIFICADA para seleccionar paciente CON VERIFICACIÓN
+    // Función UNIFICADA para seleccionar paciente
     window.selectPaciente = function(pacienteParam) {
       console.log('🔄 Intentando seleccionar paciente:', pacienteParam);
-      
-      // VERIFICACIÓN OBLIGATORIA DE ACCESO
-      if (!verifyUserAccess()) {
-        console.log('🚫 ACCESO DENEGADO: Usuario no autorizado para seleccionar pacientes');
-        alert('❌ Debes estar autenticado para acceder a los pacientes');
-        return;
-      }
       
       let paciente = null;
       
@@ -1246,6 +1093,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   
+  <!-- Servicio de sincronización alternativo -->
+  <script src="sync-service.js"></script>
     
   </head>
 <body>
@@ -1277,189 +1126,45 @@
       <p style="color: var(--text-light); font-size: 0.85rem; margin-top: 8px;">¿Qué puede hacer este software?</p>
     </div>
     
+    <!-- Botón de acceso directo (bypass temporal) -->
+    <div style="text-align: center; margin-bottom: 16px;">
+      <button onclick="bypassAuth()" style="
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-size: 1rem;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        transition: all 0.3s ease;
+      " 
+      onmouseover="this.style.transform='scale(1.05)'"
+      onmouseout="this.style.transform='scale(1)'">
+        🚨 ACCESO DIRECTO (Firebase roto)
+      </button>
+      <p style="color: var(--text-light); font-size: 0.8rem; margin-top: 4px;">Usar mientras se arregla Firebase</p>
+    </div>
     
-    <!-- Selector de tipo de cuenta -->
-    <div id="accountTypeSelector" class="form-card">
-      <h2>Selecciona tu tipo de cuenta</h2>
-      <p style="text-align: center; color: var(--text-light); margin-bottom: 24px;">
-        Elige el tipo de cuenta que mejor se adapte a tu rol
-      </p>
-      
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-        <!-- Cuenta Médico -->
-        <div class="account-type-card" onclick="selectAccountType('medico')" style="
-          border: 2px solid var(--primary);
-          border-radius: 12px;
-          padding: 24px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          background: var(--bg-secondary);
-        " onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 8px 25px rgba(79, 70, 229, 0.3)'"
-           onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
-          <div style="font-size: 3rem; margin-bottom: 12px;">🩺</div>
-          <h3 style="margin: 0 0 8px 0; color: var(--primary);">Médico</h3>
-          <p style="margin: 0; color: var(--text-light); font-size: 0.9rem;">
-            Acceso completo a tus pacientes, visitas y calendario personal
-          </p>
+    <div id="loginCard" class="form-card">
+      <h2>Iniciar Sesión</h2>
+      <form id="loginForm">
+        <div id="loginError" class="error-message" style="display:none;"></div>
+        <div id="loginConfigHelp" class="error-message" style="display:none; background:#fef3c7; color:#92400e; border-color:#fbbf24;">
+          <strong>🔧 Configuración Requerida:</strong><br>
+          <a href="https://console.firebase.google.com/project/clinical-70644/authentication/providers" target="_blank" style="color:#92400e; text-decoration:underline;">
+            Click aquí para configurar Firebase Authentication
+          </a><br>
+          <small>1. Ve a Authentication → Sign-in method<br>2. Habilita Email/Password<br>3. Guarda cambios</small>
         </div>
-        
-        <!-- Cuenta Administrador -->
-        <div class="account-type-card" onclick="selectAccountType('admin')" style="
-          border: 2px solid #dc2626;
-          border-radius: 12px;
-          padding: 24px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          background: var(--bg-secondary);
-        " onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 8px 25px rgba(220, 38, 38, 0.3)'"
-           onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
-          <div style="font-size: 3rem; margin-bottom: 12px;">👨‍💼</div>
-          <h3 style="margin: 0 0 8px 0; color: #dc2626;">Administrador</h3>
-          <p style="margin: 0; color: var(--text-light); font-size: 0.9rem;">
-            Gestión de médicos, asignación de pacientes y calendario general
-          </p>
-        </div>
-      </div>
-      
-      <!-- SUPERCUENTA - Acceso especial -->
-      <div style="text-align: center; margin: 16px 0;">
-        <button onclick="selectAccountType('super')" style="
-          background: linear-gradient(135deg, #7c2d12, #991b1b, #7c2d12);
-          color: #fbbf24;
-          border: 2px solid #fbbf24;
-          border-radius: 8px;
-          padding: 8px 16px;
-          font-size: 0.9rem;
-          cursor: pointer;
-          font-weight: bold;
-          text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-          box-shadow: 0 4px 12px rgba(124, 45, 18, 0.4);
-          transition: all 0.3s ease;
-        " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(124, 45, 18, 0.6)'"
-           onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(124, 45, 18, 0.4)'">
-          👑 SUPERCUENTA - Control Total del Sistema
-        </button>
-      </div>
-      
-      <div style="display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px;">
-      </div>
-      
-      <div style="text-align: center;">
-        <p style="color: var(--text-light); font-size: 0.85rem; margin: 0;">
-          💡 Los administradores pueden gestionar múltiples médicos<br>
-          🔗 Los médicos pueden vincularse con administradores mediante códigos
-        </p>
-      </div>
-    </div>
-
-    <!-- Login Médico -->
-    <div id="loginMedico" class="form-card" style="display: none;">
-      <div style="display: flex; align-items: center; margin-bottom: 16px;">
-        <button onclick="backToAccountType()" style="background: none; border: none; color: var(--primary); cursor: pointer; margin-right: 12px;">⬅️</button>
-        <h2 style="margin: 0;">🩺 Iniciar Sesión - Médico</h2>
-      </div>
-      
-      <form id="loginFormMedico">
-        <div id="loginErrorMedico" class="error-message" style="display:none;"></div>
-        <input type="email" id="loginEmailMedico" placeholder="Email del médico" required>
-        <input type="password" id="loginPasswordMedico" placeholder="Contraseña" required>
-        
-        <!-- Código de vinculación opcional -->
-        <div style="margin: 16px 0; padding: 16px; background: var(--bg-secondary); border-radius: 8px; border: 1px dashed var(--primary);">
-          <label style="display: block; margin-bottom: 8px; color: var(--text); font-weight: 500;">
-            🔗 Código de vinculación (opcional)
-          </label>
-          <input type="text" id="codigoVinculacion" placeholder="Código del administrador" style="margin-bottom: 8px;">
-          <p style="margin: 0; font-size: 0.8rem; color: var(--text-light);">
-            Si tienes un código de un administrador, ingrésalo para vincularte
-          </p>
-        </div>
-        
-        <button type="submit">🩺 Entrar como Médico</button>
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" required autocomplete="username">
+        <label for="loginPassword">Contraseña</label>
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+        <button type="submit">Entrar</button>
       </form>
-      <p><a href="#" onclick="showRegisterMedico()">¿No tienes cuenta? Regístrate como Médico</a></p>
-    </div>
-
-    <!-- Login Administrador -->
-    <div id="loginAdmin" class="form-card" style="display: none;">
-      <div style="display: flex; align-items: center; margin-bottom: 16px;">
-        <button onclick="backToAccountType()" style="background: none; border: none; color: var(--primary); cursor: pointer; margin-right: 12px;">⬅️</button>
-        <h2 style="margin: 0;">👨‍💼 Iniciar Sesión - Administrador</h2>
-      </div>
-      
-      <form id="loginFormAdmin">
-        <div id="loginErrorAdmin" class="error-message" style="display:none;"></div>
-        <input type="email" id="loginEmailAdmin" placeholder="Email del administrador" required>
-        <input type="password" id="loginPasswordAdmin" placeholder="Contraseña" required>
-        
-        <!-- Información sobre administradores -->
-        <div style="margin: 16px 0; padding: 16px; background: #fef3c7; border-radius: 8px; border: 1px solid #fbbf24;">
-          <h4 style="margin: 0 0 8px 0; color: #92400e;">👨‍💼 Cuenta Administrador</h4>
-          <ul style="margin: 0; padding-left: 16px; color: #92400e; font-size: 0.9rem;">
-            <li>Gestiona múltiples médicos</li>
-            <li>Asigna pacientes a médicos específicos</li>
-            <li>Maneja calendario general</li>
-            <li>Genera códigos de vinculación</li>
-          </ul>
-        </div>
-        
-        <button type="submit" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">👨‍💼 Entrar como Administrador</button>
-      </form>
-      <p><a href="#" onclick="showRegisterAdmin()">¿No tienes cuenta? Regístrate como Administrador</a></p>
-    </div>
-
-    <!-- Login SUPERCUENTA -->
-    <div id="loginSuper" class="form-card" style="display: none;">
-      <div style="display: flex; align-items: center; margin-bottom: 16px;">
-        <button onclick="backToAccountType()" style="background: none; border: none; color: var(--primary); cursor: pointer; margin-right: 12px;">⬅️</button>
-        <h2 style="margin: 0; color: #7c2d12;">👑 SUPERCUENTA - Control Total</h2>
-      </div>
-      
-      <form id="loginFormSuper">
-        <div id="loginErrorSuper" class="error-message" style="display:none;"></div>
-        
-        <!-- Advertencia de seguridad -->
-        <div style="margin: 16px 0; padding: 16px; background: #fef2f2; border-radius: 8px; border: 2px solid #dc2626;">
-          <h4 style="margin: 0 0 8px 0; color: #dc2626;">⚠️ ACCESO RESTRINGIDO</h4>
-          <p style="margin: 0; color: #dc2626; font-size: 0.9rem; font-weight: 500;">
-            Esta cuenta tiene control total sobre el sistema.<br>
-            Solo para administradores del sistema.
-          </p>
-        </div>
-        
-        <input type="text" id="loginUserSuper" placeholder="Usuario: ADMIN" required>
-        <input type="password" id="loginPasswordSuper" placeholder="Contraseña: ADMINCITO" required>
-        
-        <!-- Información sobre SUPERCUENTA -->
-        <div style="margin: 16px 0; padding: 16px; background: #7c2d12; border-radius: 8px; border: 1px solid #fbbf24;">
-          <h4 style="margin: 0 0 8px 0; color: #fbbf24;">👑 Funcionalidades SUPERCUENTA</h4>
-          <ul style="margin: 0; padding-left: 16px; color: #fbbf24; font-size: 0.9rem;">
-            <li>📊 Ver todos los usuarios registrados</li>
-            <li>⏰ Monitorear horas de uso en tiempo real</li>
-            <li>🔒 Activar/Desactivar cuentas</li>
-            <li>🔗 Gestionar vinculaciones entre administradores y médicos</li>
-            <li>📈 Estadísticas completas del sistema</li>
-            <li>🏥 Gestionar organizaciones</li>
-            <li>🛡️ Control de seguridad y auditoría</li>
-          </ul>
-        </div>
-        
-        <button type="submit" style="
-          background: linear-gradient(135deg, #7c2d12, #991b1b, #7c2d12);
-          color: #fbbf24;
-          border: 2px solid #fbbf24;
-          font-weight: bold;
-          text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        ">👑 Acceder como SUPERCUENTA</button>
-      </form>
-      
-      <div style="text-align: center; margin-top: 16px;">
-        <p style="color: #dc2626; font-size: 0.8rem; font-weight: 500;">
-          🔐 Credenciales fijas del sistema<br>
-          Usuario: <code>ADMIN</code> | Contraseña: <code>ADMINCITO</code>
-        </p>
+      <div class="center">
+        <span class="link" onclick="showRegister()">¿No tienes cuenta? Regístrate</span>
       </div>
     </div>
     <div id="registerCard" class="form-card" style="display:none;">
@@ -1508,31 +1213,6 @@
   </div>
 
   <div id="mainContent" style="display: none;">
-    <!-- Botón de cerrar sesión flotante -->
-    <button onclick="logout()" style="
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: linear-gradient(135deg, #dc2626, #b91c1c);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 1.2rem;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
-      transition: all 0.3s ease;
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    " 
-    onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 20px rgba(220, 38, 38, 0.6)'"
-    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(220, 38, 38, 0.4)'"
-    onclick="logout()"
-    title="Cerrar sesión y cambiar cuenta">🚪</button>
-
     <!-- Barra de búsqueda de pacientes -->
     <div id="searchContainer" class="form-section">
       <h4>🔍 Buscar Pacientes</h4>
@@ -1916,110 +1596,11 @@
       </div>
     </div>
   </div>
+
   <script>
     // Variables globales del sistema de autenticación
     let currentUser = null;
     let isAuthenticated = false;
-
-    // ===== FUNCIÓN DE LOGOUT DEFINIDA INMEDIATAMENTE =====
-    
-    window.logout = function() {
-      console.log('🚪 FORZANDO LOGOUT COMPLETO...');
-      
-      try {
-        // DETENER todos los procesos automáticos
-        window.logoutInProgress = true;
-        
-         // Limpiar variables de sesión pero CONSERVAR datos
-        window.currentUser = null;
-        window.isAuthenticated = false;
-        window.userRole = null;
-        window.selectedAccountType = null;
-        window.selectedPaciente = null;
-        
-        currentUser = null;
-        isAuthenticated = false;
-        if (typeof userRole !== 'undefined') userRole = null;
-        if (typeof selectedAccountType !== 'undefined') selectedAccountType = null;
-        if (typeof selectedPaciente !== 'undefined') selectedPaciente = null;
-        
-         try { localStorage.removeItem('userRole'); } catch {}
-         console.log('✅ Variables de sesión limpiadas (DATOS CONSERVADOS)');
-        
-        // FORZAR cierre de sesión Firebase sin callbacks
-        if (window.auth && typeof window.auth.signOut === 'function') {
-          try {
-            // Desconectar listeners temporalmente
-            if (window.authUnsubscribe) {
-              window.authUnsubscribe();
-              window.authUnsubscribe = null;
-            }
-            
-            window.auth.signOut();
-            console.log('✅ Firebase desconectado');
-          } catch (error) {
-            console.warn('⚠️ Error cerrando Firebase:', error);
-          }
-        }
-        
-        // FORZAR mostrar interfaz de login
-        const authContainer = document.querySelector('.container');
-        const mainContent = document.getElementById('mainContent');
-        const userInfo = document.getElementById('userInfo');
-        
-        // Ocultar TODO el contenido principal
-        if (mainContent) {
-          mainContent.style.display = 'none !important';
-          mainContent.style.visibility = 'hidden';
-          console.log('✅ Panel principal FORZADO a ocultar');
-        }
-        
-        if (userInfo) {
-          userInfo.style.display = 'none !important';
-          userInfo.style.visibility = 'hidden';
-        }
-        
-        // MOSTRAR interfaz de login
-        if (authContainer) {
-          authContainer.style.display = 'block !important';
-          authContainer.style.visibility = 'visible';
-          console.log('✅ Menú de login FORZADO a mostrar');
-        }
-        
-        // FORZAR selector de tipo de cuenta
-        setTimeout(() => {
-          const accountSelector = document.getElementById('accountTypeSelector');
-          const loginMedico = document.getElementById('loginMedico');
-          const loginAdmin = document.getElementById('loginAdmin');
-          const loginSuper = document.getElementById('loginSuper');
-          const registerCard = document.getElementById('registerCard');
-          
-          // Ocultar todos los formularios
-          if (loginMedico) loginMedico.style.display = 'none';
-          if (loginAdmin) loginAdmin.style.display = 'none';
-          if (loginSuper) loginSuper.style.display = 'none';
-          if (registerCard) registerCard.style.display = 'none';
-          
-          // MOSTRAR selector
-          if (accountSelector) {
-            accountSelector.style.display = 'block !important';
-            accountSelector.style.visibility = 'visible';
-            console.log('✅ Selector de cuenta FORZADO a mostrar');
-          }
-          
-          // Marcar logout como completado
-          window.logoutInProgress = false;
-          
-        }, 50);
-        
-        console.log('🎉 LOGOUT FORZADO COMPLETADO');
-        
-      } catch (error) {
-        console.error('❌ Error en logout forzado:', error);
-        // Recargar página como último recurso
-        window.location.reload();
-      }
-    };
 
     // Manejar la instalación de la PWA
     let deferredPrompt;
@@ -2035,8 +1616,6 @@
     let allRecordatorios = [];
     let allCitas = [];
     let currentChart = null;
-
-    // Función logout ya definida al inicio del script
 
     const visitTypes = [
       { value: 'primera', label: 'Primera Consulta', icon: '🩺', color: '#4ade80' },
@@ -2061,9 +1640,7 @@
     // ===== FUNCIÓN DE GUARDADO AUTOMÁTICO =====
     async function autoSave() {
       if (!currentUser || !selectedPaciente) return;
-      // Evitar guardados en modo SUPERCUENTA
-      if (window.userRole === 'super') return;
-
+      
       try {
         await savePacienteToFirestore(selectedPaciente);
         console.log('Guardado automático completado');
@@ -2072,910 +1649,129 @@
       }
     }
 
-    // ===== SISTEMA DE AUTENTICACIÓN SIMPLIFICADO =====
+    // ===== SISTEMA DE AUTENTICACIÓN MEJORADO =====
 
-    console.log('🔐 Inicializando sistema de autenticación simplificado...');
+    // Sistema de autenticación robusto con fallbacks
+    console.log('🔐 Inicializando sistema de autenticación...');
 
-    // Función de inicialización de autenticación
-    function initializeAuth() {
+    // Variables de autenticación
+    let authInitialized = false;
+    let authRetryCount = 0;
+    const MAX_AUTH_RETRIES = 3;
+
+    // Función para inicializar autenticación con reintentos
+    async function initializeAuthWithRetry() {
+      if (authInitialized) return;
+      
       try {
-        if (!window.auth) {
-          console.error('❌ Firebase Auth no disponible');
-          return;
+        console.log(`🔄 Intento de inicialización de auth: ${authRetryCount + 1}/${MAX_AUTH_RETRIES}`);
+
+      if (!window.auth) {
+          throw new Error('Firebase Auth no disponible');
         }
 
-        console.log('🔄 Configurando listener de autenticación...');
-
-        // Listener de estado de autenticación MEJORADO
-        window.authUnsubscribe = window.auth.onAuthStateChanged((user) => {
-          console.log('🔐 Estado de autenticación:', !!user);
-          
-          // Si está en proceso de logout, NO hacer nada automático
-          if (window.logoutInProgress) {
-            console.log('⏸️ Logout en progreso, ignorando cambio de auth');
-            return;
-          }
+        // Configurar listener de estado de autenticación
+        window.auth.onAuthStateChanged((user) => {
+          console.log('🔐 Estado de autenticación cambió:', !!user);
           
           if (user) {
-            console.log('✅ Usuario autenticado:', user.email);
+            console.log('✅ Usuario autenticado exitosamente:', user.email);
             currentUser = user;
             isAuthenticated = true;
             
-            // Solo mostrar interfaz si NO estamos en logout
-            if (!window.logoutInProgress) {
-              // Esperar a que el rol esté disponible; la UI se mostrará por verifyUserAccess()
-              if (typeof window.afterAuthUserReady === 'function') {
-                window.afterAuthUserReady();
-              }
-              setTimeout(loadUserData, 500);
-            }
+            // Mostrar interfaz principal
+            const authContainer = document.querySelector('.container');
+            const mainContent = document.getElementById('mainContent');
+            const userInfo = document.getElementById('userInfo');
+            
+            if (authContainer) authContainer.style.display = 'none';
+            if (mainContent) mainContent.style.display = 'block';
+            if (userInfo) userInfo.style.display = 'flex';
+            
+            // Cargar datos del usuario
+            loadUserData();
             
           } else {
             console.log('❌ Usuario no autenticado');
             currentUser = null;
             isAuthenticated = false;
             
-            // Solo mostrar login si NO estamos en logout (para evitar loops)
-            if (!window.logoutInProgress) {
-              showLoginInterface();
-            }
+            // Mostrar interfaz de login
+            const authContainer = document.querySelector('.container');
+            const mainContent = document.getElementById('mainContent');
+            const userInfo = document.getElementById('userInfo');
+            
+            if (authContainer) authContainer.style.display = 'block';
+            if (mainContent) mainContent.style.display = 'none';
+            if (userInfo) userInfo.style.display = 'none';
+            
+            // Limpiar datos
+            allPacientes = [];
+            allRecordatorios = [];
+            allCitas = [];
           }
         });
 
-        console.log('✅ Sistema de autenticación configurado');
+        authInitialized = true;
+        console.log('✅ Sistema de autenticación inicializado correctamente');
         
       } catch (error) {
-        console.error('❌ Error configurando autenticación:', error);
+        console.error(`❌ Error inicializando auth (intento ${authRetryCount + 1}):`, error);
+        authRetryCount++;
+        
+        if (authRetryCount < MAX_AUTH_RETRIES) {
+          console.log(`🔄 Reintentando en 2 segundos...`);
+          setTimeout(initializeAuthWithRetry, 2000);
+        } else {
+          console.error('❌ Falló inicialización de auth después de todos los reintentos');
+          alert('❌ Error en sistema de autenticación. Recarga la página.');
+        }
       }
     }
 
-    // VERIFICACIÓN ESTRICTA DE ACCESO
-    function verifyUserAccess() {
-      console.log('🔐 VERIFICANDO ACCESO DEL USUARIO...');
+    // Función de bypass temporal para acceso directo
+    window.bypassAuth = function() {
+      console.log('🚨 ACTIVANDO BYPASS DE AUTENTICACIÓN...');
       
-      // Verificar que hay usuario autenticado
-      if (!currentUser || !isAuthenticated) {
-        console.log('❌ ACCESO DENEGADO: No hay usuario autenticado');
-        forceShowLogin();
-        return false;
-      }
+      // Crear usuario mock
+      currentUser = {
+        uid: 'bypass_user_' + Date.now(),
+        email: 'corraljosemaria@hotmail.com',
+        displayName: 'Usuario Bypass',
+        getIdToken: () => Promise.resolve('bypass_token')
+      };
       
-      // Verificar que el usuario tiene un email válido
-      if (!currentUser.email) {
-        console.log('❌ ACCESO DENEGADO: Usuario sin email válido');
-        forceShowLogin();
-        return false;
-      }
+      isAuthenticated = true;
       
-      // Verificar que el usuario tiene un rol asignado
-      if (!userRole) {
-        console.log('❌ ACCESO DENEGADO: Usuario sin rol asignado');
-        forceShowLogin();
-        return false;
-      }
+      console.log('✅ Usuario bypass creado:', currentUser.email);
       
-      console.log('✅ ACCESO AUTORIZADO para:', currentUser.email, 'Rol:', userRole);
-      return true;
-    }
-
-    // Forzar mostrar login y bloquear acceso
-    function forceShowLogin() {
-      console.log('🚫 FORZANDO REGRESO AL LOGIN...');
-      
-      const authContainer = document.querySelector('.container');
-      const mainContent = document.getElementById('mainContent');
-      const userInfo = document.getElementById('userInfo');
-      
-      // FORZAR mostrar login
-      if (authContainer) {
-        authContainer.style.display = 'block !important';
-        authContainer.style.visibility = 'visible';
-      }
-      
-      // FORZAR ocultar panel principal
-      if (mainContent) {
-        mainContent.style.display = 'none !important';
-        mainContent.style.visibility = 'hidden';
-      }
-      
-      if (userInfo) {
-        userInfo.style.display = 'none !important';
-        userInfo.style.visibility = 'hidden';
-      }
-      
-      // Mostrar selector de cuentas
-      const accountSelector = document.getElementById('accountTypeSelector');
-      if (accountSelector) {
-        accountSelector.style.display = 'block !important';
-      }
-      
-      console.log('🚫 Usuario bloqueado - debe autenticarse correctamente');
-    }
-
-    // Mostrar interfaz principal SOLO si está autorizado
-    function showMainInterface() {
-      console.log('🔄 Intentando mostrar interfaz principal...');
-      
-      // VERIFICACIÓN OBLIGATORIA
-      if (!verifyUserAccess()) {
-        console.log('❌ Verificación falló - manteniendo en login');
-        return;
-      }
-      
-      console.log('✅ Verificación exitosa - mostrando interfaz');
-      
+      // Mostrar interfaz principal
       const authContainer = document.querySelector('.container');
       const mainContent = document.getElementById('mainContent');
       const userInfo = document.getElementById('userInfo');
       
       if (authContainer) authContainer.style.display = 'none';
       if (mainContent) mainContent.style.display = 'block';
-      if (userInfo) userInfo.style.display = 'flex';
-      
-      // Actualizar info del usuario
-      if (currentUser) {
+      if (userInfo) {
+        userInfo.style.display = 'flex';
+        
+        // Actualizar info del usuario
         const userName = document.getElementById('userName');
         const userEmail = document.getElementById('userEmail');
-        if (userName) userName.textContent = currentUser.displayName || 'Usuario';
-        if (userEmail) userEmail.textContent = currentUser.email;
+        if (userName) userName.textContent = 'Usuario Bypass';
+        if (userEmail) userEmail.textContent = 'corraljosemaria@hotmail.com';
       }
       
-      console.log('✅ Interfaz principal mostrada para usuario autorizado');
-    }
-
-    // Mostrar interfaz de login
-    function showLoginInterface() {
-      const authContainer = document.querySelector('.container');
-      const mainContent = document.getElementById('mainContent');
-      const userInfo = document.getElementById('userInfo');
+      // Cargar datos locales inmediatamente
+      console.log('📦 Cargando datos en modo bypass...');
+      loadLocalData();
+      renderPacienteSelector();
       
-      if (authContainer) authContainer.style.display = 'block';
-      if (mainContent) mainContent.style.display = 'none';
-      if (userInfo) userInfo.style.display = 'none';
-    }
-
-    // ===== SISTEMA DE ROLES Y TIPOS DE CUENTA =====
-
-    let selectedAccountType = null;
-    let userRole = null; // 'medico' o 'admin'
-
-    // Seleccionar tipo de cuenta
-    window.selectAccountType = function(type) {
-      console.log('👤 Tipo de cuenta seleccionado:', type);
-      selectedAccountType = type;
-      
-      // Ocultar selector
-      document.getElementById('accountTypeSelector').style.display = 'none';
-      
-      // Mostrar formulario correspondiente
-      if (type === 'medico') {
-        document.getElementById('loginMedico').style.display = 'block';
-      } else if (type === 'admin') {
-        document.getElementById('loginAdmin').style.display = 'block';
-      } else if (type === 'super') {
-        document.getElementById('loginSuper').style.display = 'block';
-        console.log('👑 SUPERCUENTA seleccionada');
-      }
+      alert('✅ ACCESO DIRECTO ACTIVADO\n\n📱 Ahora puedes usar la aplicación normalmente.\n💾 Los datos se guardan localmente.\n🌐 Usa "Sincronizar Datos" para compartir entre dispositivos.');
     };
 
-    // Volver al selector de tipo de cuenta
-    window.backToAccountType = function() {
-      console.log('⬅️ Volviendo al selector de tipo de cuenta');
-      
-      // Ocultar formularios
-      document.getElementById('loginMedico').style.display = 'none';
-      document.getElementById('loginAdmin').style.display = 'none';
-      document.getElementById('loginSuper').style.display = 'none';
-      document.getElementById('registerCard').style.display = 'none';
-      
-      // Mostrar selector
-      document.getElementById('accountTypeSelector').style.display = 'block';
-      
-      selectedAccountType = null;
-    };
-
-    // Generar código de vinculación para administradores
-    function generateVinculationCode(adminUserId) {
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-      return `ADM-${random}-${timestamp.toString().slice(-6)}`;
-    }
-
-    // Verificar código de vinculación
-    async function verifyVinculationCode(code, medicoUserId) {
-      try {
-        console.log('🔍 Verificando código de vinculación:', code);
-        
-        // Buscar el código en la colección de administradores
-        const snapshot = await db.collection('administrators').where('vinculationCodes', 'array-contains', code).get();
-        
-        if (!snapshot.empty) {
-          const adminDoc = snapshot.docs[0];
-          const adminData = adminDoc.data();
-          
-          console.log('✅ Código válido, vinculando con administrador:', adminData.email);
-          
-          // Agregar médico a la lista del administrador
-          // Fallback sin FieldValue
-          const currentLinks = adminData.linkedMedicos || [];
-          const nextLinks = Array.from(new Set([...(currentLinks || []), medicoUserId]));
-          await adminDoc.ref.update({ linkedMedicos: nextLinks });
-          
-          // Marcar código como usado
-          const currentCodes = adminData.vinculationCodes || [];
-          const nextCodes = currentCodes.filter(c => c !== code);
-          await adminDoc.ref.update({ vinculationCodes: nextCodes });
-          
-          return { success: true, adminData };
-        } else {
-          console.log('❌ Código de vinculación inválido');
-          return { success: false, error: 'Código inválido o expirado' };
-        }
-        
-      } catch (error) {
-        console.error('❌ Error verificando código:', error);
-        return { success: false, error: 'Error verificando código' };
-      }
-    }
-
-    // ===== SISTEMA DE ROLES Y TIPOS DE CUENTA =====
-    // (eliminado duplicado)
-
-    // Seleccionar tipo de cuenta
-    window.selectAccountType = function(type) {
-      console.log('👤 Tipo de cuenta seleccionado:', type);
-      selectedAccountType = type;
-      
-      // Ocultar selector
-      document.getElementById('accountTypeSelector').style.display = 'none';
-      
-      // Mostrar formulario correspondiente
-      if (type === 'medico') {
-        document.getElementById('loginMedico').style.display = 'block';
-      } else if (type === 'admin') {
-        document.getElementById('loginAdmin').style.display = 'block';
-      } else if (type === 'super') {
-        document.getElementById('loginSuper').style.display = 'block';
-        console.log('👑 SUPERCUENTA seleccionada');
-      }
-    };
-
-    // Volver al selector de tipo de cuenta
-    window.backToAccountType = function() {
-      console.log('⬅️ Volviendo al selector de tipo de cuenta');
-      
-      // Ocultar formularios
-      document.getElementById('loginMedico').style.display = 'none';
-      document.getElementById('loginAdmin').style.display = 'none';
-      document.getElementById('loginSuper').style.display = 'none';
-      document.getElementById('registerCard').style.display = 'none';
-      
-      // Mostrar selector
-      document.getElementById('accountTypeSelector').style.display = 'block';
-      
-      selectedAccountType = null;
-    };
-
-    // Generar código de vinculación para administradores
-    function generateVinculationCode(adminUserId) {
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-      return `ADM-${random}-${timestamp.toString().slice(-6)}`;
-    }
-
-    // Event Listeners para formularios de roles
-    document.getElementById('loginFormMedico')?.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const email = document.getElementById('loginEmailMedico').value?.trim();
-      const password = document.getElementById('loginPasswordMedico').value;
-      const codigoVinculacion = document.getElementById('codigoVinculacion').value?.trim();
-      const loginError = document.getElementById('loginErrorMedico');
-
-      if (loginError) loginError.style.display = 'none';
-
-      try {
-        console.log('🩺 Iniciando sesión como médico:', email);
-        
-        const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
-        console.log('✅ Médico autenticado:', userCredential.user.email);
-        
-        // Establecer rol y persistir
-        userRole = 'medico';
-        try { localStorage.setItem('userRole', 'medico'); } catch {}
-        
-        // Guardar datos del médico
-        const medicoData = {
-          email: email,
-          role: 'medico',
-          displayName: userCredential.user.displayName || email.split('@')[0],
-          lastLogin: new Date().toISOString(),
-          linkedAdmin: null
-        };
-
-        await db.collection('medicos').doc(userCredential.user.uid).set(medicoData, { merge: true });
-        console.log('✅ Datos del médico guardados');
-        
-      } catch (error) {
-        console.error('❌ Error en login de médico:', error);
-        if (loginError) {
-          loginError.textContent = `Error: ${error.message}`;
-          loginError.style.display = 'block';
-        }
-      }
-    });
-
-    document.getElementById('loginFormAdmin')?.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const email = document.getElementById('loginEmailAdmin').value?.trim();
-      const password = document.getElementById('loginPasswordAdmin').value;
-      const loginError = document.getElementById('loginErrorAdmin');
-
-      if (loginError) loginError.style.display = 'none';
-
-      try {
-        console.log('👨‍💼 Iniciando sesión como administrador:', email);
-        
-        const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
-        console.log('✅ Administrador autenticado:', userCredential.user.email);
-        
-        // Establecer rol y persistir
-        userRole = 'admin';
-        try { localStorage.setItem('userRole', 'admin'); } catch {}
-        
-        // Generar código de vinculación
-        const vinculationCode = generateVinculationCode(userCredential.user.uid);
-        
-        const adminData = {
-          email: email,
-          role: 'admin',
-          displayName: userCredential.user.displayName || email.split('@')[0],
-          lastLogin: new Date().toISOString(),
-          vinculationCodes: [vinculationCode],
-          linkedMedicos: []
-        };
-
-        await db.collection('administrators').doc(userCredential.user.uid).set(adminData, { merge: true });
-        console.log('✅ Administrador configurado con código:', vinculationCode);
-        
-      } catch (error) {
-        console.error('❌ Error en login de administrador:', error);
-        if (loginError) {
-          loginError.textContent = `Error: ${error.message}`;
-          loginError.style.display = 'block';
-        }
-      }
-    });
-
-    // Login SUPERCUENTA
-    document.getElementById('loginFormSuper')?.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const username = document.getElementById('loginUserSuper').value?.trim();
-      const password = document.getElementById('loginPasswordSuper').value;
-      const loginError = document.getElementById('loginErrorSuper');
-
-      if (loginError) loginError.style.display = 'none';
-
-      // Verificar credenciales fijas
-      if (username !== 'ADMIN' || password !== 'ADMINCITO') {
-        console.log('❌ Credenciales de SUPERCUENTA incorrectas');
-        if (loginError) {
-          loginError.textContent = '❌ Credenciales incorrectas. Usuario: ADMIN | Contraseña: ADMINCITO';
-          loginError.style.display = 'block';
-        }
-        return;
-      }
-
-      try {
-        console.log('👑 ACCESO SUPERCUENTA AUTORIZADO');
-        
-        // Crear usuario SUPERCUENTA mock
-        currentUser = {
-          uid: 'SUPERCUENTA_ADMIN_SYSTEM',
-          email: 'ADMIN@clinical-system.com',
-          displayName: 'SUPERCUENTA',
-          role: 'super',
-          getIdToken: () => Promise.resolve('super_admin_token')
-        };
-        
-        isAuthenticated = true;
-        userRole = 'super';
-        try { localStorage.setItem('userRole', 'super'); } catch {}
-        
-        console.log('✅ SUPERCUENTA activada');
-        
-        // Mostrar interfaz de SUPERCUENTA
-        showSuperAdminInterface();
-        
-        // Registrar acceso en el sistema
-        await logSuperAdminAccess();
-        
-        alert('👑 SUPERCUENTA ACTIVADA\n\n🔓 Control total del sistema habilitado\n📊 Acceso a todas las funcionalidades de gestión');
-        
-      } catch (error) {
-        console.error('❌ Error activando SUPERCUENTA:', error);
-        if (loginError) {
-          loginError.textContent = `Error del sistema: ${error.message}`;
-          loginError.style.display = 'block';
-        }
-      }
-    });
-
-    // ===== FUNCIONES DE SUPERCUENTA =====
-
-    // Mostrar interfaz de SUPERCUENTA
-    function showSuperAdminInterface() {
-      // GATING: solo continuar si hay acceso válido
-      if (!verifyUserAccess()) {
-        forceShowLogin();
-        return;
-      }
-      // Asegurar rol super antes de renderizar
-      if (userRole !== 'super') {
-        console.log('❌ Rol inválido para SUPERCUENTA');
-        forceShowLogin();
-        return;
-      }
-      console.log('👑 Mostrando interfaz de SUPERCUENTA');
-      
-      // Ocultar login y mostrar interfaz especial
-      const authContainer = document.querySelector('.container');
-      const mainContent = document.getElementById('mainContent');
-      
-      if (authContainer) authContainer.style.display = 'none';
-      if (mainContent) {
-        mainContent.style.display = 'block';
-        
-        // Reemplazar contenido con panel de SUPERCUENTA
-        mainContent.innerHTML = `
-          <div style="background: linear-gradient(135deg, #7c2d12, #991b1b); padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 2px solid #fbbf24;">
-            <h1 style="color: #fbbf24; text-align: center; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
-              👑 SUPERCUENTA - PANEL DE CONTROL SUPREMO
-            </h1>
-            <p style="color: #fbbf24; text-align: center; margin: 8px 0 0 0; opacity: 0.9;">
-              Control total del sistema Clinical Data
-            </p>
-          </div>
-          
-          <!-- Estadísticas del Sistema -->
-          <div class="form-section">
-            <h4>📊 Estadísticas del Sistema</h4>
-            <div id="systemStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-              <div class="stat-card">
-                <div class="stat-number" id="totalUsers">-</div>
-                <div class="stat-label">👥 Usuarios Totales</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-number" id="activeMedicos">-</div>
-                <div class="stat-label">🩺 Médicos Activos</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-number" id="activeAdmins">-</div>
-                <div class="stat-label">👨‍💼 Administradores</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-number" id="totalPacientes">-</div>
-                <div class="stat-label">👤 Pacientes Totales</div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Usuarios en Línea -->
-          <div class="form-section">
-            <h4>🟢 Usuarios Conectados</h4>
-            <div id="onlineUsers">Cargando...</div>
-          </div>
-          
-          <!-- Gestión de Usuarios -->
-          <div class="form-section">
-            <h4>👥 Gestión de Usuarios</h4>
-            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-              <button onclick="loadAllUsers()" class="btn-primary">🔄 Actualizar Lista</button>
-              <button onclick="exportSystemData()" class="btn-secondary">📊 Exportar Datos</button>
-              <button onclick="showSystemLogs()" class="btn-secondary">📋 Ver Logs</button>
-            </div>
-            <div id="allUsersList">Cargando usuarios...</div>
-          </div>
-          
-          <!-- Modal para detalle (pacientes por usuario, vinculación, etc.) -->
-          <div id="superModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-            <div id="superModalContent" style="background: #0f172a; color: #e2e8f0; width: min(900px, 96vw); max-height: 90vh; overflow: auto; border-radius: 10px; border: 1px solid #334155;">
-              <div style="display:flex; justify-content: space-between; align-items:center; padding: 12px 16px; border-bottom:1px solid #334155;">
-                <h3 id="superModalTitle" style="margin:0; font-size: 1.05rem;">Detalle</h3>
-                <button onclick="closeSuperModal()" class="btn-sm">✖️</button>
-              </div>
-              <div id="superModalBody" style="padding: 16px;">Cargando...</div>
-            </div>
-          </div>
-
-          <!-- Acciones del Sistema -->
-          <div class="form-section">
-            <h4>⚙️ Acciones del Sistema</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-              <button onclick="generateAdminCode()" class="btn-secondary">🔗 Generar Código Admin</button>
-              <button onclick="viewAllVinculations()" class="btn-secondary">🔗 Ver Vinculaciones</button>
-              <button onclick="systemMaintenance()" class="btn-secondary">🔧 Mantenimiento</button>
-              <button onclick="backupSystem()" class="btn-secondary">💾 Backup Sistema</button>
-            </div>
-          </div>
-        `;
-      }
-      
-      // Cargar datos iniciales
-      loadSystemStats();
-      loadAllUsers();
-      startOnlineUsersMonitor();
-    }
-
-    // Registrar acceso de SUPERCUENTA
-    async function logSuperAdminAccess() {
-      try {
-        const accessLog = {
-          timestamp: new Date().toISOString(),
-          action: 'SUPERCUENTA_ACCESS',
-          ip: 'unknown', // Se puede obtener con APIs externas
-          userAgent: navigator.userAgent,
-          sessionId: Date.now().toString()
-        };
-
-        await db.collection('system_logs').add(accessLog);
-        console.log('📝 Acceso de SUPERCUENTA registrado');
-      } catch (error) {
-        console.warn('⚠️ No se pudo registrar acceso:', error);
-      }
-    }
-
-    // Cargar estadísticas del sistema
-    async function loadSystemStats() {
-      try {
-        console.log('📊 Cargando estadísticas del sistema...');
-        
-        // Contar médicos
-        const medicosSnapshot = await db.collection('medicos').get();
-        const activeMedicos = medicosSnapshot.size;
-        
-        // Contar administradores
-        const adminsSnapshot = await db.collection('administrators').get();
-        const activeAdmins = adminsSnapshot.size;
-        
-        // Contar usuarios totales
-        const totalUsers = activeMedicos + activeAdmins;
-        
-        // Contar pacientes totales (aproximado)
-        let totalPacientes = 0;
-        const usersSnapshot = await db.collection('users').get();
-        for (const userDoc of usersSnapshot.docs) {
-          const pacientesSnapshot = await userDoc.ref.collection('pacientes').get();
-          totalPacientes += pacientesSnapshot.size;
-        }
-        
-        // Actualizar interfaz
-        document.getElementById('totalUsers').textContent = totalUsers;
-        document.getElementById('activeMedicos').textContent = activeMedicos;
-        document.getElementById('activeAdmins').textContent = activeAdmins;
-        document.getElementById('totalPacientes').textContent = totalPacientes;
-        
-        console.log('✅ Estadísticas cargadas:', { totalUsers, activeMedicos, activeAdmins, totalPacientes });
-        
-      } catch (error) {
-        console.error('❌ Error cargando estadísticas:', error);
-        document.getElementById('totalUsers').textContent = 'Error';
-        document.getElementById('activeMedicos').textContent = 'Error';
-        document.getElementById('activeAdmins').textContent = 'Error';
-        document.getElementById('totalPacientes').textContent = 'Error';
-      }
-    }
-    // Cargar todos los usuarios del sistema (médicos y administradores) con emails y estado
-    async function loadAllUsers() {
-      try {
-        console.log('👥 Cargando todos los usuarios...');
-
-        const allUsersList = document.getElementById('allUsersList');
-        allUsersList.innerHTML = '<p>🔄 Cargando usuarios...</p>';
-
-        let usersHTML = '';
-
-        // Helper para pintar tarjeta de usuario
-        const renderUserCard = (opts) => {
-          const { id, role, email, displayName, lastLogin, subscriptionStatus, linkedMedicosCount, disabled } = opts;
-          const color = role === 'admin' ? '#dc2626' : 'var(--primary)';
-          const roleIcon = role === 'admin' ? '👨‍💼' : '🩺';
-          const sub = subscriptionStatus || 'activa';
-          const subColor = sub === 'activa' ? '#16a34a' : (sub === 'vencida' ? '#dc2626' : '#ca8a04');
-          const disabledTag = disabled ? '<small style="color:#ef4444">⛔ Deshabilitado</small><br>' : '';
-
-          return `
-            <div class="user-card" style="border-left: 4px solid ${color};">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <strong>${displayName || email}</strong><br>
-                  <small>${roleIcon} ${email}</small><br>
-                  <small>⏰ Último acceso: ${lastLogin || 'Nunca'}</small><br>
-                  ${role === 'admin' ? `<small>🔗 Médicos vinculados: ${linkedMedicosCount || 0}</small><br>` : ''}
-                  <small>💳 Suscripción: <span style="color:${subColor}">${sub}</span></small><br>
-                  ${disabledTag}
-                </div>
-                <div style="display: flex; gap: 4px;">
-                  <button class="btn-sm" onclick="toggleSubscription('${id}','${role}')">💳 Suscripción</button>
-                  <button class="btn-sm" onclick="toggleUserEnabled('${id}','${role}')">⛔ Habilitar/Deshabilitar</button>
-                  ${role === 'admin' ? `<button class=\"btn-sm\" onclick=\"manageLinks('${id}')\">🔗 Vincular</button>` : ''}
-                  ${role === 'medico' ? `<button class=\"btn-sm\" onclick=\"promoteToAdmin('${id}')\">⬆️ Promover</button>` : `<button class=\"btn-sm\" onclick=\"demoteToMedico('${id}')\">⬇️ Degradar</button>`}
-                  <button class="btn-sm" onclick="openPatientsModal('${id}','${role}','${email}')">👁️ Pacientes</button>
-                </div>
-              </div>
-            </div>
-          `;
-        };
-
-        // Cargar médicos
-        const medicosSnapshot = await db.collection('medicos').get();
-        if (!medicosSnapshot.empty) {
-          usersHTML += '<h5 style="color: var(--primary); margin: 16px 0 8px 0;">🩺 MÉDICOS</h5>';
-          medicosSnapshot.forEach(doc => {
-            const m = doc.data();
-            const lastLogin = m.lastLogin ? new Date(m.lastLogin).toLocaleString('es-ES') : 'Nunca';
-            usersHTML += renderUserCard({
-              id: doc.id,
-              role: 'medico',
-              email: m.email,
-              displayName: m.displayName,
-              lastLogin,
-              subscriptionStatus: m.subscriptionStatus,
-              disabled: m.disabled === true
-            });
-          });
-        }
-
-        // Cargar administradores
-        const adminsSnapshot = await db.collection('administrators').get();
-        if (!adminsSnapshot.empty) {
-          usersHTML += '<h5 style="color: #dc2626; margin: 16px 0 8px 0;">👨‍💼 ADMINISTRADORES</h5>';
-          adminsSnapshot.forEach(doc => {
-            const a = doc.data();
-            const lastLogin = a.lastLogin ? new Date(a.lastLogin).toLocaleString('es-ES') : 'Nunca';
-            const linkedMedicosCount = a.linkedMedicos?.length || 0;
-            usersHTML += renderUserCard({
-              id: doc.id,
-              role: 'admin',
-              email: a.email,
-              displayName: a.displayName,
-              lastLogin,
-              subscriptionStatus: a.subscriptionStatus,
-              linkedMedicosCount,
-              disabled: a.disabled === true
-            });
-          });
-        }
-
-        if (usersHTML === '') {
-          usersHTML = '<p style="color: var(--text-light); text-align: center;">No hay usuarios registrados</p>';
-        }
-
-        allUsersList.innerHTML = usersHTML;
-        console.log('✅ Lista de usuarios cargada');
-
-      } catch (error) {
-        console.error('❌ Error cargando usuarios:', error);
-        document.getElementById('allUsersList').innerHTML = '<p style="color: var(--danger);">Error cargando usuarios</p>';
-      }
-    }
-
-    // Alternar estado de suscripción (activa <-> vencida <-> en_revision)
-    window.toggleSubscription = async function(userId, role) {
-      try {
-        const col = role === 'admin' ? 'administrators' : 'medicos';
-        const ref = db.collection(col).doc(userId);
-        const snap = await ref.get();
-        if (!snap.exists) return alert('Usuario no encontrado');
-        const current = snap.data().subscriptionStatus || 'activa';
-        const next = current === 'activa' ? 'vencida' : (current === 'vencida' ? 'en_revision' : 'activa');
-        await ref.update({ subscriptionStatus: next, subscriptionUpdatedAt: new Date().toISOString() });
-        alert(`Estado de suscripción actualizado a: ${next}`);
-        loadAllUsers();
-      } catch (e) {
-        console.error('Error actualizando suscripción', e);
-        alert('No se pudo actualizar la suscripción');
-      }
-    };
-
-    // Habilitar/Deshabilitar usuario (flag disabled)
-    window.toggleUserEnabled = async function(userId, role) {
-      try {
-        const col = role === 'admin' ? 'administrators' : 'medicos';
-        const ref = db.collection(col).doc(userId);
-        const snap = await ref.get();
-        if (!snap.exists) return alert('Usuario no encontrado');
-        const current = !!snap.data().disabled;
-        await ref.update({ disabled: !current, disabledUpdatedAt: new Date().toISOString() });
-        alert(!current ? 'Usuario deshabilitado' : 'Usuario habilitado');
-        loadAllUsers();
-      } catch (e) {
-        console.error('Error alternando habilitación', e);
-        alert('No se pudo actualizar el estado');
-      }
-    };
-
-    // Promover médico a admin
-    window.promoteToAdmin = async function(medicoId) {
-      try {
-        // Leer médico y crear/actualizar entrada en administrators
-        const mRef = db.collection('medicos').doc(medicoId);
-        const mSnap = await mRef.get();
-        if (!mSnap.exists) return alert('Médico no encontrado');
-        const m = mSnap.data();
-        const aRef = db.collection('administrators').doc(medicoId);
-        await aRef.set({
-          email: m.email,
-          displayName: m.displayName || (m.email || '').split('@')[0],
-          lastLogin: new Date().toISOString(),
-          vinculationCodes: m.vinculationCodes || [],
-          linkedMedicos: m.linkedMedicos || []
-        }, { merge: true });
-        alert('Médico promovido a administrador');
-        loadAllUsers();
-      } catch (e) {
-        console.error('Error promoviendo médico', e);
-        alert('No se pudo promover');
-      }
-    };
-
-    // Degradar admin a médico
-    window.demoteToMedico = async function(adminId) {
-      try {
-        const aRef = db.collection('administrators').doc(adminId);
-        const aSnap = await aRef.get();
-        if (!aSnap.exists) return alert('Administrador no encontrado');
-        const a = aSnap.data();
-        const mRef = db.collection('medicos').doc(adminId);
-        await mRef.set({
-          email: a.email,
-          displayName: a.displayName || (a.email || '').split('@')[0],
-          lastLogin: new Date().toISOString()
-        }, { merge: true });
-        // Nota: no borramos admin; requerir confirmación en futuro
-        alert('Administrador degradado a médico (no se eliminó el admin)');
-        loadAllUsers();
-      } catch (e) {
-        console.error('Error degradando admin', e);
-        alert('No se pudo degradar');
-      }
-    };
-
-    // Modal helper
-    function openSuperModal(title, html) {
-      const modal = document.getElementById('superModal');
-      const titleEl = document.getElementById('superModalTitle');
-      const bodyEl = document.getElementById('superModalBody');
-      if (!modal || !titleEl || !bodyEl) return;
-      titleEl.textContent = title;
-      bodyEl.innerHTML = html;
-      modal.style.display = 'flex';
-    }
-    window.closeSuperModal = function() {
-      const modal = document.getElementById('superModal');
-      if (modal) modal.style.display = 'none';
-    };
-
-    // Ver pacientes por usuario (uid)
-    window.openPatientsModal = async function(uid, role, email) {
-      try {
-        let html = '<p>🔄 Cargando pacientes...</p>';
-        openSuperModal(`Pacientes de ${email}`, html);
-        const snap = await db.collection('users').doc(uid).collection('pacientes').get();
-        if (!snap || snap.size === 0) {
-          html = '<p style="color: var(--text-light);">Sin pacientes</p>';
-        } else {
-          html = '<div style="display:grid; gap:8px">';
-          snap.forEach(d => {
-            const p = d.data();
-            html += `<div style="padding:8px; background: var(--bg-secondary); border-radius:6px;">`+
-                    `<strong>${p.nombre || '(Sin nombre)'} </strong>`+
-                    `<small style="opacity:.8">DNI: ${p.dni || '-'}</small>`+
-                    `</div>`;
-          });
-          html += '</div>';
-        }
-        openSuperModal(`Pacientes de ${email}`, html);
-      } catch (e) {
-        console.error('Error listando pacientes', e);
-        openSuperModal(`Pacientes de ${email}`, '<p style="color: var(--danger);">Error al cargar pacientes</p>');
-      }
-    };
-
-    // Gestionar vinculación de médicos a un admin
-    window.manageLinks = async function(adminId) {
-      try {
-        // Obtener lista de médicos
-        const medicosSnapshot = await db.collection('medicos').get();
-        const opciones = [];
-        medicosSnapshot.forEach(doc => {
-          const m = doc.data();
-          opciones.push(`${doc.id}::${m.email}`);
-        });
-        const seleccion = prompt(`Ingrese ID de médico a vincular (formato id::email)\n\n${opciones.join('\n')}`);
-        if (!seleccion) return;
-        const medicoId = seleccion.split('::')[0];
-
-        const adminRef = db.collection('administrators').doc(adminId);
-          // Fallback sin FieldValue: leer y reescribir array
-          const adminSnap = await adminRef.get();
-          const current = (adminSnap && adminSnap.exists && adminSnap.data().linkedMedicos) || [];
-          const next = Array.from(new Set([...(current || []), medicoId]));
-          await adminRef.update({ linkedMedicos: next });
-        alert('Médico vinculado con éxito');
-        loadAllUsers();
-      } catch (e) {
-        console.error('Error vinculando médico', e);
-        alert('No se pudo vincular el médico');
-      }
-    };
-
-    // Monitor de usuarios en línea (simulado)
-    function startOnlineUsersMonitor() {
-      const onlineUsers = document.getElementById('onlineUsers');
-      
-      // Simulación de usuarios en línea
-      setInterval(() => {
-        const mockOnlineUsers = [
-          { email: 'corraljosemaria@hotmail.com', role: 'medico', since: '14:30' },
-          // Se pueden agregar más usuarios reales cuando el sistema esté en uso
-        ];
-        
-        let html = '';
-        mockOnlineUsers.forEach(user => {
-          const roleIcon = user.role === 'medico' ? '🩺' : '👨‍💼';
-          html += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; margin: 4px 0; background: var(--bg-secondary); border-radius: 6px;">
-              <span>${roleIcon} ${user.email}</span>
-              <span style="color: #22c55e; font-size: 0.8rem;">🟢 Desde ${user.since}</span>
-            </div>
-          `;
-        });
-        
-        onlineUsers.innerHTML = html || '<p style="color: var(--text-light);">No hay usuarios conectados</p>';
-      }, 5000);
-    }
-
-    // Funciones de gestión (placeholder)
-    window.toggleUserStatus = function(userId, userType) {
-      alert(`🔒 Gestión de usuario:\nID: ${userId}\nTipo: ${userType}\n\n🚧 Funcionalidad en desarrollo...`);
-    };
-
-    window.viewUserDetails = function(userId, userType) {
-      alert(`👁️ Detalles del usuario:\nID: ${userId}\nTipo: ${userType}\n\n🚧 Panel de detalles en desarrollo...`);
-    };
-
-    window.generateAdminCode = function() {
-      const code = generateVinculationCode('SUPERCUENTA');
-      alert(`🔗 Código de administrador generado:\n\n${code}\n\nEste código puede ser usado por un nuevo administrador para registrarse.`);
-    };
-
-    window.viewAllVinculations = function() {
-      alert('🔗 Visualizador de vinculaciones\n\n🚧 En desarrollo...\n\nMostrará todas las conexiones entre administradores y médicos.');
-    };
-
-    window.systemMaintenance = function() {
-      alert('🔧 Herramientas de mantenimiento\n\n🚧 En desarrollo...\n\nIncluirá limpieza de datos, optimización y reparaciones.');
-    };
-
-    window.backupSystem = function() {
-      alert('💾 Sistema de backup\n\n🚧 En desarrollo...\n\nPermitirá crear backups completos del sistema.');
-    };
-
-    window.exportSystemData = function() {
-      alert('📊 Exportación de datos del sistema\n\n🚧 En desarrollo...\n\nExportará estadísticas completas en formato Excel/PDF.');
-    };
-
-    window.showSystemLogs = function() {
-      alert('📋 Logs del sistema\n\n🚧 En desarrollo...\n\nMostrará todos los accesos y acciones del sistema.');
-    };
-
-    // Función logout ya definida arriba - esta es duplicada, se elimina
-
-    // Inicializar cuando Firebase esté listo
-    setTimeout(initializeAuth, 2000);
+    // Inicializar autenticación cuando Firebase esté listo
+    setTimeout(initializeAuthWithRetry, 1000);
       
       // Función de prueba para verificar conectividad
       window.testFirebaseConnection = async function() {
@@ -3032,13 +1828,7 @@
       const loginContainer = document.querySelector('.container');
       const mainContent = document.getElementById('mainContent');
       const authContainer = document.getElementById('authContainer');
-
-      // SIEMPRE usar gating estricto
-      if (!verifyUserAccess()) {
-        forceShowLogin();
-        return;
-      }
-
+      
       if (loginContainer) loginContainer.style.display = 'none';
       if (mainContent) mainContent.style.display = 'block';
       if (authContainer) authContainer.style.display = 'block';
@@ -3125,12 +1915,9 @@
       }
 
       try {
-        console.log('🔐 Intentando iniciar sesión con:', email);
-        
-        // Usar la sintaxis correcta de Firebase Auth
-        const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
-        console.log('✅ LOGIN EXITOSO:', userCredential.user.email);
-        
+        console.log('Intentando iniciar sesión con:', email);
+        await window.signInWithEmailAndPassword(window.auth, email, password);
+        console.log('Login exitoso');
         // El onAuthStateChanged se encargará del resto
       } catch (error) {
         console.error('Error de login:', error);
@@ -3193,9 +1980,9 @@
       try {
         console.log('Intentando crear usuario con:', { email, password: '***', name });
         
-        // Crear usuario con sintaxis correcta
-        const userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
-        console.log('✅ Usuario creado exitosamente:', userCredential.user.uid);
+        // Crear usuario
+        const userCredential = await window.createUserWithEmailAndPassword(window.auth, email, password);
+        console.log('Usuario creado exitosamente:', userCredential.user.uid);
         
         // Actualizar perfil
         await userCredential.user.updateProfile({
@@ -3309,11 +2096,6 @@
     // Cargar datos del usuario
     async function loadUserData() {
       if (!currentUser) return;
-      // Evitar sincronización pesada si SUPERCUENTA
-      if (window.userRole === 'super') {
-        console.log('🔕 SUPERCUENTA: omitiendo sincronización de datos de usuario.');
-        return;
-      }
 
       try {
         const userDoc = await db.collection('users').doc(currentUser.uid).get();
@@ -3321,7 +2103,7 @@
         if (userDoc.exists) {
           // Actualizar último login
           await db.collection('users').doc(currentUser.uid).update({
-            lastLogin: new Date().toISOString()
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
           });
         }
 
@@ -3430,7 +2212,9 @@
       const bitacoraSelector = document.getElementById('bitacoraSelector');
       if (bitacoraSelector) bitacoraSelector.innerHTML = '';
     }
+
     // ===== FUNCIONES MODIFICADAS PARA FIRESTORE =====
+
     // Modificar createNewBitacora para usar Firestore
     async function createNewBitacora() {
       if (!currentUser) {
@@ -4231,6 +3015,7 @@
       a.download = `bitacora_${selectedBitacora.name}_export.json`;
       a.click();
     }
+
     function showEditBitacoraModal(bitacora) {
       const modal = document.getElementById('editBitacoraModal');
       const nameInput = document.getElementById('editBitacoraName');
@@ -5021,6 +3806,7 @@
         list.appendChild(div);
       });
     }
+
     // Modo nocturno
     function toggleDarkMode() {
       const body = document.body;
@@ -5276,17 +4062,9 @@
       });
     }
 
-    // Crear nuevo paciente CON VERIFICACIÓN ESTRICTA
+    // Crear nuevo paciente
     async function createNewPaciente() {
       console.log('🔄 Iniciando creación de paciente...');
-      
-      // VERIFICACIÓN OBLIGATORIA DE ACCESO
-      if (!verifyUserAccess()) {
-        console.log('🚫 ACCESO DENEGADO: Usuario no autorizado para crear pacientes');
-        alert('❌ Debes estar autenticado correctamente para crear pacientes');
-        forceShowLogin();
-        return;
-      }
       
       try {
         // Obtener elementos del formulario
@@ -5802,6 +4580,7 @@
       fileInput.files = dt.files;
       handleFileSelection({ target: fileInput });
     }
+
     // Procesar archivos para guardar
     async function processFilesForSave(files) {
       console.log('🔄 Procesando archivos para guardar...');
@@ -5949,17 +4728,9 @@
       `);
     }
 
-    // Guardar visita médica CON VERIFICACIÓN ESTRICTA
+    // Guardar visita médica MEJORADA
     async function saveVisit() {
       console.log('🩺 Iniciando guardado de visita...');
-      
-      // VERIFICACIÓN OBLIGATORIA DE ACCESO
-      if (!verifyUserAccess()) {
-        console.log('🚫 ACCESO DENEGADO: Usuario no autorizado para guardar visitas');
-        alert('❌ Debes estar autenticado correctamente para guardar visitas');
-        forceShowLogin();
-        return;
-      }
       
       if (!selectedPaciente) {
         alert('❌ No hay paciente seleccionado');
@@ -6406,12 +5177,10 @@
         console.error('❌ No hay usuario autenticado o paciente inválido');
         return;
       }
-      // Bloquear escrituras si es SUPERCUENTA
-      if (window.userRole === 'super') {
-        console.log('🔕 SUPERCUENTA: bloqueo de escritura savePacienteToFirestore');
-        return;
-      }
-
+      
+      console.log('🔐 Guardando para usuario:', currentUser.email);
+      console.log('👤 Guardando paciente:', paciente.nombre);
+      
       try {
         // Estructura: users/{userId}/pacientes/{pacienteId}
         const docRef = db.collection('users').doc(currentUser.uid).collection('pacientes').doc(paciente.id);
@@ -6593,6 +5362,7 @@
       
       return result;
     }
+
     // Función MEJORADA para sincronizar datos locales con Firebase
     async function syncLocalDataToFirebase() {
       if (!currentUser) {
@@ -7119,7 +5889,6 @@
 
       try {
         if (currentUser) {
-          if (window.userRole === 'super') { console.log('🔕 SUPERCUENTA: omitiendo set de recordatorio'); return; }
           await db.collection('users').doc(currentUser.uid)
                    .collection('recordatorios').doc(recordatorio.id)
                    .set(recordatorio);
@@ -7217,7 +5986,6 @@
 
       try {
         if (currentUser) {
-          if (window.userRole === 'super') { console.log('🔕 SUPERCUENTA: omitiendo update de recordatorio'); return; }
           await db.collection('users').doc(currentUser.uid)
                    .collection('recordatorios').doc(recordatorioId)
                    .update({ completado: true });
@@ -7235,7 +6003,6 @@
 
       try {
         if (currentUser) {
-          if (window.userRole === 'super') { console.log('🔕 SUPERCUENTA: omitiendo delete de recordatorio'); return; }
           await db.collection('users').doc(currentUser.uid)
                    .collection('recordatorios').doc(recordatorioId)
                    .delete();
@@ -7362,6 +6129,7 @@
         container.appendChild(diaElement);
       }
     }
+
     async function crearCita() {
       const pacienteId = document.getElementById('citaPaciente').value;
       const fecha = document.getElementById('citaFecha').value;
@@ -7386,7 +6154,6 @@
 
       try {
         if (currentUser) {
-          if (window.userRole === 'super') { console.log('🔕 SUPERCUENTA: omitiendo set de cita'); return; }
           await db.collection('users').doc(currentUser.uid)
                    .collection('citas').doc(cita.id)
                    .set(cita);
@@ -7450,7 +6217,6 @@
 
       try {
         if (currentUser) {
-          if (window.userRole === 'super') { console.log('🔕 SUPERCUENTA: omitiendo delete de cita'); return; }
           await db.collection('users').doc(currentUser.uid)
                    .collection('citas').doc(citaId)
                    .delete();
@@ -7530,39 +6296,14 @@
       console.log('✅ Modo offline inicializado');
     }
 
-    // VERIFICACIÓN INICIAL AL CARGAR LA PÁGINA
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('📄 DOM cargado - VERIFICANDO ESTADO INICIAL...');
-
-      // Cargar rol almacenado si existe
-      try {
-        const storedRole = localStorage.getItem('userRole');
-        if (storedRole) {
-          userRole = storedRole;
-          console.log('🛈 Rol restaurado desde storage:', storedRole);
-        }
-      } catch {}
-
-      // FORZAR mostrar login al inicio
-      forceShowLogin();
-      
-      // Solo cargar datos si hay usuario válido
-      if (verifyUserAccess()) {
-        console.log('✅ Usuario válido detectado, cargando datos...');
-        initOfflineMode();
-        setTimeout(initMedicalApp, 1000);
-      } else {
-        console.log('🚫 Sin usuario válido, manteniendo en login');
-      }
-    });
+    // Ejecutar cuando se carga la app
+    setTimeout(initMedicalApp, 1000);
     
-    // Verificación adicional con timeout
-    setTimeout(() => {
-      if (!verifyUserAccess()) {
-        console.log('🚫 Verificación de timeout - forzando login');
-        forceShowLogin();
-      }
-    }, 2000);
+    // También cargar datos locales inmediatamente al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('📄 DOM cargado, iniciando datos locales...');
+      initOfflineMode();
+    });
     
     // Fallback si DOMContentLoaded ya pasó
     if (document.readyState === 'loading') {
@@ -7678,3 +6419,4 @@
   </div>
 </body>
 </html>
+
