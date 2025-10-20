@@ -851,6 +851,7 @@
       messagingSenderId: "166670165939",
       appId: "1:166670165939:web:05e9352a1a96dbd2a58dc6"
     };
+    window.firebaseConfig = firebaseConfig;
 
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
@@ -1088,6 +1089,89 @@
     console.log('✅ Auth disponible:', !!window.auth);
     console.log('✅ Firestore disponible:', !!window.db);
     </script>
+
+  <!-- Firebase v9 compat (para soportar db.collection y API estilo v8) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script>
+    (function(){
+      try {
+        if (typeof firebase === 'undefined') return;
+
+        // Obtener o inicializar app compat usando la misma configuración
+        var compatApp;
+        try {
+          compatApp = firebase.app();
+        } catch (e) {
+          if (window.firebaseConfig) {
+            compatApp = firebase.initializeApp(window.firebaseConfig);
+          }
+        }
+
+        var authCompat = firebase.auth(compatApp);
+        var dbCompat = firebase.firestore(compatApp);
+
+        // Preferir compat globalmente para soportar llamadas db.collection(...)
+        window.auth = authCompat;
+        window.db = dbCompat;
+
+        // Wrappers para compatibilizar llamadas estilo modular usadas en algunos puntos
+        function refFromSegments(segments) {
+          var ref = dbCompat;
+          for (var i = 0; i < segments.length; i += 2) {
+            var coll = segments[i];
+            var id = segments[i + 1];
+            if (id === undefined) {
+              ref = ref.collection(coll);
+            } else {
+              ref = ref.collection(coll).doc(id);
+            }
+          }
+          return ref;
+        }
+
+        window.doc = function(_dbIgnored) {
+          var segments = Array.prototype.slice.call(arguments, 1);
+          return { _segments: segments };
+        };
+        window.setDoc = async function(refObj, data, options) {
+          var ref = refFromSegments(refObj._segments || []);
+          return ref.set(data, options);
+        };
+        window.deleteDoc = async function(refObj) {
+          var ref = refFromSegments(refObj._segments || []);
+          return ref.delete();
+        };
+        window.collection = function(_dbIgnored) {
+          var segments = Array.prototype.slice.call(arguments, 1);
+          return { _collectionSegments: segments };
+        };
+        window.getDocs = async function(collectionRef) {
+          var ref = refFromSegments(collectionRef._collectionSegments || []);
+          return ref.get();
+        };
+
+        // Reexponer helpers de auth estilo modular para no romper referencias
+        window.signInWithEmailAndPassword = function(_authIgnored, email, password) {
+          return authCompat.signInWithEmailAndPassword(email, password);
+        };
+        window.createUserWithEmailAndPassword = function(_authIgnored, email, password) {
+          return authCompat.createUserWithEmailAndPassword(email, password);
+        };
+        window.onAuthStateChanged = function(_authIgnored, cb) {
+          return authCompat.onAuthStateChanged(cb);
+        };
+        window.signOut = function(_authIgnored) {
+          return authCompat.signOut();
+        };
+
+        console.log('🔁 Firebase compat activado: db.collection() disponible');
+      } catch (e) {
+        console.warn('⚠️ No se pudo activar compat:', e);
+      }
+    })();
+  </script>
   
   <!-- Librerías UMD sin conflictos -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
