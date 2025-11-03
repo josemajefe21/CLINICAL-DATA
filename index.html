@@ -5276,9 +5276,6 @@
       console.log('👤 Guardando paciente:', paciente.nombre);
       
       try {
-        // Estructura: users/{userId}/pacientes/{pacienteId}
-        const docRef = db.collection('users').doc(currentUser.uid).collection('pacientes').doc(paciente.id);
-        
         // Agregar metadatos de usuario para verificación
         const pacienteConMetadata = {
           ...paciente,
@@ -5287,8 +5284,8 @@
           lastModified: new Date().toISOString(),
           syncVersion: Date.now()
         };
-        
-        await docRef.set(pacienteConMetadata, { merge: true });
+
+        await upsertUserCollectionDoc('pacientes', paciente.id, pacienteConMetadata, { merge: true });
         
         console.log('✅ PACIENTE SINCRONIZADO EXITOSAMENTE');
         console.log('🌐 Disponible para usuario:', currentUser.email);
@@ -5518,13 +5515,9 @@
           console.log(`📌 Sincronizando ${recordatoriosLocal.length} recordatorios...`);
           for (const recordatorio of recordatoriosLocal) {
             try {
-              if (currentUser && window.db) {
-                await db.collection('users').doc(currentUser.uid)
-                        .collection('recordatorios').doc(recordatorio.id)
-                        .set(recordatorio, { merge: true });
-              } else {
-                enqueueSyncItem({ type: 'recordatorio', op: 'upsert', data: recordatorio });
-              }
+              const recordatorioId = recordatorio.id || recordatorio.uid || recordatorio.uuid || `record_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+              if (!recordatorio.id) recordatorio.id = recordatorioId;
+              await upsertUserCollectionDoc('recordatorios', recordatorioId, recordatorio);
             } catch (e) {
               enqueueSyncItem({ type: 'recordatorio', op: 'upsert', data: recordatorio });
             }
@@ -5536,13 +5529,9 @@
           console.log(`📅 Sincronizando ${citasLocal.length} citas...`);
           for (const cita of citasLocal) {
             try {
-              if (currentUser && window.db) {
-                await db.collection('users').doc(currentUser.uid)
-                        .collection('citas').doc(cita.id)
-                        .set(cita, { merge: true });
-              } else {
-                enqueueSyncItem({ type: 'cita', op: 'upsert', data: cita });
-              }
+              const citaId = cita.id || cita.uid || cita.uuid || `cita_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+              if (!cita.id) cita.id = citaId;
+              await upsertUserCollectionDoc('citas', citaId, cita);
             } catch (e) {
               enqueueSyncItem({ type: 'cita', op: 'upsert', data: cita });
             }
@@ -5802,6 +5791,25 @@
       console.log('🧾 Encolado para sincronizar:', item.type, item.op);
     }
 
+    async function upsertUserCollectionDoc(collectionName, docId, data, options = { merge: true }) {
+      if (!currentUser) throw new Error('No hay usuario autenticado');
+      if (!docId) throw new Error(`Documento sin ID para colección ${collectionName}`);
+
+      if (window.db && typeof window.db.collection === 'function') {
+        await window.db
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection(collectionName)
+          .doc(docId)
+          .set(data, options);
+      } else if (window.setDoc && window.doc) {
+        const ref = window.doc(window.db, 'users', currentUser.uid, collectionName, docId);
+        await window.setDoc(ref, data, options);
+      } else {
+        throw new Error('Firestore no inicializado correctamente');
+      }
+    }
+
     async function processSyncQueue() {
       if (!currentUser) {
         console.log('⏸️ Sin usuario autenticado, cola pendiente');
@@ -5828,13 +5836,13 @@
               if (!restOK) throw e;
             }
           } else if (item.type === 'recordatorio' && item.op === 'upsert' && item.data) {
-            await db.collection('users').doc(currentUser.uid)
-                    .collection('recordatorios').doc(item.data.id)
-                    .set(item.data, { merge: true });
+            const recordatorioId = item.data.id || item.data.uid || item.data.uuid || `record_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            if (!item.data.id) item.data.id = recordatorioId;
+            await upsertUserCollectionDoc('recordatorios', recordatorioId, item.data);
           } else if (item.type === 'cita' && item.op === 'upsert' && item.data) {
-            await db.collection('users').doc(currentUser.uid)
-                    .collection('citas').doc(item.data.id)
-                    .set(item.data, { merge: true });
+            const citaId = item.data.id || item.data.uid || item.data.uuid || `cita_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            if (!item.data.id) item.data.id = citaId;
+            await upsertUserCollectionDoc('citas', citaId, item.data);
           }
           // Otras entidades podrían añadirse aquí (recordatorios, citas)
         } catch (err) {
