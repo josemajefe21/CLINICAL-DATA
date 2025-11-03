@@ -1774,6 +1774,10 @@
             
             // Cargar datos del usuario
             loadUserData();
+            // Intentar procesar cola pendiente tras autenticación
+            setTimeout(() => {
+              try { processSyncQueue(); } catch (_) {}
+            }, 500);
             
           } else {
             console.log('❌ Usuario no autenticado');
@@ -4030,6 +4034,10 @@
           
           selectedPaciente = nuevoPaciente;
           console.log('📊 Total pacientes después de agregar:', window.allPacientes.length);
+          // Intentar sincronizar en segundo plano si hay sesión
+          if (window.currentUser) {
+            setTimeout(() => { try { processSyncQueue(); } catch (_) {} }, 0);
+          }
           
           // PASO 2: Intentar guardar en Firebase (secundario, puede fallar)
           if (window.currentUser && window.setDoc) {
@@ -4039,9 +4047,11 @@
               console.log('☁️ ✅ Paciente guardado en Firebase');
             } catch (firebaseError) {
               console.warn('⚠️ Firebase no disponible, datos guardados solo localmente:', firebaseError);
+              enqueueSyncItem({ type: 'paciente', op: 'upsert', data: nuevoPaciente });
             }
           } else {
             console.log('⚠️ Firebase no disponible, usando solo localStorage');
+            enqueueSyncItem({ type: 'paciente', op: 'upsert', data: nuevoPaciente });
           }
 
           // Actualizar interfaz
@@ -5459,7 +5469,9 @@
       
       try {
         const pacientesLocal = loadFromLocalStorage(STORAGE_KEYS.PACIENTES) || [];
-        
+        const recordatoriosLocal = loadFromLocalStorage(STORAGE_KEYS.RECORDATORIOS) || [];
+        const citasLocal = loadFromLocalStorage(STORAGE_KEYS.CITAS) || [];
+
         if (pacientesLocal.length > 0) {
           console.log(`📊 Sincronizando ${pacientesLocal.length} pacientes locales...`);
           
@@ -5498,8 +5510,43 @@
           }
           
         } else {
-          console.log('ℹ️ No hay datos locales para sincronizar');
-          alert('ℹ️ No hay datos locales para sincronizar');
+          console.log('ℹ️ No hay pacientes locales para sincronizar');
+        }
+
+        // Recordatorios
+        if (Array.isArray(recordatoriosLocal) && recordatoriosLocal.length > 0) {
+          console.log(`📌 Sincronizando ${recordatoriosLocal.length} recordatorios...`);
+          for (const recordatorio of recordatoriosLocal) {
+            try {
+              if (currentUser && window.db) {
+                await db.collection('users').doc(currentUser.uid)
+                        .collection('recordatorios').doc(recordatorio.id)
+                        .set(recordatorio, { merge: true });
+              } else {
+                enqueueSyncItem({ type: 'recordatorio', op: 'upsert', data: recordatorio });
+              }
+            } catch (e) {
+              enqueueSyncItem({ type: 'recordatorio', op: 'upsert', data: recordatorio });
+            }
+          }
+        }
+
+        // Citas
+        if (Array.isArray(citasLocal) && citasLocal.length > 0) {
+          console.log(`📅 Sincronizando ${citasLocal.length} citas...`);
+          for (const cita of citasLocal) {
+            try {
+              if (currentUser && window.db) {
+                await db.collection('users').doc(currentUser.uid)
+                        .collection('citas').doc(cita.id)
+                        .set(cita, { merge: true });
+              } else {
+                enqueueSyncItem({ type: 'cita', op: 'upsert', data: cita });
+              }
+            } catch (e) {
+              enqueueSyncItem({ type: 'cita', op: 'upsert', data: cita });
+            }
+          }
         }
       } catch (error) {
         console.error('❌ Error crítico en sincronización:', error);
@@ -5726,6 +5773,102 @@
         return null;
       }
     }
+
+    // Cola de sincronización persistente (garantiza subida cuando vuelva internet/autenticación)
+    const SYNC_QUEUE_KEY = 'clinical_data_sync_queue_v1';
+
+    function loadSyncQueue() {
+      try {
+        return JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveSyncQueue(queue) {
+      try {
+        localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+      } catch (_) {}
+    }
+
+    function enqueueSyncItem(item) {
+      const queue = loadSyncQueue();
+      queue.push({
+        id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        createdAt: new Date().toISOString(),
+        item
+      });
+      saveSyncQueue(queue);
+      console.log('🧾 Encolado para sincronizar:', item.type, item.op);
+    }
+
+    async function processSyncQueue() {
+      if (!currentUser) {
+        console.log('⏸️ Sin usuario autenticado, cola pendiente');
+        return;
+      }
+
+      let queue = loadSyncQueue();
+      if (!Array.isArray(queue) || queue.length === 0) {
+        console.log('✅ No hay elementos pendientes de sincronización');
+        return;
+      }
+
+      console.log(`🔄 Procesando cola de sincronización (${queue.length} elementos)...`);
+      const remaining = [];
+
+      for (const q of queue) {
+        const { item } = q;
+        try {
+          if (item.type === 'paciente' && item.op === 'upsert' && item.data) {
+            try {
+              await savePacienteToFirestore(item.data);
+            } catch (e) {
+              const restOK = await syncWithFirebaseREST(item.data);
+              if (!restOK) throw e;
+            }
+          } else if (item.type === 'recordatorio' && item.op === 'upsert' && item.data) {
+            await db.collection('users').doc(currentUser.uid)
+                    .collection('recordatorios').doc(item.data.id)
+                    .set(item.data, { merge: true });
+          } else if (item.type === 'cita' && item.op === 'upsert' && item.data) {
+            await db.collection('users').doc(currentUser.uid)
+                    .collection('citas').doc(item.data.id)
+                    .set(item.data, { merge: true });
+          }
+          // Otras entidades podrían añadirse aquí (recordatorios, citas)
+        } catch (err) {
+          console.warn('⚠️ Falló elemento de la cola, se mantiene para reintento:', err?.message || err);
+          remaining.push(q);
+        }
+      }
+
+      saveSyncQueue(remaining);
+      console.log(`📦 Cola actualizada. Pendientes: ${remaining.length}`);
+    }
+
+    window.processSyncQueue = processSyncQueue;
+    window.addEventListener('online', () => {
+      console.log('📶 Conexión restaurada, intentando sincronizar pendientes...');
+      processSyncQueue();
+    });
+
+    // Sincronización automática periódica
+    let lastAutoSyncAt = 0;
+    const AUTO_SYNC_INTERVAL_MS = 30000; // 30s mínimo entre sincronizaciones reales
+    function autoSyncTick() {
+      if (!currentUser) return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      const now = Date.now();
+      if (now - lastAutoSyncAt < AUTO_SYNC_INTERVAL_MS) return;
+      lastAutoSyncAt = now;
+      console.log('⏱️ AutoSync: verificando pendientes y subiendo cambios...');
+      try { processSyncQueue(); } catch (_) {}
+      try { syncLocalDataToFirebase(); } catch (_) {}
+    }
+    setInterval(autoSyncTick, 15000); // comprobación cada 15s (respetando umbral)
+    window.addEventListener('focus', autoSyncTick);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) autoSyncTick(); });
 
     // Cargar datos desde localStorage al inicializar
     function loadLocalData() {
