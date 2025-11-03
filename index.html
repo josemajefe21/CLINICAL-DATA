@@ -841,7 +841,7 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, enableNetwork, disableNetwork, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+    import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, deleteDoc, updateDoc, enableNetwork, disableNetwork, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDpwMc60IPAJiBwYU6PPc0QHrHSqhKjE8s",
@@ -877,9 +877,11 @@
     window.collection = collection;
     window.addDoc = addDoc;
     window.getDocs = getDocs;
+    window.getDoc = getDoc;
     window.doc = doc;
     window.setDoc = setDoc;
     window.deleteDoc = deleteDoc;
+    window.updateDoc = updateDoc;
 
     // Inicializar onAuthStateChanged inmediatamente
     onAuthStateChanged(auth, async (user) => {
@@ -1101,12 +1103,18 @@
 
         // Obtener o inicializar app compat usando la misma configuración
         var compatApp;
+        var compatConfig = window.firebaseConfig || {
+          apiKey: "AIzaSyDpwMc60IPAJiBwYU6PPc0QHrHSqhKjE8s",
+          authDomain: "clinical-70644.firebaseapp.com",
+          projectId: "clinical-70644",
+          storageBucket: "clinical-70644.firebasestorage.app",
+          messagingSenderId: "166670165939",
+          appId: "1:166670165939:web:05e9352a1a96dbd2a58dc6"
+        };
         try {
           compatApp = firebase.app();
         } catch (e) {
-          if (window.firebaseConfig) {
-            compatApp = firebase.initializeApp(window.firebaseConfig);
-          }
+          compatApp = firebase.initializeApp(compatConfig);
         }
 
         var authCompat = firebase.auth(compatApp);
@@ -1177,8 +1185,93 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   
-  <!-- Servicio de sincronización alternativo -->
-  <script src="sync-service.js"></script>
+  <!-- Servicio de sincronización alternativo (inline para evitar reescrituras en Vercel) -->
+  <script>
+    class SyncService {
+      constructor() {
+        this.baseUrl = 'https://api.jsonbin.io/v3/b';
+        this.apiKey = '$2a$10$8K9wZ2fX3vY1qR5tN7mO8eH6pL4jS9dF2gA5cB8xE1wQ3rT6yU9iK';
+        this.userBins = new Map();
+      }
+
+      generateUserBinId(userEmail) {
+        return btoa(userEmail).replace(/[^a-zA-Z0-9]/g, '').substring(0, 24);
+      }
+
+      async saveUserData(userEmail, data) {
+        try {
+          console.log('🌐 Guardando datos en servicio de sincronización...');
+          console.log('👤 Usuario:', userEmail);
+          console.log('📊 Datos:', { pacientes: data.pacientes?.length || 0 });
+
+          const binId = this.generateUserBinId(userEmail);
+          const url = `${this.baseUrl}/${binId}`;
+
+          const payload = {
+            user: userEmail,
+            timestamp: new Date().toISOString(),
+            data: data,
+            version: '2.0'
+          };
+
+          const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': this.apiKey,
+              'X-Bin-Name': `clinical-data-${userEmail.split('@')[0]}`
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (response.ok) {
+            console.log('✅ Datos guardados en servicio de sincronización');
+            return true;
+          } else {
+            console.error('❌ Error guardando en servicio:', response.status);
+            return false;
+          }
+        } catch (error) {
+          console.error('❌ Error en servicio de sincronización:', error);
+          return false;
+        }
+      }
+
+      async loadUserData(userEmail) {
+        try {
+          console.log('📥 Cargando datos desde servicio de sincronización...');
+          console.log('👤 Usuario:', userEmail);
+
+          const binId = this.generateUserBinId(userEmail);
+          const url = `${this.baseUrl}/${binId}/latest`;
+
+          const response = await fetch(url, {
+            headers: {
+              'X-Master-Key': this.apiKey
+            }
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Datos cargados desde servicio de sincronización');
+            console.log('📊 Datos:', { pacientes: result.record?.data?.pacientes?.length || 0 });
+            return result.record?.data || null;
+          } else if (response.status === 404) {
+            console.log('ℹ️ No hay datos en servicio de sincronización para este usuario');
+            return null;
+          } else {
+            console.error('❌ Error cargando desde servicio:', response.status);
+            return null;
+          }
+        } catch (error) {
+          console.error('❌ Error en carga desde servicio:', error);
+          return null;
+        }
+      }
+    }
+
+    window.syncService = new SyncService();
+  </script>
     
   </head>
 <body>
