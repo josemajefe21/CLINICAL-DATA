@@ -841,7 +841,7 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-    import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, deleteDoc, updateDoc, enableNetwork, disableNetwork, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+    import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, deleteDoc, updateDoc, enableNetwork, disableNetwork, connectFirestoreEmulator, writeBatch, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDpwMc60IPAJiBwYU6PPc0QHrHSqhKjE8s",
@@ -882,6 +882,8 @@
     window.setDoc = setDoc;
     window.deleteDoc = deleteDoc;
     window.updateDoc = updateDoc;
+    window.writeBatch = writeBatch;
+    window.serverTimestamp = serverTimestamp;
 
     // Inicializar onAuthStateChanged inmediatamente
     onAuthStateChanged(auth, async (user) => {
@@ -1158,6 +1160,12 @@
         window.getDocs = async function(collectionRef) {
           var ref = refFromSegments(collectionRef._collectionSegments || []);
           return ref.get();
+        };
+        window.serverTimestamp = function() {
+          return firebase.firestore.FieldValue.serverTimestamp();
+        };
+        window.writeBatch = function() {
+          return firebase.firestore().batch();
         };
 
         // Reexponer helpers de auth estilo modular para no romper referencias
@@ -2173,12 +2181,18 @@
 
         // Crear documento de usuario en Firestore
         try {
-          await db.collection('users').doc(userCredential.user.uid).set({
+          const userDocRef = getDocumentRef('users', userCredential.user.uid);
+          const payload = {
             name: name,
             email: email,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-          });
+            createdAt: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString(),
+            lastLogin: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString()
+          };
+          if (isCompatFirestore()) {
+            await userDocRef.set(payload, { merge: true });
+          } else {
+            await setDoc(userDocRef, payload, { merge: true });
+          }
           console.log('Documento de usuario creado en Firestore');
         } catch (firestoreError) {
           console.warn('Error al crear documento en Firestore (no crítico):', firestoreError);
@@ -2279,13 +2293,18 @@
       if (!currentUser) return;
 
       try {
-        const userDoc = await db.collection('users').doc(currentUser.uid).get();
-        
-        if (userDoc.exists) {
-          // Actualizar último login
-          await db.collection('users').doc(currentUser.uid).update({
-            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-          });
+        const userDocRef = getDocumentRef('users', currentUser.uid);
+        const userDocSnapshot = await getDocumentSnapshot(userDocRef);
+
+        if (snapshotExists(userDocSnapshot)) {
+          try {
+            const payload = window.serverTimestamp
+              ? { lastLogin: window.serverTimestamp() }
+              : { lastLogin: new Date().toISOString() };
+            await updateFirestoreDocument(userDocRef, payload);
+          } catch (updateError) {
+            console.warn('⚠️ No se pudo actualizar lastLogin:', updateError);
+          }
         }
 
         // Cargar bitácoras del usuario
@@ -2301,14 +2320,14 @@
       if (!currentUser) return;
 
       try {
-        const bitacorasSnapshot = await db.collection('users').doc(currentUser.uid)
-          .collection('bitacoras').get();
+        const bitacorasRef = getCollectionRef('users', currentUser.uid, 'bitacoras');
+        const snapshot = await getCollectionSnapshot(bitacorasRef);
 
         const bitacoras = [];
-        bitacorasSnapshot.forEach(doc => {
+        snapshot.forEach(docSnap => {
           bitacoras.push({
-            id: doc.id,
-            ...doc.data()
+            id: docSnap.id,
+            ...(snapshotData(docSnap) || {})
           });
         });
 
@@ -2338,12 +2357,9 @@
       if (!currentUser) return;
 
       try {
-        const bitacoraRef = db.collection('users').doc(currentUser.uid)
-          .collection('bitacoras').doc(bitacora.id);
-        
-        await bitacoraRef.set({
+        await upsertUserCollectionDoc('bitacoras', bitacora.id, {
           ...bitacora,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          updatedAt: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString()
         });
 
         console.log('Bitácora guardada en Firestore');
@@ -2359,16 +2375,24 @@
         const localBitacoras = JSON.parse(localStorage.getItem('bitacoras') || '[]');
         
         if (localBitacoras.length > 0) {
-          const batch = db.batch();
-          
+          const usingCompat = isCompatFirestore();
+          const batch = usingCompat ? window.db.batch() : writeBatch(window.db);
+
           for (const bitacora of localBitacoras) {
-            const bitacoraRef = db.collection('users').doc(userId)
-              .collection('bitacoras').doc(bitacora.id);
-            
-            batch.set(bitacoraRef, {
+            const bitacoraRef = usingCompat
+              ? compatTraverse(['users', userId, 'bitacoras', bitacora.id])
+              : doc(window.db, 'users', userId, 'bitacoras', bitacora.id);
+
+            const payload = {
               ...bitacora,
-              migratedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+              migratedAt: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString()
+            };
+
+            if (usingCompat) {
+              batch.set(bitacoraRef, payload);
+            } else {
+              batch.set(bitacoraRef, payload, { merge: true });
+            }
           }
           
           await batch.commit();
@@ -5410,20 +5434,20 @@
       console.log('🔐 Cargando datos para usuario:', currentUser.email);
       
       try {
-        const snapshot = await db.collection('users').doc(currentUser.uid)
-                                 .collection('pacientes').get();
-        
+        const pacientesRef = getCollectionRef('users', currentUser.uid, 'pacientes');
+        const snapshot = await getCollectionSnapshot(pacientesRef);
+
         allPacientes = [];
         let pacientesFromFirebase = 0;
         
-        snapshot.forEach(doc => {
-          const pacienteData = doc.data();
+        snapshot.forEach(docSnap => {
+          const pacienteData = snapshotData(docSnap);
           // Verificar que el paciente pertenece al usuario actual
-          if (pacienteData.ownerUserId === currentUser.uid) {
-            allPacientes.push(pacienteData);
+          if (pacienteData && pacienteData.ownerUserId === currentUser.uid) {
+            allPacientes.push({ id: docSnap.id, ...pacienteData });
             pacientesFromFirebase++;
           } else {
-            console.warn('⚠️ Paciente no pertenece al usuario actual:', pacienteData.nombre);
+            console.warn('⚠️ Paciente no pertenece al usuario actual:', pacienteData?.nombre);
           }
         });
         
@@ -5903,6 +5927,69 @@
       }
     }
 
+    function isCompatFirestore() {
+      return window.db && typeof window.db.collection === 'function';
+    }
+
+    function compatTraverse(segments) {
+      let ref = window.db;
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        if (i % 2 === 0) {
+          ref = ref.collection(segment);
+        } else {
+          ref = ref.doc(segment);
+        }
+      }
+      return ref;
+    }
+
+    function getDocumentRef() {
+      const segments = Array.from(arguments);
+      if (isCompatFirestore()) {
+        return compatTraverse(segments);
+      }
+      return doc(window.db, ...segments);
+    }
+
+    function getCollectionRef() {
+      const segments = Array.from(arguments);
+      if (isCompatFirestore()) {
+        return compatTraverse(segments);
+      }
+      return collection(window.db, ...segments);
+    }
+
+    async function getDocumentSnapshot(ref) {
+      return isCompatFirestore() ? await ref.get() : await getDoc(ref);
+    }
+
+    async function getCollectionSnapshot(ref) {
+      return isCompatFirestore() ? await ref.get() : await getDocs(ref);
+    }
+
+    async function updateFirestoreDocument(ref, data) {
+      if (isCompatFirestore()) {
+        return ref.update(data);
+      }
+      return updateDoc(ref, data);
+    }
+
+    function snapshotExists(snapshot) {
+      if (!snapshot) return false;
+      if (typeof snapshot.exists === 'boolean') return snapshot.exists;
+      if (typeof snapshot.exists === 'function') return snapshot.exists();
+      return !!snapshotData(snapshot);
+    }
+
+    function snapshotData(snapshot) {
+      if (!snapshot) return null;
+      if (typeof snapshot.data === 'function') {
+        return snapshot.data();
+      }
+      return snapshot.data || null;
+    }
+
     async function processSyncQueue() {
       if (!currentUser) {
         console.log('⏸️ Sin usuario autenticado, cola pendiente');
@@ -6217,9 +6304,7 @@
 
       try {
         if (currentUser) {
-          await db.collection('users').doc(currentUser.uid)
-                   .collection('recordatorios').doc(recordatorio.id)
-                   .set(recordatorio);
+          await upsertUserCollectionDoc('recordatorios', recordatorio.id, recordatorio);
         }
 
         allRecordatorios.push(recordatorio);
@@ -6314,9 +6399,8 @@
 
       try {
         if (currentUser) {
-          await db.collection('users').doc(currentUser.uid)
-                   .collection('recordatorios').doc(recordatorioId)
-                   .update({ completado: true });
+          const recordatorioRef = getDocumentRef('users', currentUser.uid, 'recordatorios', recordatorioId);
+          await updateFirestoreDocument(recordatorioRef, { completado: true });
         }
 
         renderRecordatoriosList();
@@ -6331,9 +6415,12 @@
 
       try {
         if (currentUser) {
-          await db.collection('users').doc(currentUser.uid)
-                   .collection('recordatorios').doc(recordatorioId)
-                   .delete();
+          const recordatorioRef = getDocumentRef('users', currentUser.uid, 'recordatorios', recordatorioId);
+          if (isCompatFirestore()) {
+            await recordatorioRef.delete();
+          } else {
+            await deleteDoc(recordatorioRef);
+          }
         }
 
         allRecordatorios = allRecordatorios.filter(r => r.id !== recordatorioId);
@@ -6482,9 +6569,7 @@
 
       try {
         if (currentUser) {
-          await db.collection('users').doc(currentUser.uid)
-                   .collection('citas').doc(cita.id)
-                   .set(cita);
+          await upsertUserCollectionDoc('citas', cita.id, cita);
         }
 
         allCitas.push(cita);
@@ -6545,9 +6630,12 @@
 
       try {
         if (currentUser) {
-          await db.collection('users').doc(currentUser.uid)
-                   .collection('citas').doc(citaId)
-                   .delete();
+          const citaRef = getDocumentRef('users', currentUser.uid, 'citas', citaId);
+          if (isCompatFirestore()) {
+            await citaRef.delete();
+          } else {
+            await deleteDoc(citaRef);
+          }
         }
 
         allCitas = allCitas.filter(c => c.id !== citaId);
@@ -6564,12 +6652,13 @@
       if (!currentUser) return;
       
       try {
-        const snapshot = await db.collection('users').doc(currentUser.uid)
-                                 .collection('recordatorios').get();
+        const recordatoriosRef = getCollectionRef('users', currentUser.uid, 'recordatorios');
+        const snapshot = await getCollectionSnapshot(recordatoriosRef);
         
         allRecordatorios = [];
-        snapshot.forEach(doc => {
-          allRecordatorios.push(doc.data());
+        snapshot.forEach(docSnap => {
+          const data = snapshotData(docSnap);
+          if (data) allRecordatorios.push({ id: docSnap.id, ...data });
         });
       } catch (error) {
         console.error('Error al cargar recordatorios:', error);
@@ -6580,12 +6669,13 @@
       if (!currentUser) return;
       
       try {
-        const snapshot = await db.collection('users').doc(currentUser.uid)
-                                 .collection('citas').get();
+        const citasRef = getCollectionRef('users', currentUser.uid, 'citas');
+        const snapshot = await getCollectionSnapshot(citasRef);
         
         allCitas = [];
-        snapshot.forEach(doc => {
-          allCitas.push(doc.data());
+        snapshot.forEach(docSnap => {
+          const data = snapshotData(docSnap);
+          if (data) allCitas.push({ id: docSnap.id, ...data });
         });
       } catch (error) {
         console.error('Error al cargar citas:', error);
