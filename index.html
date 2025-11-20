@@ -5361,23 +5361,51 @@
       }
     }
 
-    function deletePaciente() {
+    async function deletePaciente() {
       if (!selectedPaciente) return;
       
       if (confirm(`¿Estás seguro de eliminar al paciente ${selectedPaciente.nombre}? Esta acción no se puede deshacer.`)) {
-        allPacientes = allPacientes.filter(p => p.id !== selectedPaciente.id);
+        const pacienteId = selectedPaciente.id;
+
+        allPacientes = allPacientes.filter(p => p.id !== pacienteId);
         selectedPaciente = null;
-        
+
+        // Intentar eliminar en Firestore
+        if (currentUser) {
+          try {
+            await deleteUserCollectionDoc('pacientes', pacienteId);
+            console.log('🗑️ Paciente eliminado en Firestore:', pacienteId);
+          } catch (error) {
+            console.warn('⚠️ No se pudo eliminar en Firestore ahora, se encola para reintento:', error);
+            enqueueSyncItem({ type: 'paciente', op: 'delete', id: pacienteId });
+          }
+        }
+
         // CRÍTICO: Guardar cambios inmediatamente en localStorage
         const saveSuccess = saveToLocalStorage(STORAGE_KEYS.PACIENTES, allPacientes);
         if (!saveSuccess) {
           console.error('❌ FALLO CRÍTICO: No se pudieron guardar cambios tras eliminación');
           alert('⚠️ Error guardando cambios. Los datos pueden no persistir.');
         }
+        if (typeof window.backupAfterAction === 'function') {
+          try {
+            window.backupAfterAction({
+              pacientes: allPacientes,
+              recordatorios: allRecordatorios || [],
+              citas: allCitas || []
+            });
+          } catch (backupError) {
+            console.warn('⚠️ No se pudo actualizar el backup local tras eliminar paciente:', backupError);
+          }
+        }
         
         document.getElementById('fichaClinica').style.display = 'none';
         document.getElementById('visitForm').style.display = 'none';
         renderPacienteSelector();
+
+        setTimeout(() => {
+          try { processSyncQueue(); } catch (e) { console.warn('⚠️ No se pudo procesar cola inmediatamente', e); }
+        }, 0);
         
         alert('Paciente eliminado exitosamente');
       }
@@ -5928,6 +5956,32 @@
       }
     }
 
+    async function deleteUserCollectionDoc(collectionName, docId) {
+      if (!currentUser) throw new Error('No hay usuario autenticado');
+      if (!docId) throw new Error(`Documento sin ID para colección ${collectionName}`);
+
+      if (window.db && typeof window.db.collection === 'function') {
+        await window.db
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection(collectionName)
+          .doc(docId)
+          .delete();
+      } else if (window.deleteDoc && window.doc) {
+        const ref = window.doc(window.db, 'users', currentUser.uid, collectionName, docId);
+        await window.deleteDoc(ref);
+      } else if (window.doc) {
+        const ref = window.doc(window.db, 'users', currentUser.uid, collectionName, docId);
+        if (ref && typeof ref.delete === 'function') {
+          await ref.delete();
+        } else {
+          throw new Error('Firestore no inicializado correctamente para delete');
+        }
+      } else {
+        throw new Error('Firestore no inicializado correctamente');
+      }
+    }
+
     function isCompatFirestore() {
       return window.db && typeof window.db.collection === 'function';
     }
@@ -6016,6 +6070,8 @@
               const restOK = await syncWithFirebaseREST(item.data);
               if (!restOK) throw e;
             }
+          } else if (item.type === 'paciente' && item.op === 'delete' && item.id) {
+            await deleteUserCollectionDoc('pacientes', item.id);
           } else if (item.type === 'recordatorio' && item.op === 'upsert' && item.data) {
             const recordatorioId = item.data.id || item.data.uid || item.data.uuid || `record_${Date.now()}_${Math.random().toString(36).slice(2)}`;
             if (!item.data.id) item.data.id = recordatorioId;
