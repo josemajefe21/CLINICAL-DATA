@@ -843,6 +843,17 @@
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
     import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, deleteDoc, updateDoc, enableNetwork, disableNetwork, connectFirestoreEmulator, writeBatch, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
+    // Redirigir alertas a la consola para evitar ventanas emergentes
+    window.alert = (mensaje) => {
+      const texto = typeof mensaje === 'string' ? mensaje : JSON.stringify(mensaje);
+      const prefijo = (typeof texto === 'string' && /^[❌⚠️🚨]/.test(texto)) ? 'error' : 'info';
+      if (prefijo === 'error') {
+        console.error(`ALERTA: ${texto}`);
+      } else {
+        console.log(`ALERTA: ${texto}`);
+      }
+    };
+
     const firebaseConfig = {
       apiKey: "AIzaSyDpwMc60IPAJiBwYU6PPc0QHrHSqhKjE8s",
       authDomain: "clinical-70644.firebaseapp.com",
@@ -1310,26 +1321,6 @@
       onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(79, 70, 229, 0.3)'"
       title="¿Qué puede hacer este software?">🩺❓</button>
       <p style="color: var(--text-light); font-size: 0.85rem; margin-top: 8px;">¿Qué puede hacer este software?</p>
-    </div>
-    
-    <!-- Botón de acceso directo (bypass temporal) -->
-    <div style="text-align: center; margin-bottom: 16px;">
-      <button onclick="bypassAuth()" style="
-        background: linear-gradient(135deg, #dc2626, #b91c1c);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 12px 24px;
-        font-size: 1rem;
-        cursor: pointer;
-        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-        transition: all 0.3s ease;
-      " 
-      onmouseover="this.style.transform='scale(1.05)'"
-      onmouseout="this.style.transform='scale(1)'">
-        🚨 ACCESO DIRECTO (Firebase roto)
-      </button>
-      <p style="color: var(--text-light); font-size: 0.8rem; margin-top: 4px;">Usar mientras se arregla Firebase</p>
     </div>
     
     <div id="loginCard" class="form-card">
@@ -1918,47 +1909,6 @@
         }
       }
     }
-
-    // Función de bypass temporal para acceso directo
-    window.bypassAuth = function() {
-      console.log('🚨 ACTIVANDO BYPASS DE AUTENTICACIÓN...');
-      
-      // Crear usuario mock
-      currentUser = {
-        uid: 'bypass_user_' + Date.now(),
-        email: 'corraljosemaria@hotmail.com',
-        displayName: 'Usuario Bypass',
-        getIdToken: () => Promise.resolve('bypass_token')
-      };
-      
-      isAuthenticated = true;
-      
-      console.log('✅ Usuario bypass creado:', currentUser.email);
-      
-      // Mostrar interfaz principal
-      const authContainer = document.querySelector('.container');
-      const mainContent = document.getElementById('mainContent');
-      const userInfo = document.getElementById('userInfo');
-      
-      if (authContainer) authContainer.style.display = 'none';
-      if (mainContent) mainContent.style.display = 'block';
-      if (userInfo) {
-        userInfo.style.display = 'flex';
-        
-        // Actualizar info del usuario
-        const userName = document.getElementById('userName');
-        const userEmail = document.getElementById('userEmail');
-        if (userName) userName.textContent = 'Usuario Bypass';
-        if (userEmail) userEmail.textContent = 'corraljosemaria@hotmail.com';
-      }
-      
-      // Cargar datos locales inmediatamente
-      console.log('📦 Cargando datos en modo bypass...');
-      loadLocalData();
-      renderPacienteSelector();
-      
-      alert('✅ ACCESO DIRECTO ACTIVADO\n\n📱 Ahora puedes usar la aplicación normalmente.\n💾 Los datos se guardan localmente.\n🌐 Usa "Sincronizar Datos" para compartir entre dispositivos.');
-    };
 
     // Inicializar autenticación cuando Firebase esté listo
     setTimeout(initializeAuthWithRetry, 1000);
