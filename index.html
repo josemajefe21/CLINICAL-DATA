@@ -5182,12 +5182,50 @@
         // Actualizar en la lista local
         const index = allPacientes.findIndex(p => p.id === selectedPaciente.id);
         if (index !== -1) {
-          allPacientes[index] = selectedPaciente;
+          allPacientes[index] = { ...allPacientes[index], ...selectedPaciente };
+        }
+        if (Array.isArray(window.allPacientes)) {
+          const globalIndex = window.allPacientes.findIndex(p => p.id === selectedPaciente.id);
+          if (globalIndex !== -1) {
+            window.allPacientes[globalIndex] = { ...window.allPacientes[globalIndex], ...selectedPaciente };
+          }
+        } else {
+          window.allPacientes = [...allPacientes];
+        }
+
+        // Persistir cambios locales para sincronizar entre pestañas y sesiones
+        try {
+          saveToLocalStorage(STORAGE_KEYS.PACIENTES, allPacientes);
+          localStorage.setItem('allPacientes', JSON.stringify(allPacientes));
+          console.log('💾 Paciente actualizado en almacenamiento local');
+        } catch (storageError) {
+          console.warn('⚠️ No se pudo persistir el paciente editado en localStorage:', storageError);
+        }
+
+        // Actualizar respaldo integrado si está disponible
+        if (typeof window.backupAfterAction === 'function') {
+          try {
+            window.backupAfterAction({
+              pacientes: allPacientes,
+              recordatorios: allRecordatorios || [],
+              citas: allCitas || []
+            });
+          } catch (backupError) {
+            console.warn('⚠️ No se pudo actualizar el backup tras editar paciente:', backupError);
+          }
         }
 
         renderPacienteInfo();
         renderPacienteSelector();
         closeEditPacienteModal();
+        
+        setTimeout(() => {
+          try {
+            processSyncQueue();
+          } catch (queueError) {
+            console.warn('⚠️ No se pudo procesar la cola tras editar paciente:', queueError);
+          }
+        }, 0);
         
         alert('✅ Paciente actualizado exitosamente');
       } catch (error) {
