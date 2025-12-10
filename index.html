@@ -1814,19 +1814,6 @@
       '#a78bfa', '#f472b6', '#60a5fa', '#34d399'
     ];
 
-    function parseLocalDate(dateString) {
-      if (!dateString) return null;
-      const parts = dateString.split('-').map(Number);
-      if (parts.length !== 3 || parts.some(isNaN)) return null;
-      const [year, month, day] = parts;
-      return new Date(year, month - 1, day);
-    }
-
-    function formatLocalDate(dateString) {
-      const date = parseLocalDate(dateString);
-      return date ? date.toLocaleDateString('es-ES') : (dateString || '');
-    }
-
     // ===== FUNCIÓN DE GUARDADO AUTOMÁTICO =====
     async function autoSave() {
       if (!currentUser || !selectedPaciente) return;
@@ -4549,8 +4536,8 @@
       let ultimaFecha = null;
       Object.values(paciente.visitas).forEach(visits => {
         visits.forEach(visit => {
-          const fecha = parseLocalDate(visit?.date);
-          if (fecha && (!ultimaFecha || fecha > ultimaFecha)) {
+          const fecha = new Date(visit.date);
+          if (!ultimaFecha || fecha > ultimaFecha) {
             ultimaFecha = fecha;
           }
         });
@@ -4572,12 +4559,7 @@
       
       const todasLasVisitas = [];
       Object.values(paciente.visitas).forEach(visits => {
-        visits.forEach(visit => {
-          const fecha = parseLocalDate(visit?.date);
-          if (fecha) {
-            todasLasVisitas.push(fecha);
-          }
-        });
+        visits.forEach(visit => todasLasVisitas.push(new Date(visit.date)));
       });
 
       if (todasLasVisitas.length < 2) return 'N/A';
@@ -5128,11 +5110,7 @@
         return;
       }
 
-      const visitasOrdenadas = [...visitas].sort((a, b) => {
-        const dateA = parseLocalDate(a?.date);
-        const dateB = parseLocalDate(b?.date);
-        return (dateB ? dateB.getTime() : 0) - (dateA ? dateA.getTime() : 0);
-      });
+      const visitasOrdenadas = [...visitas].sort((a, b) => new Date(b.date) - new Date(a.date));
       
       container.innerHTML = `
         <div class="form-section">
@@ -5140,7 +5118,7 @@
           ${visitasOrdenadas.map(visita => `
             <div style="background: var(--bg); padding: 12px; border-radius: 6px; margin: 8px 0; border-left: 4px solid ${estadosClinicosColors[visita.estado] || '#gray'};">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <strong>${formatLocalDate(visita.date)} ${visita.time || ''}</strong>
+                <strong>${new Date(visita.date).toLocaleDateString('es-ES')} ${visita.time}</strong>
                 <span style="background: ${estadosClinicosColors[visita.estado]}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
                   ${document.getElementById('estadoSelect')?.querySelector(`option[value="${visita.estado}"]`)?.textContent || visita.estado}
                 </span>
@@ -5338,7 +5316,7 @@
                   y = 20;
                 }
                 
-                const fecha = formatLocalDate(visita.date);
+                const fecha = new Date(visita.date).toLocaleDateString('es-ES');
                 doc.text(`• ${fecha} - ${visita.estado}`, 25, y);
                 
                 if (visita.sintomas) {
@@ -6237,13 +6215,9 @@
         });
       }
 
-      visitasData.sort((a, b) => {
-        const dateA = parseLocalDate(a?.date);
-        const dateB = parseLocalDate(b?.date);
-        return (dateA ? dateA.getTime() : 0) - (dateB ? dateB.getTime() : 0);
-      });
+      visitasData.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      const labels = visitasData.map(v => formatLocalDate(v.date));
+      const labels = visitasData.map(v => new Date(v.date).toLocaleDateString('es-ES'));
       const estadoValues = visitasData.map(v => {
         switch(v.estado) {
           case 'critico': return 1;
