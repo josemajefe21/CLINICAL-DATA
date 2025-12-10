@@ -4989,10 +4989,22 @@
         // CRÍTICO: Actualizar la lista global de pacientes
         const pacienteIndex = allPacientes.findIndex(p => p.id === selectedPaciente.id);
         if (pacienteIndex >= 0) {
-          allPacientes[pacienteIndex] = selectedPaciente;
+          allPacientes[pacienteIndex] = { ...allPacientes[pacienteIndex], ...selectedPaciente };
           console.log('✅ Paciente actualizado en lista global');
         } else {
           console.error('❌ Paciente no encontrado en lista global');
+        }
+
+        // Mantener referencia sincronizada con window.allPacientes
+        if (Array.isArray(window.allPacientes)) {
+          const globalIndex = window.allPacientes.findIndex(p => p.id === selectedPaciente.id);
+          if (globalIndex !== -1) {
+            window.allPacientes[globalIndex] = { ...window.allPacientes[globalIndex], ...selectedPaciente };
+          } else {
+            window.allPacientes = [...allPacientes];
+          }
+        } else {
+          window.allPacientes = [...allPacientes];
         }
 
         // Guardar SIEMPRE en localStorage primero
@@ -5003,6 +5015,28 @@
           console.error('❌ FALLO CRÍTICO: No se pudo guardar en localStorage');
           alert('❌ Error guardando datos localmente. Intenta de nuevo.');
           return;
+        }
+
+        // Persistencia legacy para compatibilidad con otros listeners
+        try {
+          localStorage.setItem('allPacientes', JSON.stringify(allPacientes));
+          console.log('💾 allPacientes legacy actualizado');
+        } catch (legacyError) {
+          console.warn('⚠️ No se pudo actualizar la clave legacy allPacientes:', legacyError);
+        }
+
+        // Actualizar backup integrado si está disponible
+        if (typeof window.backupAfterAction === 'function') {
+          try {
+            window.backupAfterAction({
+              pacientes: allPacientes,
+              recordatorios: allRecordatorios || [],
+              citas: allCitas || []
+            });
+            console.log('🛡️ Backup actualizado tras guardar visita');
+          } catch (backupError) {
+            console.warn('⚠️ No se pudo actualizar el backup tras guardar visita:', backupError);
+          }
         }
 
         // FORZAR guardado en Firebase para sincronización
@@ -5079,6 +5113,14 @@
         renderEstadisticasPaciente();
         renderHistory();
         
+        setTimeout(() => {
+          try {
+            processSyncQueue();
+          } catch (queueError) {
+            console.warn('⚠️ No se pudo procesar la cola tras guardar visita:', queueError);
+          }
+        }, 0);
+
         // MENSAJE DE CONFIRMACIÓN MEJORADO
         const visitTypeLabel = visitTypes.find(v => v.value === selectedVisitType)?.label || selectedVisitType;
         const mensaje = `✅ VISITA GUARDADA CORRECTAMENTE\n\n` +
